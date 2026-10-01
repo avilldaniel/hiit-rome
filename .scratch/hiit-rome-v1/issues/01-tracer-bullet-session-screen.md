@@ -12,14 +12,19 @@ Reference: spec sections "Workout model", "Timeline builder", "Session engine", 
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** resolved (branch `v1`, commits 31136fa, 9e0331c)
 
-- [ ] Project scaffold: SvelteKit (Svelte 5, TypeScript) with `adapter-static` in SPA mode and no server files. Vitest and Playwright are configured, and one command each runs the dev server, unit tests and browser tests.
-- [ ] Workout model types (Workout, Group, Interval, Kind) with validation limits (duration 1 s–99:59, Rounds 1–99). The engine modules have no Svelte imports.
-- [ ] The Timeline builder flattens nested Groups. Each entry carries its start offset, resolved colors and position path. "Skip last rest" applies recursively; tests cover the 4-Tabata example and its total duration.
-- [ ] The Session engine covers start → Lead-in → running → completed, plus pause and resume. It is timestamp-based (no tick counting), driven by timestamped actions, never reads the clock, and is tested with a fake clock.
-- [ ] The engine view exposes status, current entry, next five upcoming entries, remaining and elapsed time, total remaining, progress, header labels (named Groups as "Name X of Y", an unnamed innermost Group as "Round X of Y", unnamed outer Groups omitted), colors, and the Kind label (hidden when the name equals the Kind).
-- [ ] Palette tokens live in one place: Kind colors, neutral navy, and paired text colors. An automated test asserts at least 3:1 contrast for every pair.
-- [ ] The Session screen matches variant B. The main area shows the Kind label, name, digits (tabular numbers, system sans) and progress bar in the Interval's color. A navy rail shows "UP NEXT" with five items (first largest and wrapping, the rest truncating), the Round header and time left. During the final Interval the rail shows a single "Finish" row. In portrait the rail stacks below.
-- [ ] Lead-in and paused states use the neutral navy screen. The final-3-seconds pulse falls back to a flash under reduced motion.
-- [ ] A Playwright smoke test controls the page clock, presses Space, and asserts that the background changes from navy (Lead-in) to the first Interval's color and that the Session reaches completion.
+- [x] Project scaffold: SvelteKit (Svelte 5, TypeScript) with `adapter-static` in SPA mode and no server files. Vitest and Playwright are configured, and one command each runs the dev server, unit tests and browser tests.
+- [x] Workout model types (Workout, Group, Interval, Kind) with validation limits (duration 1 s–99:59, Rounds 1–99). The engine modules have no Svelte imports.
+- [x] The Timeline builder flattens nested Groups. Each entry carries its start offset, resolved colors and position path. "Skip last rest" applies recursively; tests cover the 4-Tabata example and its total duration.
+- [x] The Session engine covers start → Lead-in → running → completed, plus pause and resume. It is timestamp-based (no tick counting), driven by timestamped actions, never reads the clock, and is tested with a fake clock.
+- [x] The engine view exposes status, current entry, next five upcoming entries, remaining and elapsed time, total remaining, progress, header labels (named Groups as "Name X of Y", an unnamed innermost Group as "Round X of Y", unnamed outer Groups omitted), colors, and the Kind label (hidden when the name equals the Kind).
+- [x] Palette tokens live in one place: Kind colors, neutral navy, and paired text colors. An automated test asserts at least 3:1 contrast for every pair.
+- [x] The Session screen matches variant B. The main area shows the Kind label, name, digits (tabular numbers, system sans) and progress bar in the Interval's color. A navy rail shows "UP NEXT" with five items (first largest and wrapping, the rest truncating), the Round header and time left. During the final Interval the rail shows a single "Finish" row. In portrait the rail stacks below.
+- [x] Lead-in and paused states use the neutral navy screen. The final-3-seconds pulse falls back to a flash under reduced motion.
+- [x] A Playwright smoke test controls the page clock, presses Space, and asserts that the background changes from navy (Lead-in) to the first Interval's color and that the Session reaches completion.
+
+## Comments
+
+- Code review (standards + spec) ran against `main`. Fixed: toggle and final-seconds countdown moved into the engine, elapsed time added to the view, whole-number validation, rail color from the palette token, glossary wording.
+- Deferred: an in-memory IndexedDB fake for the store seam (lands with ticket 05, its first user); Playwright uses the locally installed Chrome (`channel: 'chrome'`).
