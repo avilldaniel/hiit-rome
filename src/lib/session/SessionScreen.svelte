@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
-	import { createSession, dispatch, view } from '#lib/engine/session.ts';
+	import { PALETTE } from '#lib/engine/palette.ts';
+	import { createSession, dispatch, view, type SessionAction } from '#lib/engine/session.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 
 	let { workout }: { workout: Workout } = $props();
 
 	// The Session engine owns all timing; this component only renders its view and forwards actions.
-	const timeline = $derived(buildTimeline(workout.items));
-	const newSession = () => createSession(timeline, { leadInMs: workout.leadInSec * 1000 });
-	let session = $state.raw(untrack(newSession));
+	let session = $state.raw(
+		untrack(() => createSession(buildTimeline(workout.items), { leadInMs: workout.leadInSec * 1000 }))
+	);
 	let now = $state(performance.now());
-	const v = $derived(view(session, now));
+	const sessionView = $derived(view(session, now));
 
 	$effect(() => {
 		let frame = requestAnimationFrame(function tick() {
@@ -22,37 +23,33 @@
 		return () => cancelAnimationFrame(frame);
 	});
 
-	function startPauseResume() {
-		const at = performance.now();
-		const status = view(session, at).status;
-		if (status === 'idle') {
-			session = dispatch(newSession(), { type: 'start', at });
-		} else if (status === 'running' || status === 'lead-in') {
-			session = dispatch(session, { type: 'pause', at });
-		} else if (status === 'paused') {
-			session = dispatch(session, { type: 'resume', at });
-		}
-		now = at;
+	function act(type: SessionAction['type']) {
+		now = performance.now();
+		session = dispatch(session, { type, at: now });
 	}
 
 	function onkeydown(e: KeyboardEvent) {
 		if (e.code === 'Space') {
 			e.preventDefault();
-			startPauseResume();
+			act('toggle');
 		}
 	}
 
+	const STATUS_TITLE = { idle: 'Ready', 'lead-in': 'Get ready', paused: 'Get ready', completed: 'Workout complete' };
 	const title = $derived(
-		v.current?.name ??
-			{ idle: 'Ready', 'lead-in': 'Get ready', paused: 'Get ready', completed: 'Workout complete', running: '' }[v.status]
+		sessionView.current?.name ?? STATUS_TITLE[sessionView.status as keyof typeof STATUS_TITLE]
 	);
 	const kindLine = $derived(
-		v.status === 'paused' ? ['Paused', v.kindLabel].filter(Boolean).join(' · ') : v.status === 'idle' ? 'Press Space to start' : v.kindLabel
+		sessionView.status === 'paused'
+			? ['Paused', sessionView.kindLabel].filter(Boolean).join(' · ')
+			: sessionView.status === 'idle'
+				? 'Press Space to start'
+				: sessionView.kindLabel
 	);
-	const remainingSec = $derived(Math.ceil(v.remainingMs / 1000));
-	const counting = $derived(v.status === 'running' || v.status === 'lead-in');
-	// Re-keyed once per second in the final 3 seconds so the pulse animation replays.
-	const pulseKey = $derived(counting && remainingSec >= 1 && remainingSec <= 3 ? `${v.current?.index}-${remainingSec}` : 'steady');
+	// Re-keyed once per final second so the pulse animation replays.
+	const pulseKey = $derived(
+		sessionView.finalSecond ? `${sessionView.current?.index}-${sessionView.finalSecond}` : 'steady'
+	);
 </script>
 
 <svelte:window {onkeydown} />
@@ -60,25 +57,25 @@
 <div
 	class="screen"
 	data-testid="session"
-	style:background-color={v.colors.background}
-	style:color={v.colors.text}
+	style:background-color={sessionView.colors.background}
+	style:color={sessionView.colors.text}
 >
 	<main class="main">
 		<p class="kind">{kindLine ?? ''}</p>
 		<h1 class="name">{title}</h1>
 		{#key pulseKey}
-			<p class="digits" class:pulse={pulseKey !== 'steady'} data-testid="remaining">{formatClock(v.remainingMs)}</p>
+			<p class="digits" class:pulse={pulseKey !== 'steady'} data-testid="remaining">{formatClock(sessionView.remainingMs)}</p>
 		{/key}
-		<div class="bar" aria-hidden="true"><div class="fill" style:width="{v.progress * 100}%"></div></div>
+		<div class="bar" aria-hidden="true"><div class="fill" style:width="{sessionView.progress * 100}%"></div></div>
 	</main>
 
-	<aside class="rail">
+	<aside class="rail" style:background-color={PALETTE.neutral.background} style:color={PALETTE.neutral.text}>
 		<h2 class="rail-title" id="up-next">Up next</h2>
 		<ol aria-labelledby="up-next">
-			{#if v.isFinal}
+			{#if sessionView.isFinal}
 				<li><span class="item-name">Finish</span></li>
 			{:else}
-				{#each v.upcoming as entry (entry.index)}
+				{#each sessionView.upcoming as entry (entry.index)}
 					<li>
 						<span class="chip" style:background-color={entry.colors.background}></span>
 						<span class="item-name">{entry.name}</span>
@@ -88,10 +85,10 @@
 			{/if}
 		</ol>
 		<div class="rail-foot">
-			{#each v.header.length ? v.header : [workout.name] as line (line)}
+			{#each sessionView.header.length ? sessionView.header : [workout.name] as line (line)}
 				<p>{line}</p>
 			{/each}
-			<p class="time-left">{formatClock(v.totalRemainingMs)} left</p>
+			<p class="time-left">{formatClock(sessionView.totalRemainingMs)} left</p>
 		</div>
 	</aside>
 </div>
@@ -157,15 +154,13 @@
 		background: currentColor;
 	}
 
-	/* The rail is always neutral navy, whatever the current Interval's color. */
+	/* The rail is always the neutral palette color (set inline), whatever the current Interval's color. */
 	.rail {
 		display: flex;
 		flex-direction: column;
 		gap: 2vh;
 		padding: 4vh 2vw;
 		min-width: 0;
-		background: #073b4c;
-		color: #ffffff;
 	}
 
 	.rail-title {

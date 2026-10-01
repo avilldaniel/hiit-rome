@@ -9,7 +9,7 @@ A saved, named definition of an ordered structure of intervals that a user build
 _Avoid_: Timer, routine, program
 
 **Interval**:
-A single timed segment of a Workout with a name, duration and color; the only thing that actually counts down.
+The smallest timed part of a Workout, with a name, duration and color; the only thing that actually counts down.
 _Avoid_: Segment, step, exercise
 
 **Kind**:

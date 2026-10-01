@@ -22,4 +22,14 @@ describe('validateItems', () => {
 			tooLong.id
 		]);
 	});
+
+	it('requires whole seconds and whole Rounds', () => {
+		const fractionalDuration = interval('Odd', 'work', 1.5);
+		const fractionalRounds = group(2.5, []);
+
+		expect(validateItems([fractionalDuration, fractionalRounds]).map((p) => p.itemId)).toEqual([
+			fractionalDuration.id,
+			fractionalRounds.id
+		]);
+	});
 });

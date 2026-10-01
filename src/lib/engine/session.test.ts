@@ -63,6 +63,34 @@ describe('Session', () => {
 		expect(v.colors.background).toBe('#073b4c');
 	});
 
+	it('reports elapsed time in the current Interval', () => {
+		expect(view(started(), s(75)).elapsedMs).toBe(5_000);
+	});
+
+	it('counts the final 3 whole seconds of an Interval or Lead-in, for the pulse', () => {
+		const session = started();
+
+		expect(view(session, s(7.5)).finalSecond).toBe(3); // Lead-in, 2.5 s left
+		expect(view(session, s(69.2)).finalSecond).toBe(1); // Warm-up ends at 70 s
+		expect(view(session, s(66)).finalSecond).toBeNull();
+		expect(view(dispatch(session, { type: 'pause', at: s(69) }), s(69)).finalSecond).toBeNull();
+	});
+
+	it('toggles: start when idle, pause while counting, resume when paused, nothing once complete', () => {
+		const idle = createSession(timeline, { leadInMs: 10_000 });
+		const running = dispatch(idle, { type: 'toggle', at: T0 });
+		expect(view(running, s(3)).status).toBe('lead-in');
+
+		const paused = dispatch(running, { type: 'toggle', at: s(75) });
+		expect(view(paused, s(80))).toMatchObject({ status: 'paused', remainingMs: 15_000 });
+
+		const resumed = dispatch(paused, { type: 'toggle', at: s(80) });
+		expect(view(resumed, s(85))).toMatchObject({ status: 'running', remainingMs: 10_000 });
+
+		const done = dispatch(resumed, { type: 'toggle', at: s(1000) });
+		expect(view(done, s(2000)).status).toBe('completed');
+	});
+
 	it('starts straight into the first Interval when the Lead-in is zero', () => {
 		expect(view(started(0), T0)).toMatchObject({ status: 'running', current: { name: 'Warm-up' } });
 	});

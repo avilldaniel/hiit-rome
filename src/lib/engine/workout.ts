@@ -10,7 +10,7 @@ export const KIND_LABEL: Record<Kind, string> = {
 	cooldown: 'Cool-down'
 };
 
-/** A single timed segment; the only thing that actually counts down. */
+/** The smallest timed part of a Workout; the only thing that actually counts down. */
 export interface Interval {
 	type: 'interval';
 	id: string;
@@ -54,18 +54,20 @@ export interface Problem {
 	message: string;
 }
 
+const inRange = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
+
 /** Every Interval or Group whose values fall outside the allowed limits, in document order. */
 export function validateItems(items: Item[]): Problem[] {
 	const problems: Problem[] = [];
 	for (const item of items) {
 		if (item.type === 'interval') {
-			if (item.durationSec < LIMITS.minDurationSec || item.durationSec > LIMITS.maxDurationSec) {
-				problems.push({ itemId: item.id, message: 'Duration must be between 0:01 and 99:59' });
+			if (!inRange(item.durationSec, LIMITS.minDurationSec, LIMITS.maxDurationSec)) {
+				problems.push({ itemId: item.id, message: 'Duration must be whole seconds between 0:01 and 99:59' });
 			}
 			continue;
 		}
-		if (item.rounds < LIMITS.minRounds || item.rounds > LIMITS.maxRounds) {
-			problems.push({ itemId: item.id, message: 'Rounds must be between 1 and 99' });
+		if (!inRange(item.rounds, LIMITS.minRounds, LIMITS.maxRounds)) {
+			problems.push({ itemId: item.id, message: 'Rounds must be a whole number between 1 and 99' });
 		}
 		problems.push(...validateItems(item.items));
 	}
