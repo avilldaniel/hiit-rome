@@ -8,7 +8,7 @@ This slice sets up the project and the patterns everything else follows:
 - palette tokens
 - all three test seams (engine via Vitest, store seam ready for later, browser smoke via Playwright)
 
-Reference: spec sections "Workout model", "Timeline builder", "Session engine", "Session screen layout", "Colors". The prototype at `prototypes/session-screen.prototype.html` shows the target layout; rewrite it properly, don't copy it.
+Reference: spec sections "Workout model", "Timeline builder", "Session engine", "Session screen layout", "Colors". The prototype (`prototypes/session-screen.prototype.html` on branch `prototype/session-screen`) shows the target layout; rewrite it properly, don't copy it.
 
 **Blocked by:** None — can start immediately
 

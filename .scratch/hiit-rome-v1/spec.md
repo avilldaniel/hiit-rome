@@ -333,7 +333,7 @@ See [docs/roadmap.md](../../docs/roadmap.md) for the full list with reasons. In 
 
 ## Further Notes
 
-- **Prototype outcome (2026-10-01).** A throwaway Session-screen prototype compared four layouts: A, the spec layout; B, a side rail with an upcoming list; C, maximum digits with a Next band; and D, a progress ring with Round dots. The user chose **B**; see "Session screen layout" under Interaction specifics. The prototype lives at `prototypes/session-screen.prototype.html` and should move to a throwaway branch once the repo is under git.
+- **Prototype outcome (2026-10-01).** A throwaway Session-screen prototype compared four layouts: A, the spec layout; B, a side rail with an upcoming list; C, maximum digits with a Next band; and D, a progress ring with Round dots. The user chose **B**; see "Session screen layout" under Interaction specifics. The prototype lives on the throwaway git branch `prototype/session-screen`, not on `main`.
 - **The palette is tentative.** The user may change it. It lives in one token set; when it changes, re-run the contrast check and re-pick paired text colors.
 - **iOS background audio is fragile.** If the phone-first pivot happens, background Cues on iPhone are best-effort; the timestamp-based clock guarantees correct position on return.
 - **Keepalive audio is the main platform risk.** Validate early on Chrome, Safari and Firefox on the target laptop. If a browser still throttles hidden tabs, Cues may drop while another tab is in front, but timekeeping stays correct.
