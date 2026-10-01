@@ -33,3 +33,65 @@ test('the demo Workout runs from Lead-in to completion on the Session screen', a
 	await page.clock.fastForward(10 * 60_000);
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Workout complete');
 });
+
+test.describe('Session controls', () => {
+	// Demo Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20 … 3:50 in all.
+	test.beforeEach(async ({ page }) => {
+		await page.clock.install({ time: new Date('2026-10-01T09:00:00') });
+		await page.goto('/');
+		await expect(page.getByText('Press Space or tap to start')).toBeVisible();
+		await page.clock.pauseAt(new Date('2026-10-01T09:00:01')); // time moves only when the test says so
+		await page.keyboard.press('Space');
+	});
+
+	test('the keyboard drives next, previous and ±30 s', async ({ page }) => {
+		const name = page.getByRole('heading', { level: 1 });
+		const remaining = page.getByTestId('remaining');
+		const timeLeft = page.getByTestId('time-left');
+
+		await page.keyboard.press('ArrowRight'); // skip the Lead-in
+		await expect(name).toHaveText('Warm-up');
+		await page.keyboard.press('ArrowRight');
+		await expect(name).toHaveText('Mountain Climbers');
+		await expect(remaining).toHaveText('0:20');
+		await expect(timeLeft).toHaveText('3:30 left');
+
+		await page.keyboard.press('ArrowUp');
+		await expect(remaining).toHaveText('0:50');
+		await expect(timeLeft).toHaveText('4:00 left');
+		await page.keyboard.press('ArrowDown');
+		await expect(remaining).toHaveText('0:20');
+		await expect(timeLeft).toHaveText('3:30 left');
+
+		// The music-player rule: past 3 s, ← restarts the Interval; within 3 s, it goes back.
+		await page.clock.runFor(5_000);
+		await expect(remaining).toHaveText('0:15');
+		await page.keyboard.press('ArrowLeft');
+		await expect(name).toHaveText('Mountain Climbers');
+		await expect(remaining).toHaveText('0:20');
+		await page.keyboard.press('ArrowLeft');
+		await expect(name).toHaveText('Warm-up');
+
+		// −30 s with less than 30 s left ends the Interval.
+		await page.keyboard.press('ArrowDown');
+		await expect(name).toHaveText('Mountain Climbers');
+		await expect(remaining).toHaveText('0:20');
+	});
+
+	test('Esc ends the Session once confirmed, and shows the summary', async ({ page }) => {
+		await page.keyboard.press('ArrowRight'); // into the Warm-up
+		await page.clock.runFor(20_000); // Warm-up done
+		await page.clock.runFor(5_000);
+
+		await page.keyboard.press('Escape');
+		await page.getByRole('button', { name: 'Keep going' }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mountain Climbers');
+
+		await page.keyboard.press('Escape');
+		await page.keyboard.press('Enter');
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Session ended');
+		await expect(page.getByTestId('summary-elapsed')).toHaveText('0:25');
+		await expect(page.getByTestId('summary-intervals')).toHaveText('1');
+		await expect(page.getByTestId('summary-work')).toHaveText('0:05');
+	});
+});

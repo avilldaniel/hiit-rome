@@ -10,29 +10,59 @@ import { KIND_LABEL } from './workout';
  * timestamps rather than by counting ticks, so it never drifts when the browser throttles us.
  */
 export interface SessionState {
+	/** The Workout's Timeline, as built; never modified. */
 	timeline: Timeline;
 	leadInMs: number;
-	status: 'idle' | 'running' | 'paused';
-	/** Session clock reading at `since`. */
+	/** The short Lead-in played when resuming from pause; 0 turns it off. */
+	resumeLeadInMs: number;
+	/** ±30 s adjustments for this Session only, by entry index. */
+	offsetsMs: Record<number, number>;
+	status: 'idle' | 'running' | 'paused' | 'ended';
+	/** Session clock reading at `since`. After a resume, `since` lies ahead, at the end of the resume Lead-in. */
 	clockMs: number;
 	since: number;
+	/** What was done before `since`; the stretch since then is added on demand. */
+	done: Tally;
 }
 
-/** `toggle` is the one-button control: start when idle, pause while counting, resume when paused. */
-export type SessionAction = { type: 'start' | 'pause' | 'resume' | 'toggle'; at: number };
+interface Tally {
+	elapsedMs: number;
+	workMs: number;
+	/** Indexes of the entries played to their end, each counted once. */
+	completed: number[];
+}
+
+/** `toggle` is the one-button control: start when idle, pause while counting, resume when paused. `restart` is only allowed while paused. */
+export type SessionAction =
+	| { type: 'start' | 'pause' | 'resume' | 'toggle' | 'next' | 'previous' | 'restart' | 'end'; at: number }
+	| { type: 'adjust'; deltaMs: number; at: number };
+
+/** A Session action before it is stamped with the moment it happened. */
+export type SessionCommand = SessionAction extends infer A ? (A extends unknown ? Omit<A, 'at'> : never) : never;
+
+/** The size of one ±30 s adjustment. */
+export const ADJUST_MS = 30_000;
+
+/** What was actually done in the Session: time spent in Intervals, not counting Lead-ins, pauses or skipped time. */
+export interface SessionSummary {
+	elapsedMs: number;
+	intervalsCompleted: number;
+	/** Time spent in Work-Kind Intervals. */
+	workMs: number;
+}
 
 export interface SessionView {
-	status: 'idle' | 'lead-in' | 'running' | 'paused' | 'completed';
+	status: 'idle' | 'lead-in' | 'running' | 'paused' | 'resume-lead-in' | 'completed' | 'ended';
 	current: TimelineEntry | null;
 	upcoming: TimelineEntry[];
-	/** Time left in the current Interval, or in the Lead-in. */
+	/** Time left in the current Interval, or in the Lead-in or resume Lead-in. */
 	remainingMs: number;
-	/** Time spent in the current Interval, or in the Lead-in. */
+	/** Time spent in the current Interval, or in the Lead-in or resume Lead-in. */
 	elapsedMs: number;
 	/** 3, 2 or 1 during the final whole seconds of a counting Interval or Lead-in; otherwise null. */
 	finalSecond: number | null;
 	totalRemainingMs: number;
-	/** How far through the current Interval (or Lead-in) we are, 0 to 1. */
+	/** How far through the current Interval (or Lead-in, or resume Lead-in) we are, 0 to 1. */
 	progress: number;
 	colors: ColorPair;
 	/** Round position lines, outermost first: named Groups as "Name X of Y", the innermost unnamed one as "Round X of Y". */
@@ -41,6 +71,8 @@ export interface SessionView {
 	kindLabel: string | null;
 	/** The current Interval is the last one, so "Finish" is next. */
 	isFinal: boolean;
+	/** Set once the Session has completed or been ended. */
+	summary: SessionSummary | null;
 }
 
 const UPCOMING_COUNT = 5;
@@ -58,46 +90,164 @@ function kindLabel(entry: TimelineEntry): string | null {
 	return label.toLowerCase() === entry.name.toLowerCase() ? null : label;
 }
 
-const noInterval = { header: [], kindLabel: null, isFinal: false };
+const noInterval = { header: [], kindLabel: null, isFinal: false, summary: null };
 const FINAL_SECONDS = 3;
+/** Like a music player: previous restarts the Interval once this much of it has played. */
+const RESTART_AFTER_MS = 3000;
 
 function finalSecond(counting: boolean, remainingMs: number): number | null {
 	const second = Math.ceil(remainingMs / 1000);
 	return counting && second >= 1 && second <= FINAL_SECONDS ? second : null;
 }
 
-export function createSession(timeline: Timeline, options: { leadInMs: number }): SessionState {
-	return { timeline, leadInMs: options.leadInMs, status: 'idle', clockMs: 0, since: 0 };
+export function createSession(
+	timeline: Timeline,
+	options: { leadInMs: number; resumeLeadInMs?: number }
+): SessionState {
+	return {
+		timeline,
+		leadInMs: options.leadInMs,
+		resumeLeadInMs: options.resumeLeadInMs ?? 0,
+		offsetsMs: {},
+		status: 'idle',
+		clockMs: 0,
+		since: 0,
+		done: { elapsedMs: 0, workMs: 0, completed: [] }
+	};
 }
 
 export function dispatch(state: SessionState, action: SessionAction): SessionState {
+	// Fold the time run so far into the tally first, so actions can move the clock or reshape the Timeline freely.
+	const settled = settle(state, action.at);
 	switch (action.type) {
 		case 'start':
-			return { ...state, status: 'running', clockMs: 0, since: action.at };
+			if (state.status !== 'idle') return state;
+			return { ...settled, status: 'running', clockMs: 0, since: action.at };
 		case 'pause':
 			if (state.status !== 'running') return state;
-			return { ...state, status: 'paused', clockMs: clock(state, action.at), since: action.at };
-		case 'resume':
+			return { ...settled, status: 'paused' };
+		case 'resume': {
 			if (state.status !== 'paused') return state;
-			return { ...state, status: 'running', since: action.at };
+			// The Session's own Lead-in is warning enough; elsewhere, hold the clock through a resume Lead-in.
+			const leadInMs = state.clockMs < state.leadInMs ? 0 : state.resumeLeadInMs;
+			return { ...settled, status: 'running', since: action.at + leadInMs };
+		}
 		case 'toggle': {
 			const status = view(state, action.at).status;
 			if (status === 'idle') return dispatch(state, { type: 'start', at: action.at });
 			if (status === 'paused') return dispatch(state, { type: 'resume', at: action.at });
-			if (status === 'completed') return state;
+			if (status === 'completed' || status === 'ended') return state;
 			return dispatch(state, { type: 'pause', at: action.at });
 		}
+		case 'next': {
+			const pos = position(state, action.at);
+			if (!pos) return state;
+			const { entries, totalMs } = adjustedTimeline(state);
+			const next = pos.entry ? entries[pos.entry.index + 1] : entries[0];
+			return { ...settled, clockMs: state.leadInMs + (next ? next.startMs : totalMs) };
+		}
+		case 'previous': {
+			const pos = position(state, action.at);
+			if (!pos) return state;
+			if (!pos.entry) return { ...settled, clockMs: 0 };
+			const back = pos.intoMs > RESTART_AFTER_MS ? pos.entry : (adjustedTimeline(state).entries[pos.entry.index - 1] ?? pos.entry);
+			return { ...settled, clockMs: state.leadInMs + back.startMs };
+		}
+		case 'adjust': {
+			const pos = position(state, action.at);
+			if (!pos?.entry) return state;
+			const { index, durationMs } = pos.entry;
+			// Never negative time: removing more than is left ends the Interval right here, and the next one starts.
+			const newDurationMs = Math.max(pos.intoMs, durationMs + action.deltaMs);
+			const offsetMs = newDurationMs - state.timeline.entries[index].durationMs;
+			const endedHere = newDurationMs === pos.intoMs;
+			const completed = endedHere ? [...new Set([...settled.done.completed, index])] : settled.done.completed;
+			return { ...settled, offsetsMs: { ...state.offsetsMs, [index]: offsetMs }, done: { ...settled.done, completed } };
+		}
+		case 'restart': {
+			if (state.status !== 'paused') return state;
+			const { leadInMs, resumeLeadInMs } = state;
+			const fresh = createSession(state.timeline, { leadInMs, resumeLeadInMs });
+			return dispatch(fresh, { type: 'start', at: action.at });
+		}
+		case 'end':
+			if (!position(state, action.at)) return state;
+			return { ...settled, status: 'ended' };
 	}
 }
 
+/** Where the Session clock is: in the Lead-in (no entry) or in an entry. Null when not started or finished. */
+function position(state: SessionState, now: number): { entry: TimelineEntry | null; intoMs: number } | null {
+	if (state.status === 'idle' || state.status === 'ended') return null;
+	const t = clock(state, now);
+	if (t < state.leadInMs) return { entry: null, intoMs: t };
+	const workoutMs = t - state.leadInMs;
+	const entry = adjustedTimeline(state).entries.find((e) => workoutMs < e.startMs + e.durationMs);
+	return entry ? { entry, intoMs: workoutMs - entry.startMs } : null;
+}
+
+/** The Timeline as this Session plays it: the Workout's Timeline with the ±30 s adjustments applied. */
+function adjustedTimeline(state: SessionState): Timeline {
+	let startMs = 0;
+	const entries = state.timeline.entries.map((entry) => {
+		const durationMs = entry.durationMs + (state.offsetsMs[entry.index] ?? 0);
+		const adjusted = { ...entry, durationMs, startMs };
+		startMs += durationMs;
+		return adjusted;
+	});
+	return { entries, totalMs: startMs };
+}
+
+/** The same Session, re-based at `at`: the time run up to then is moved into the tally. */
+function settle(state: SessionState, at: number): SessionState {
+	if (state.status !== 'running') return state;
+	return { ...state, clockMs: clock(state, at), since: Math.max(state.since, at), done: tally(state, at) };
+}
+
+/** What has been done by `now`, including the stretch run since the last action. */
+function tally(state: SessionState, now: number): Tally {
+	const { elapsedMs, workMs } = state.done;
+	const completed = new Set(state.done.completed);
+	const from = state.clockMs - state.leadInMs;
+	const to = clock(state, now) - state.leadInMs;
+	let ran = 0;
+	let worked = 0;
+	for (const entry of adjustedTimeline(state).entries) {
+		const end = entry.startMs + entry.durationMs;
+		const overlap = Math.max(0, Math.min(to, end) - Math.max(from, entry.startMs));
+		ran += overlap;
+		if (entry.kind === 'work') worked += overlap;
+		if (from < end && end <= to) completed.add(entry.index);
+	}
+	return { elapsedMs: elapsedMs + ran, workMs: workMs + worked, completed: [...completed] };
+}
+
 function clock(state: SessionState, now: number): number {
-	return state.status === 'running' ? state.clockMs + (now - state.since) : state.clockMs;
+	return state.status === 'running' ? state.clockMs + Math.max(0, now - state.since) : state.clockMs;
+}
+
+function finishedView(status: 'completed' | 'ended', { elapsedMs, workMs, completed }: Tally): SessionView {
+	return {
+		status,
+		current: null,
+		upcoming: [],
+		remainingMs: 0,
+		elapsedMs: 0,
+		finalSecond: null,
+		totalRemainingMs: 0,
+		progress: 1,
+		colors: PALETTE.neutral,
+		...noInterval,
+		summary: { elapsedMs, intervalsCompleted: completed.length, workMs }
+	};
 }
 
 export function view(state: SessionState, now: number): SessionView {
-	const { entries, totalMs } = state.timeline;
+	const { entries, totalMs } = adjustedTimeline(state);
 	const t = clock(state, now);
 	const paused = state.status === 'paused';
+
+	if (state.status === 'ended') return finishedView('ended', state.done);
 
 	if (t < state.leadInMs) {
 		const status = state.status === 'idle' ? 'idle' : paused ? 'paused' : 'lead-in';
@@ -117,23 +267,10 @@ export function view(state: SessionState, now: number): SessionView {
 
 	const workoutMs = t - state.leadInMs;
 	const current = entries.find((e) => workoutMs < e.startMs + e.durationMs);
-	if (!current) {
-		return {
-			status: 'completed',
-			current: null,
-			upcoming: [],
-			remainingMs: 0,
-			elapsedMs: 0,
-			finalSecond: null,
-			totalRemainingMs: 0,
-			progress: 1,
-			colors: PALETTE.neutral,
-			...noInterval
-		};
-	}
+	if (!current) return finishedView('completed', tally(state, now));
 
 	const intoMs = workoutMs - current.startMs;
-	return {
+	const inInterval: SessionView = {
 		status: paused ? 'paused' : 'running',
 		current,
 		upcoming: entries.slice(current.index + 1, current.index + 1 + UPCOMING_COUNT),
@@ -145,6 +282,20 @@ export function view(state: SessionState, now: number): SessionView {
 		colors: paused ? PALETTE.neutral : current.colors,
 		header: headerLines(current.path),
 		kindLabel: kindLabel(current),
-		isFinal: current.index === entries.length - 1
+		isFinal: current.index === entries.length - 1,
+		summary: null
+	};
+
+	// Resuming from pause: the Interval waits, shown on the neutral screen, while the resume Lead-in counts down.
+	const resumeLeftMs = state.status === 'running' ? state.since - now : 0;
+	if (resumeLeftMs <= 0) return inInterval;
+	return {
+		...inInterval,
+		status: 'resume-lead-in',
+		remainingMs: resumeLeftMs,
+		elapsedMs: state.resumeLeadInMs - resumeLeftMs,
+		finalSecond: finalSecond(true, resumeLeftMs),
+		progress: 1 - resumeLeftMs / state.resumeLeadInMs,
+		colors: PALETTE.neutral
 	};
 }

@@ -2,18 +2,34 @@
 	import { untrack } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
-	import { createSession, dispatch, view, type SessionAction } from '#lib/engine/session.ts';
+	import { ADJUST_MS, createSession, dispatch, view, type SessionCommand } from '#lib/engine/session.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
+		import ConfirmDialog from './ConfirmDialog.svelte';
+	import ControlBar from './ControlBar.svelte';
+	import SessionSummary from './SessionSummary.svelte';
 
 	let { workout }: { workout: Workout } = $props();
 
+	/** On by default; hard-coded until Settings (ticket 08). */
+	const RESUME_LEAD_IN_MS = 3000;
+	/** UI chrome only: how long the control bar lingers. Session timing stays in the engine. */
+	const CONTROLS_HIDE_MS = 3000;
+	const SWIPE_MIN_PX = 60;
+	const TAP_MAX_PX = 12;
+
 	// The Session engine owns all timing; this component only renders its view and forwards actions.
 	let session = $state.raw(
-		untrack(() => createSession(buildTimeline(workout.items), { leadInMs: workout.leadInSec * 1000 }))
+		untrack(() =>
+			createSession(buildTimeline(workout.items), {
+				leadInMs: workout.leadInSec * 1000,
+				resumeLeadInMs: RESUME_LEAD_IN_MS
+			})
+		)
 	);
 	let now = $state(performance.now());
 	const sessionView = $derived(view(session, now));
+	const finished = $derived(sessionView.summary !== null);
 
 	$effect(() => {
 		let frame = requestAnimationFrame(function tick() {
@@ -23,74 +39,166 @@
 		return () => cancelAnimationFrame(frame);
 	});
 
-	function act(type: SessionAction['type']) {
+	function act(command: SessionCommand) {
 		now = performance.now();
-		session = dispatch(session, { type, at: now });
+		session = dispatch(session, { ...command, at: now });
 	}
+
+	// Ending and restarting both ask first.
+	let confirming = $state<'end' | 'restart' | null>(null);
+	const askToEnd = () => (confirming = sessionView.status === 'idle' ? null : 'end');
+	const askToRestart = () => (confirming = sessionView.status === 'paused' ? 'restart' : null);
+	function confirmed() {
+		if (confirming) act({ type: confirming });
+		confirming = null;
+	}
+
+	const KEYS: Record<string, SessionCommand> = {
+		Space: { type: 'toggle' },
+		ArrowRight: { type: 'next' },
+		ArrowLeft: { type: 'previous' },
+		ArrowUp: { type: 'adjust', deltaMs: ADJUST_MS },
+		ArrowDown: { type: 'adjust', deltaMs: -ADJUST_MS }
+	};
 
 	function onkeydown(e: KeyboardEvent) {
-		if (e.code === 'Space') {
-			e.preventDefault();
-			act('toggle');
-		}
+		// An open dialog handles its own keys; browser shortcuts (e.g. ⌘R) stay the browser's.
+		if (confirming || finished || e.metaKey || e.ctrlKey || e.altKey) return;
+		const command = KEYS[e.code];
+		if (command || e.code === 'Escape') e.preventDefault(); // Esc must not also cancel the dialog it opens
+		if (e.repeat) return;
+		if (command) act(command);
+		else if (e.code === 'Escape') askToEnd();
+		else if (e.code === 'KeyR') askToRestart();
 	}
 
-	const STATUS_TITLE = { idle: 'Ready', 'lead-in': 'Get ready', paused: 'Get ready', completed: 'Workout complete' };
+	// Touch: tap anywhere to pause or resume, swipe left for next and right for previous.
+	let controlsVisible = $state(false);
+	let hideControls: ReturnType<typeof setTimeout> | undefined;
+	function revealControls() {
+		controlsVisible = true;
+		clearTimeout(hideControls);
+		hideControls = setTimeout(() => (controlsVisible = false), CONTROLS_HIDE_MS);
+	}
+	$effect(() => () => clearTimeout(hideControls));
+
+	let press: { id: number; x: number; y: number } | null = null;
+	function onpointerdown(e: PointerEvent) {
+		if (finished) return;
+		revealControls();
+		const onControls = (e.target as Element).closest('[data-controls], dialog');
+		press = e.isPrimary && !onControls ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
+	}
+	function onpointerup(e: PointerEvent) {
+		if (press?.id !== e.pointerId) return;
+		const dx = e.clientX - press.x;
+		const dy = e.clientY - press.y;
+		press = null;
+		if (Math.abs(dx) >= SWIPE_MIN_PX && Math.abs(dx) > 2 * Math.abs(dy)) act({ type: dx < 0 ? 'next' : 'previous' });
+		else if (Math.hypot(dx, dy) <= TAP_MAX_PX) act({ type: 'toggle' });
+	}
+	function onpointermove(e: PointerEvent) {
+		if (e.pointerType === 'mouse' && !finished) revealControls();
+	}
+
+	const STATUS_TITLE = { idle: 'Ready', 'lead-in': 'Get ready', paused: 'Get ready' };
 	const title = $derived(
 		sessionView.current?.name ?? STATUS_TITLE[sessionView.status as keyof typeof STATUS_TITLE]
 	);
+	const STATUS_LINE: Partial<Record<typeof sessionView.status, string>> = {
+		idle: 'Press Space or tap to start',
+		'resume-lead-in': 'Get ready'
+	};
 	const kindLine = $derived(
 		sessionView.status === 'paused'
 			? ['Paused', sessionView.kindLabel].filter(Boolean).join(' · ')
-			: sessionView.status === 'idle'
-				? 'Press Space to start'
-				: sessionView.kindLabel
+			: (STATUS_LINE[sessionView.status] ?? sessionView.kindLabel)
 	);
 	// Re-keyed once per final second so the pulse animation replays.
 	const pulseKey = $derived(
-		sessionView.finalSecond ? `${sessionView.current?.index}-${sessionView.finalSecond}` : 'steady'
+		sessionView.finalSecond ? `${sessionView.status}-${sessionView.current?.index}-${sessionView.finalSecond}` : 'steady'
 	);
 </script>
 
 <svelte:window {onkeydown} />
 
+<!-- Taps and swipes are shortcuts for actions also on the keyboard and the control bar. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="screen"
 	data-testid="session"
 	style:background-color={sessionView.colors.background}
 	style:color={sessionView.colors.text}
+	style:--neutral-bg={PALETTE.neutral.background}
+	style:--neutral-text={PALETTE.neutral.text}
+	{onpointerdown}
+	{onpointerup}
+	{onpointermove}
+	onpointercancel={() => (press = null)}
 >
-	<main class="main">
-		<p class="kind">{kindLine ?? ''}</p>
-		<h1 class="name">{title}</h1>
-		{#key pulseKey}
-			<p class="digits" class:pulse={pulseKey !== 'steady'} data-testid="remaining">{formatClock(sessionView.remainingMs)}</p>
-		{/key}
-		<div class="bar" aria-hidden="true"><div class="fill" style:width="{sessionView.progress * 100}%"></div></div>
-	</main>
+	{#if sessionView.summary}
+		<SessionSummary summary={sessionView.summary} ended={sessionView.status === 'ended'} workoutName={workout.name} />
+	{:else}
+		<main class="main">
+			<p class="kind">{kindLine ?? ''}</p>
+			<h1 class="name">{title}</h1>
+			{#key pulseKey}
+				<p class="digits" class:pulse={pulseKey !== 'steady'} data-testid="remaining">
+					{formatClock(sessionView.remainingMs)}
+				</p>
+			{/key}
+			<div class="bar" aria-hidden="true"><div class="fill" style:width="{sessionView.progress * 100}%"></div></div>
 
-	<aside class="rail" style:background-color={PALETTE.neutral.background} style:color={PALETTE.neutral.text}>
-		<h2 class="rail-title" id="up-next">Up next</h2>
-		<ol aria-labelledby="up-next">
-			{#if sessionView.isFinal}
-				<li><span class="item-name">Finish</span></li>
-			{:else}
-				{#each sessionView.upcoming as entry (entry.index)}
-					<li>
-						<span class="chip" style:background-color={entry.colors.background}></span>
-						<span class="item-name">{entry.name}</span>
-						<span class="item-duration">{formatClock(entry.durationMs)}</span>
-					</li>
+			<ControlBar
+				status={sessionView.status}
+				visible={controlsVisible}
+				onaction={act}
+				onrestart={askToRestart}
+				onend={askToEnd}
+			/>
+		</main>
+
+		<aside class="rail">
+			<h2 class="rail-title" id="up-next">Up next</h2>
+			<ol aria-labelledby="up-next">
+				{#if sessionView.isFinal}
+					<li><span class="item-name">Finish</span></li>
+				{:else}
+					{#each sessionView.upcoming as entry (entry.index)}
+						<li>
+							<span class="chip" style:background-color={entry.colors.background}></span>
+							<span class="item-name">{entry.name}</span>
+							<span class="item-duration">{formatClock(entry.durationMs)}</span>
+						</li>
+					{/each}
+				{/if}
+			</ol>
+			<div class="rail-foot">
+				{#each sessionView.header.length ? sessionView.header : [workout.name] as line (line)}
+					<p>{line}</p>
 				{/each}
-			{/if}
-		</ol>
-		<div class="rail-foot">
-			{#each sessionView.header.length ? sessionView.header : [workout.name] as line (line)}
-				<p>{line}</p>
-			{/each}
-			<p class="time-left">{formatClock(sessionView.totalRemainingMs)} left</p>
-		</div>
-	</aside>
+				<p class="time-left" data-testid="time-left">{formatClock(sessionView.totalRemainingMs)} left</p>
+			</div>
+		</aside>
+
+
+		{#if confirming === 'end'}
+			<ConfirmDialog
+				message="End this Session?"
+				confirmLabel="End Session"
+				cancelLabel="Keep going"
+				onconfirm={confirmed}
+				oncancel={() => (confirming = null)}
+			/>
+		{:else if confirming === 'restart'}
+			<ConfirmDialog
+				message="Restart the Session from the beginning?"
+				confirmLabel="Restart"
+				onconfirm={confirmed}
+				oncancel={() => (confirming = null)}
+			/>
+		{/if}
+	{/if}
 </div>
 
 <style>
@@ -103,9 +211,13 @@
 		transition:
 			background-color 0.2s,
 			color 0.2s;
+		/* Taps and swipes are ours; there is nothing to scroll or zoom. */
+		touch-action: none;
+		user-select: none;
 	}
 
 	.main {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
@@ -154,8 +266,10 @@
 		background: currentColor;
 	}
 
-	/* The rail is always the neutral palette color (set inline), whatever the current Interval's color. */
+	/* The rail is always the neutral palette color, whatever the current Interval's color. */
 	.rail {
+		background-color: var(--neutral-bg);
+		color: var(--neutral-text);
 		display: flex;
 		flex-direction: column;
 		gap: 2vh;
