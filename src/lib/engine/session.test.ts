@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildTimeline } from './timeline';
 import { group, interval } from './workout';
-import { createSession, dispatch, view, type SessionAction } from './session';
+import { createSession, dispatch, intervalList, view, type IntervalListItem, type SessionAction } from './session';
 
 const T0 = 1_000_000; // arbitrary clock origin; the engine never reads the real clock
 const s = (seconds: number) => T0 + seconds * 1000;
@@ -225,6 +225,61 @@ describe('Session controls', () => {
 		expect(view(away, s(77))).toMatchObject({ current: { name: 'Burpees', index: 1 }, remainingMs: 50_000 });
 	});
 
+	const jump = (session: ReturnType<typeof started>, index: number, atSec: number) =>
+		dispatch(session, { type: 'jump', index, at: s(atSec) });
+
+	it('jump goes to the start of the chosen Interval and keeps counting', () => {
+		const jumped = jump(started(), 3, 30); // 20 s into Warm-up, to the second Burpees
+
+		expect(view(jumped, s(30))).toMatchObject({
+			status: 'running',
+			current: { name: 'Burpees', index: 3 },
+			remainingMs: 20_000,
+			totalRemainingMs: 50_000
+		});
+		expect(view(jumped, s(35)).remainingMs).toBe(15_000);
+	});
+
+	it('jump back starts a Round over', () => {
+		const again = jump(started(), 1, 110); // 10 s into Circuit 2 of 2, back to Circuit 1 of 2
+
+		expect(view(again, s(110))).toMatchObject({ current: { name: 'Burpees', index: 1 }, header: ['Circuit 1 of 2'], remainingMs: 20_000 });
+	});
+
+	it('jump keeps a paused Session paused, at the start of the chosen Interval', () => {
+		const paused = dispatch(started(), { type: 'pause', at: s(30) });
+
+		expect(view(jump(paused, 4, 40), s(90))).toMatchObject({ status: 'paused', current: { name: 'Cool-down' }, remainingMs: 30_000 });
+	});
+
+	it('jump during the Lead-in starts the chosen Interval', () => {
+		expect(view(jump(started(), 2, 4), s(4))).toMatchObject({ status: 'running', current: { name: 'Rest' }, remainingMs: 10_000 });
+	});
+
+	it('jump keeps the chosen Interval’s ±30 s adjustment', () => {
+		const adjusted = dispatch(started(), { type: 'adjust', deltaMs: 30_000, at: s(75) }); // Burpees now 50 s
+
+		expect(view(jump(adjusted, 1, 130), s(130))).toMatchObject({ current: { index: 1 }, remainingMs: 50_000 });
+	});
+
+	it('jump back to an Interval ended early by −30 s plays it again in full', () => {
+		const cut = dispatch(started(), { type: 'adjust', deltaMs: -30_000, at: s(70) }); // Burpees, ended as it began
+
+		expect(view(jump(cut, 1, 72), s(72))).toMatchObject({ current: { name: 'Burpees', index: 1 }, remainingMs: 20_000 });
+		expect(view(jump(cut, 1, 72), s(72)).totalRemainingMs).toBe(80_000);
+	});
+
+	it('jump does nothing before the Session starts, once it is over, or to an Interval it doesn’t have', () => {
+		const unmoved = (session: ReturnType<typeof started>, index: number, atSec: number) =>
+			expect(view(jump(session, index, atSec), s(atSec))).toEqual(view(session, s(atSec)));
+
+		unmoved(createSession(timeline, { leadInMs: 10_000 }), 3, 5);
+		unmoved(dispatch(started(), { type: 'end', at: s(75) }), 3, 80);
+		unmoved(started(), 3, 200); // completed at 150 s
+		unmoved(started(), 5, 30);
+		unmoved(started(), -1, 30);
+	});
+
 	it('never changes the Workout’s own Timeline', () => {
 		adjust(started(), 30, 75);
 
@@ -266,6 +321,14 @@ describe('Session summary', () => {
 		expect(poked).toEqual(ended);
 	});
 
+	it('counts time replayed after a jump back again, and an Interval left by a jump as not completed', () => {
+		let session = dispatch(started(), { type: 'jump', index: 1, at: s(75) }); // 5 s of Burpees, then again from its start
+		session = dispatch(session, { type: 'jump', index: 4, at: s(85) }); // 10 s more of Burpees, then to Cool-down
+		session = dispatch(session, { type: 'end', at: s(90) });
+
+		expect(view(session, s(90)).summary).toEqual({ elapsedMs: 80_000, intervalsCompleted: 1, workMs: 15_000 });
+	});
+
 	it('has no summary while the Session is under way', () => {
 		expect(view(started(), s(75)).summary).toBeNull();
 	});
@@ -294,6 +357,89 @@ describe('Session summary', () => {
 			intervalsCompleted: 0,
 			workMs: 0
 		});
+	});
+});
+
+describe('Interval list', () => {
+	/** The list as an indented outline: Round headings, then each entry's name and duration in seconds. */
+	const outline = (items: IntervalListItem[], indent = ''): string[] =>
+		items.flatMap((item) =>
+			item.type === 'round'
+				? [`${indent}${item.label}`, ...outline(item.items, `${indent}  `)]
+				: [`${indent}${item.entry.name} ${item.entry.durationMs / 1000}`]
+		);
+
+	it('lists every Interval in play order, under its Group and Round', () => {
+		expect(outline(intervalList(started()))).toEqual([
+			'Warm-up 60',
+			'Circuit 1 of 2',
+			'  Burpees 20',
+			'  Rest 10',
+			'Circuit 2 of 2',
+			'  Burpees 20',
+			'Cool-down 30'
+		]);
+	});
+
+	it('nests the Rounds of nested Groups, naming unnamed ones "Round X of Y" at every level', () => {
+		const nested = buildTimeline([
+			group(
+				2,
+				[group(2, [interval('Burpees', 'work', 20), interval('', 'rest', 10)]), interval('Between', 'rest', 60)],
+				{ name: 'Tabata' }
+			),
+			group(2, [group(1, [interval('Squats', 'work', 30)])])
+		]);
+
+		expect(outline(intervalList(createSession(nested, { leadInMs: 0 })))).toEqual([
+			'Tabata 1 of 2',
+			'  Round 1 of 2',
+			'    Burpees 20',
+			'    Rest 10',
+			'  Round 2 of 2',
+			'    Burpees 20',
+			'  Between 60',
+			'Tabata 2 of 2',
+			'  Round 1 of 2',
+			'    Burpees 20',
+			'    Rest 10',
+			'  Round 2 of 2',
+			'    Burpees 20',
+			'Round 1 of 2',
+			'  Round 1 of 1',
+			'    Squats 30',
+			'Round 2 of 2',
+			'  Round 1 of 1',
+			'    Squats 30'
+		]);
+	});
+
+	it('keeps neighbouring Groups apart, even when their Rounds read the same', () => {
+		const neighbours = buildTimeline([
+			group(1, [interval('Squats', 'work', 30)]),
+			group(1, [interval('Lunges', 'work', 30)]),
+			group(2, [interval('Breathe', 'rest', 10)]), // its final Round is skipped
+			group(2, [interval('Plank', 'work', 30)])
+		]);
+
+		expect(outline(intervalList(createSession(neighbours, { leadInMs: 0 })))).toEqual([
+			'Round 1 of 1',
+			'  Squats 30',
+			'Round 1 of 1',
+			'  Lunges 30',
+			'Round 1 of 2',
+			'  Breathe 10',
+			'Round 1 of 2',
+			'  Plank 30',
+			'Round 2 of 2',
+			'  Plank 30'
+		]);
+	});
+
+	it('shows each Interval as this Session plays it, ±30 s included', () => {
+		const adjusted = dispatch(started(), { type: 'adjust', deltaMs: 30_000, at: s(75) }); // the first Burpees
+
+		expect(outline(intervalList(adjusted))).toContain('  Burpees 50');
 	});
 });
 

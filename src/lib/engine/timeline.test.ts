@@ -19,12 +19,11 @@ describe('buildTimeline', () => {
 	});
 
 	it('repeats a Group once per Round and records each entry’s Round position', () => {
-		const t = buildTimeline([
-			group(2, [interval('Squats', 'work', 30), interval('Plank', 'work', 30)], { name: 'Circuit' })
-		]);
+		const circuit = group(2, [interval('Squats', 'work', 30), interval('Plank', 'work', 30)], { name: 'Circuit' });
+		const t = buildTimeline([circuit]);
 
 		expect(names(t)).toEqual(['Squats', 'Plank', 'Squats', 'Plank']);
-		expect(t.entries[2].path).toEqual([{ name: 'Circuit', round: 2, rounds: 2 }]);
+		expect(t.entries[2].path).toEqual([{ groupId: circuit.id, name: 'Circuit', round: 2, rounds: 2 }]);
 		expect(t.totalMs).toBe(120_000);
 	});
 

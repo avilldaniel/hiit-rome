@@ -32,10 +32,14 @@ interface Tally {
 	completed: number[];
 }
 
-/** `toggle` is the one-button control: start when idle, pause while counting, resume when paused. `restart` is only allowed while paused. */
+/**
+ * `toggle` is the one-button control: start when idle, pause while counting, resume when paused. `restart` is only allowed while paused.
+ * `jump` goes to the start of the Timeline entry at `index`.
+ */
 export type SessionAction =
 	| { type: 'start' | 'pause' | 'resume' | 'toggle' | 'next' | 'previous' | 'restart' | 'end'; at: number }
-	| { type: 'adjust'; deltaMs: number; at: number };
+	| { type: 'adjust'; deltaMs: number; at: number }
+	| { type: 'jump'; index: number; at: number };
 
 /** A Session action before it is stamped with the moment it happened. */
 export type SessionCommand = SessionAction extends infer A ? (A extends unknown ? Omit<A, 'at'> : never) : never;
@@ -77,12 +81,11 @@ export interface SessionView {
 
 const UPCOMING_COUNT = 5;
 
+/** "Name X of Y" for a named Group, "Round X of Y" otherwise. */
+const roundLabel = (p: RoundPosition) => `${p.name || 'Round'} ${p.round} of ${p.rounds}`;
+
 function headerLines(path: RoundPosition[]): string[] {
-	return path.flatMap((p, i) => {
-		if (p.name) return [`${p.name} ${p.round} of ${p.rounds}`];
-		if (i === path.length - 1) return [`Round ${p.round} of ${p.rounds}`];
-		return [];
-	});
+	return path.flatMap((p, i) => (p.name || i === path.length - 1 ? [roundLabel(p)] : []));
 }
 
 function kindLabel(entry: TimelineEntry): string | null {
@@ -153,16 +156,24 @@ export function dispatch(state: SessionState, action: SessionAction): SessionSta
 			const back = pos.intoMs > RESTART_AFTER_MS ? pos.entry : (adjustedTimeline(state).entries[pos.entry.index - 1] ?? pos.entry);
 			return { ...settled, clockMs: state.leadInMs + back.startMs };
 		}
+		case 'jump': {
+			const entry = adjustedTimeline(state).entries[action.index];
+			if (!entry || !position(state, action.at)) return state;
+			return { ...settled, clockMs: state.leadInMs + entry.startMs };
+		}
 		case 'adjust': {
 			const pos = position(state, action.at);
 			if (!pos?.entry) return state;
-			const { index, durationMs } = pos.entry;
+			const { index, startMs, durationMs } = pos.entry;
+			const newDurationMs = durationMs + action.deltaMs;
 			// Never negative time: removing more than is left ends the Interval right here, and the next one starts.
-			const newDurationMs = Math.max(pos.intoMs, durationMs + action.deltaMs);
+			// Like →, that is a one-off, so a jump back plays the Interval again at its earlier length.
+			if (newDurationMs <= pos.intoMs) {
+				const completed = [...new Set([...settled.done.completed, index])];
+				return { ...settled, clockMs: state.leadInMs + startMs + durationMs, done: { ...settled.done, completed } };
+			}
 			const offsetMs = newDurationMs - state.timeline.entries[index].durationMs;
-			const endedHere = newDurationMs === pos.intoMs;
-			const completed = endedHere ? [...new Set([...settled.done.completed, index])] : settled.done.completed;
-			return { ...settled, offsetsMs: { ...state.offsetsMs, [index]: offsetMs }, done: { ...settled.done, completed } };
+			return { ...settled, offsetsMs: { ...state.offsetsMs, [index]: offsetMs } };
 		}
 		case 'restart': {
 			if (state.status !== 'paused') return state;
@@ -174,6 +185,31 @@ export function dispatch(state: SessionState, action: SessionAction): SessionSta
 			if (!position(state, action.at)) return state;
 			return { ...settled, status: 'ended' };
 	}
+}
+
+/** A row of the Interval list: an entry, or one Round of a Group holding its own rows in play order. */
+export type IntervalListItem =
+	| { type: 'entry'; entry: TimelineEntry }
+	| { type: 'round'; label: string; items: IntervalListItem[] };
+
+const sameRound = (a: RoundPosition, b: RoundPosition | undefined) => a.groupId === b?.groupId && a.round === b.round;
+
+/** Every entry as this Session plays it, under a heading for each Round of each Group it sits in, for jumping. */
+export function intervalList(state: SessionState): IntervalListItem[] {
+	const list: IntervalListItem[] = [];
+	// The Rounds the previous entry sat in, outermost first.
+	const openRounds: { position: RoundPosition; items: IntervalListItem[] }[] = [];
+	for (const entry of adjustedTimeline(state).entries) {
+		const firstNew = entry.path.findIndex((p, i) => !sameRound(p, openRounds[i]?.position));
+		openRounds.length = firstNew === -1 ? entry.path.length : firstNew;
+		for (const position of entry.path.slice(openRounds.length)) {
+			const round: IntervalListItem = { type: 'round', label: roundLabel(position), items: [] };
+			(openRounds.at(-1)?.items ?? list).push(round);
+			openRounds.push({ position, items: round.items });
+		}
+		(openRounds.at(-1)?.items ?? list).push({ type: 'entry', entry });
+	}
+	return list;
 }
 
 /** Where the Session clock is: in the Lead-in (no entry) or in an entry. Null when not started or finished. */

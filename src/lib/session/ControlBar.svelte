@@ -5,12 +5,14 @@
 		status,
 		visible,
 		onaction,
+		onopenlist,
 		onrestart,
 		onend
 	}: {
 		status: SessionView['status'];
 		visible: boolean;
 		onaction: (command: SessionCommand) => void;
+		onopenlist: () => void;
 		onrestart: () => void;
 		onend: () => void;
 	} = $props();
@@ -25,6 +27,9 @@
 	<button class="play" onclick={() => onaction({ type: 'toggle' })}>{playLabel}</button>
 	<button onclick={() => onaction({ type: 'adjust', deltaMs: ADJUST_MS })}>+30 s</button>
 	<button onclick={() => onaction({ type: 'next' })}>Next</button>
+	{#if status !== 'idle'}
+		<button onclick={onopenlist}>Intervals</button>
+	{/if}
 	{#if status === 'paused'}
 		<button onclick={onrestart}>Restart</button>
 	{/if}

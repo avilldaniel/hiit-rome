@@ -78,6 +78,55 @@ test.describe('Session controls', () => {
 		await expect(remaining).toHaveText('0:20');
 	});
 
+	test('the Interval list jumps to a chosen Interval, by keyboard or by tap, without pausing', async ({ page }) => {
+		const name = page.getByRole('heading', { level: 1 });
+		const remaining = page.getByTestId('remaining');
+		const list = page.getByRole('dialog', { name: 'Intervals' });
+
+		await page.keyboard.press('ArrowRight'); // skip the Lead-in
+		await page.clock.runFor(5_000);
+		await expect(remaining).toHaveText('0:15');
+
+		await page.keyboard.press('KeyJ');
+		await expect(list.getByRole('heading', { name: 'Tabata 2 of 2' })).toBeVisible();
+		const warmUp = list.getByRole('button', { name: /Warm-up/ });
+		await expect(warmUp).toHaveAttribute('aria-current', 'true');
+		await expect(warmUp).toBeFocused();
+
+		// The Session keeps running behind the list.
+		await page.clock.runFor(2_000);
+		await expect(remaining).toHaveText('0:13');
+
+		// Space still pauses and resumes there; it never picks the focused Interval.
+		await page.keyboard.press('ArrowDown');
+		await page.keyboard.press('Space');
+		await expect(page.getByText('Paused', { exact: true })).toBeVisible();
+		await expect(name).toHaveText('Warm-up');
+		await page.keyboard.press('Space');
+		await page.clock.runFor(3_000); // the resume Lead-in
+
+		// Esc closes the list and changes nothing.
+		await page.keyboard.press('Escape');
+		await expect(list).toBeHidden();
+		await expect(name).toHaveText('Warm-up');
+
+		// Down past the first Tabata's three Rounds to the rest between Tabatas, and Enter jumps there.
+		await page.keyboard.press('KeyJ');
+		for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowDown');
+		await expect(list.getByRole('button', { name: /Between Tabatas/ })).toBeFocused();
+		await page.keyboard.press('Enter');
+		await expect(list).toBeHidden();
+		await expect(name).toHaveText('Between Tabatas');
+		await expect(remaining).toHaveText('0:30');
+
+		// By touch: the control bar opens the list, and a tap jumps.
+		await page.mouse.move(200, 200); // reveals the control bar
+		await page.getByRole('button', { name: 'Intervals' }).click();
+		await list.getByRole('button', { name: /Cool-down/ }).click();
+		await expect(name).toHaveText('Cool-down');
+		await expect(remaining).toHaveText('0:20');
+	});
+
 	test('Esc ends the Session once confirmed, and shows the summary', async ({ page }) => {
 		await page.keyboard.press('ArrowRight'); // into the Warm-up
 		await page.clock.runFor(20_000); // Warm-up done

@@ -2,11 +2,12 @@
 	import { untrack } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
-	import { ADJUST_MS, createSession, dispatch, view, type SessionCommand } from '#lib/engine/session.ts';
+	import { ADJUST_MS, createSession, dispatch, intervalList, view, type SessionCommand } from '#lib/engine/session.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 		import ConfirmDialog from './ConfirmDialog.svelte';
 	import ControlBar from './ControlBar.svelte';
+	import IntervalList from './IntervalList.svelte';
 	import SessionSummary from './SessionSummary.svelte';
 
 	let { workout }: { workout: Workout } = $props();
@@ -53,6 +54,14 @@
 		confirming = null;
 	}
 
+	// The Interval list, for jumping; the Session keeps running while it is open.
+	let listOpen = $state(false);
+	const toggleList = () => (listOpen = !listOpen && sessionView.status !== 'idle');
+	function jumpTo(index: number) {
+		act({ type: 'jump', index });
+		listOpen = false;
+	}
+
 	const KEYS: Record<string, SessionCommand> = {
 		Space: { type: 'toggle' },
 		ArrowRight: { type: 'next' },
@@ -64,12 +73,15 @@
 	function onkeydown(e: KeyboardEvent) {
 		// An open dialog handles its own keys; browser shortcuts (e.g. ⌘R) stay the browser's.
 		if (confirming || finished || e.metaKey || e.ctrlKey || e.altKey) return;
+		// So does the Interval list, but Space still pauses and resumes there, and J closes it.
+		if (listOpen && e.code !== 'Space' && e.code !== 'KeyJ') return;
 		const command = KEYS[e.code];
 		if (command || e.code === 'Escape') e.preventDefault(); // Esc must not also cancel the dialog it opens
 		if (e.repeat) return;
 		if (command) act(command);
 		else if (e.code === 'Escape') askToEnd();
 		else if (e.code === 'KeyR') askToRestart();
+		else if (e.code === 'KeyJ') toggleList();
 	}
 
 	// Touch: tap anywhere to pause or resume, swipe left for next and right for previous.
@@ -153,6 +165,7 @@
 				status={sessionView.status}
 				visible={controlsVisible}
 				onaction={act}
+				onopenlist={toggleList}
 				onrestart={askToRestart}
 				onend={askToEnd}
 			/>
@@ -181,6 +194,14 @@
 			</div>
 		</aside>
 
+		{#if listOpen}
+			<IntervalList
+				items={intervalList(session)}
+				currentIndex={sessionView.current?.index ?? null}
+				onjump={jumpTo}
+				onclose={() => (listOpen = false)}
+			/>
+		{/if}
 
 		{#if confirming === 'end'}
 			<ConfirmDialog
@@ -206,7 +227,9 @@
 		position: fixed;
 		inset: 0;
 		display: grid;
-		grid-template-columns: 1fr 31vw;
+		/* Shared with the Interval list, which opens over the rail. */
+		--rail-width: 31vw;
+		grid-template-columns: 1fr var(--rail-width);
 		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 		transition:
 			background-color 0.2s,

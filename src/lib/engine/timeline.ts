@@ -3,6 +3,8 @@ import { KIND_LABEL, type Interval, type Item, type Kind } from './workout';
 
 /** Where an entry sits within one enclosing Group, outermost first. */
 export interface RoundPosition {
+	/** Which Group this is, as two neighbouring Groups may read the same ("Round 1 of 1"). */
+	groupId: string;
 	name?: string;
 	round: number;
 	rounds: number;
@@ -40,7 +42,7 @@ function flatten(items: Item[], path: RoundPosition[]): Played[] {
 			continue;
 		}
 		for (let round = 1; round <= item.rounds; round++) {
-			const played = flatten(item.items, [...path, { name: item.name, round, rounds: item.rounds }]);
+			const played = flatten(item.items, [...path, { groupId: item.id, name: item.name, round, rounds: item.rounds }]);
 			if (round === item.rounds && item.skipLastRest) {
 				while (played.at(-1)?.interval.kind === 'rest') played.pop();
 			}
