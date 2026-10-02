@@ -144,12 +144,13 @@ test('the Presets and the Countdown color are edited in Settings, and kept', asy
 	await page.getByRole('textbox', { name: 'Preset 2' }).press('Tab');
 	await page.getByRole('combobox', { name: 'Color' }).selectOption({ label: 'Green' });
 
-	await page.reload();
-	await expect(page.getByRole('textbox', { name: 'Preset 2' })).toHaveValue('2:00');
 	await page.getByRole('link', { name: '← My Workouts' }).click();
 	await page.getByRole('link', { name: 'Countdown' }).click();
-
 	const preset = page.getByRole('button', { name: 'Start a 2:00 Countdown' });
+	await expect(preset).toHaveCSS('background-color', COOL_DOWN_GREEN);
+
+	// Kept: a reload reads them back from the device.
+	await page.reload();
 	await expect(preset).toHaveCSS('background-color', COOL_DOWN_GREEN);
 	await preset.click();
 	await expect(page.getByTestId('countdown')).toHaveCSS('background-color', COOL_DOWN_GREEN);

@@ -13,7 +13,10 @@ export default defineConfig({
 
 			// Static SPA with no server (ADR 0001, ADR 0002). Every URL falls back to the
 			// client-rendered shell; revisit `fallback` once a host is chosen.
-			adapter: adapter({ fallback: 'index.html' })
+			adapter: adapter({ fallback: 'index.html' }),
+			// The service worker answers every address with the one cached shell, so its asset URLs must not be
+			// relative to the address it was first loaded from.
+			paths: { relative: false }
 		})
 	],
 	test: {
