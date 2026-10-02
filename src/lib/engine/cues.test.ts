@@ -3,6 +3,7 @@ import { buildTimeline } from './timeline';
 import { group, interval } from './workout';
 import type { CueSettings } from './cues';
 import { createSession, dispatch, tick, type SessionState } from './session';
+import { DEFAULT_SETTINGS, sessionOptions, type Settings } from './settings';
 
 const T0 = 1_000_000; // arbitrary clock origin; the engine never reads the real clock
 const s = (seconds: number) => T0 + seconds * 1000;
@@ -14,8 +15,14 @@ const workout = [
 ];
 const timeline = buildTimeline(workout); // Warm-up, Burpees, Rest, Burpees, Cool-down = 140 s
 
-function started(leadInSec = 0, cueSettings?: CueSettings) {
-	return dispatch(createSession(timeline, { leadInMs: leadInSec * 1000, cueSettings }), { type: 'start', at: T0 });
+/** The default Cue settings with some changed. */
+const cueSettings = (changes: Partial<CueSettings> = {}): CueSettings => ({ ...DEFAULT_SETTINGS.cues, ...changes });
+
+function started(leadInSec = 0, changes?: Partial<CueSettings>) {
+	return dispatch(createSession(timeline, { leadInMs: leadInSec * 1000, cueSettings: cueSettings(changes) }), {
+		type: 'start',
+		at: T0
+	});
 }
 
 /** A heard Cue: what played and when, in seconds since T0, as the player would time it. */
@@ -41,7 +48,7 @@ const spoken = (heard: Heard[]) => heard.filter((h) => !['beep', 'final-tone', '
 
 describe('Cues', () => {
 	it('announces each Interval by name as it starts, an unnamed Rest as "Rest"', () => {
-		const { heard } = play(started(0, { warningSec: 0, halfway: false }), 0, 95);
+		const { heard } = play(started(0, { warning: false }), 0, 95);
 
 		expect(spoken(heard)).toEqual([
 			{ atSec: 0, cue: 'Warm-up' },
@@ -98,7 +105,7 @@ describe('Cues', () => {
 
 	it('beeps only for the seconds an Interval has, never over its start', () => {
 		const t = buildTimeline([interval('Jump', 'work', 3), interval('Hold', 'work', 2)]);
-		const session = dispatch(createSession(t, { leadInMs: 0, cueSettings: { warningSec: 0, halfway: false } }), {
+		const session = dispatch(createSession(t, { leadInMs: 0, cueSettings: cueSettings({ warning: false }) }), {
 			type: 'start',
 			at: T0
 		});
@@ -140,11 +147,11 @@ describe('Cues', () => {
 	});
 
 	it('says "Halfway" only when turned on, and only in Intervals of 30 s or more', () => {
-		const halfway = (cueSettings?: CueSettings) =>
-			spoken(play(started(0, cueSettings), 0, 140).heard).filter((h) => h.cue === 'Halfway');
+		const halfway = (changes?: Partial<CueSettings>) =>
+			spoken(play(started(0, changes), 0, 140).heard).filter((h) => h.cue === 'Halfway');
 
 		expect(halfway()).toEqual([]);
-		expect(halfway({ warningSec: 10, halfway: true })).toEqual([
+		expect(halfway({ halfway: true })).toEqual([
 			{ atSec: 30, cue: 'Halfway' }, // Warm-up, 60 s
 			{ atSec: 125, cue: 'Halfway' } // Cool-down, 30 s; the 20 s Burpees are too short
 		]);
@@ -156,6 +163,63 @@ describe('Cues', () => {
 
 		expect(halfway(15)).toEqual(['Cool-down', 'Last 15 seconds', 'Workout complete']);
 		expect(halfway(14)).toEqual(['Cool-down', 'Halfway', 'Last 14 seconds', 'Workout complete']);
+	});
+
+	it('says "Halfway" in every long Interval when the Warning is off', () => {
+		const { heard } = play(started(0, { warning: false, warningSec: 40, halfway: true }), 0, 140);
+
+		expect(spoken(heard).filter((h) => h.cue === 'Halfway').map((h) => h.atSec)).toEqual([30, 125]);
+	});
+});
+
+describe('Cue settings', () => {
+	it('with announcements off, speaks no Interval names, though a merged Warning still says what is next', () => {
+		const { heard } = play(started(0, { announce: false }), 0, 140);
+
+		expect(spoken(heard).map((h) => `${h.atSec} ${h.cue}`)).toEqual([
+			'50 Next: Burpees',
+			'70 Next: Rest',
+			'80 Next: Burpees.',
+			'100 Next: Cool-down',
+			'130 Last 10 seconds',
+			'140 Workout complete'
+		]);
+	});
+
+	it('with final-seconds beeps off, plays no beeps or tone at the end of an Interval, but still beeps over the Lead-in', () => {
+		const { heard } = play(started(10, { finalBeeps: false }), 0, 71);
+
+		expect(heard.filter((h) => h.cue === 'beep' || h.cue === 'final-tone').map((h) => `${h.atSec} ${h.cue}`)).toEqual([
+			'7 beep',
+			'8 beep',
+			'9 beep',
+			'10 final-tone'
+		]);
+	});
+
+	it('with completion off, ends on the tone at 0 rather than "Workout complete" and the chime', () => {
+		const { heard } = play(started(0, { completion: false }), 136, 141);
+
+		expect(heard.map((h) => `${h.atSec} ${h.cue}`)).toEqual(['137 beep', '138 beep', '139 beep', '140 final-tone']);
+	});
+
+	it('runs a Workout with its overrides on top of the defaults, e.g. a Tabata with the Warning at 5 s', () => {
+		const tabata = buildTimeline([group(2, [interval('Work', 'work', 20), interval('', 'rest', 10)], { skipLastRest: false })]);
+		const settings: Settings = { ...DEFAULT_SETTINGS, cues: cueSettings({ warningSec: 10 }) };
+		const options = sessionOptions({ leadInSec: 0, cueOverrides: { warningSec: 5 } }, settings);
+		const session = dispatch(createSession(tabata, options), { type: 'start', at: T0 });
+
+		expect(spoken(play(session, 0, 60).heard).map((h) => `${h.atSec} ${h.cue}`)).toEqual([
+			'0 Work',
+			'15 Next: Rest',
+			'20 Rest',
+			'25 Next: Work',
+			'30 Work',
+			'45 Next: Rest',
+			'50 Rest',
+			'55 Last 5 seconds',
+			'60 Workout complete'
+		]);
 	});
 });
 

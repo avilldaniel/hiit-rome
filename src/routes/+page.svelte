@@ -78,6 +78,7 @@
 			{#each COMING_SOON as label (label)}
 				<button type="button" disabled title="Coming soon">{label}</button>
 			{/each}
+			<a class="link" href="/settings">Settings</a>
 		</nav>
 	</header>
 
@@ -186,7 +187,8 @@
 
 	input,
 	select,
-	button {
+	button,
+	.link {
 		padding: 8px 12px;
 		border: 1px solid rgb(255 255 255 / 0.3);
 		border-radius: 8px;
@@ -201,6 +203,10 @@
 
 	button {
 		cursor: pointer;
+	}
+
+	.link {
+		text-decoration: none;
 	}
 
 	button:disabled {

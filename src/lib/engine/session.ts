@@ -1,5 +1,6 @@
-import { countdownBeeps, DEFAULT_CUE_SETTINGS, scheduleCues, type Cue, type CueSettings, type DueCue } from './cues';
+import { countdownBeeps, scheduleCues, type Cue, type CueSettings, type DueCue } from './cues';
 import { PALETTE, type ColorPair } from './palette';
+import { DEFAULT_SETTINGS } from './settings';
 import type { RoundPosition, Timeline, TimelineEntry } from './timeline';
 import { KIND_LABEL } from './workout';
 
@@ -120,7 +121,7 @@ export function createSession(
 		clockMs: 0,
 		since: 0,
 		done: { elapsedMs: 0, workMs: 0, completed: [] },
-		cueSettings: options.cueSettings ?? DEFAULT_CUE_SETTINGS,
+		cueSettings: options.cueSettings ?? DEFAULT_SETTINGS.cues,
 		heardAt: 0
 	};
 }
@@ -333,7 +334,8 @@ export function view(state: SessionState, now: number): SessionView {
 
 	if (state.status === 'ended') return finishedView('ended', state.done);
 
-	if (t < state.leadInMs) {
+	// Not started yet, even with no Lead-in to play: the screen waits on the neutral color.
+	if (state.status === 'idle' || t < state.leadInMs) {
 		const status = state.status === 'idle' ? 'idle' : paused ? 'paused' : 'lead-in';
 		return {
 			status,

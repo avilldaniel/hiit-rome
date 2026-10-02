@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
 import { buildTimeline } from '../engine/timeline';
 import type { Workout } from '../engine/workout';
 
@@ -16,7 +17,11 @@ export type Migration = (tx: IDBTransaction) => void;
  * Every schema change, in order. The schema version is the number of migrations; opening the
  * store runs whichever ones the device hasn't had yet. Only ever append.
  */
-export const MIGRATIONS: Migration[] = [(tx) => tx.db.createObjectStore('workouts', { keyPath: 'id' })];
+export const MIGRATIONS: Migration[] = [
+	(tx) => tx.db.createObjectStore('workouts', { keyPath: 'id' }),
+	// App-wide records, such as Settings, each under its own key.
+	(tx) => tx.db.createObjectStore('app')
+];
 
 export interface StoreOptions {
 	indexedDB: IDBFactory;
@@ -58,6 +63,8 @@ const COMPARE: Record<WorkoutSort, Compare> = {
 
 const DB_NAME = 'hiit-rome';
 const WORKOUTS = 'workouts';
+const APP = 'app';
+const SETTINGS_KEY = 'settings';
 
 /** The outcome of an IndexedDB request, as a promise. */
 const resultOf = <T>(request: IDBRequest<T>): Promise<T> =>
@@ -65,6 +72,9 @@ const resultOf = <T>(request: IDBRequest<T>): Promise<T> =>
 		request.onsuccess = () => resolve(request.result);
 		request.onerror = () => reject(request.error);
 	});
+
+/** What a Workout is made of, without its id: the part an edit replaces and a copy takes. */
+const content = ({ name, leadInSec, cueOverrides, items }: Workout) => ({ name, leadInSec, cueOverrides, items });
 
 const newRecord = (workout: Workout, now: number): StoredWorkout => ({
 	...workout,
@@ -115,10 +125,10 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 	return {
 		add,
 		/** Replaces a Workout's content, keeping its Favorite flag and timestamps. */
-		save: ({ id, name, leadInSec, items }: Workout) => update(id, () => ({ name, leadInSec, items })),
+		save: (workout: Workout) => update(workout.id, () => content(workout)),
 		async duplicate(id: string): Promise<StoredWorkout> {
-			const { name, leadInSec, items } = await existing(workouts(), id);
-			return add({ id: crypto.randomUUID(), name: `${name} (copy)`, leadInSec, items });
+			const original = content(await existing(workouts(), id));
+			return add({ ...original, id: crypto.randomUUID(), name: `${original.name} (copy)` });
 		},
 		/** Deletes a Workout, returning it as it was so the deletion can be undone with `restore`. */
 		async remove(id: string): Promise<StoredWorkout> {
@@ -140,6 +150,13 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 		},
 		markUsed: (id: string) => update(id, () => ({ lastUsedAt: options.now() })),
 		setFavorite: (id: string, favorite: boolean) => update(id, () => ({ favorite })),
+		/** The trainer's Settings, or the defaults until they change any. */
+		async getSettings(): Promise<Settings> {
+			const stored = await resultOf(db.transaction(APP).objectStore(APP).get(SETTINGS_KEY));
+			return (stored as Settings | undefined) ?? DEFAULT_SETTINGS;
+		},
+		saveSettings: async (settings: Settings) =>
+			void (await resultOf(db.transaction(APP, 'readwrite').objectStore(APP).put(settings, SETTINGS_KEY))),
 		close: () => db.close()
 	};
 }

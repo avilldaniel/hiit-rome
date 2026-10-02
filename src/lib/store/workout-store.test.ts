@@ -1,5 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
 import { group, interval, type Item, type Workout } from '../engine/workout';
 import { MIGRATIONS, openWorkoutStore, type Migration, type StoreOptions } from './workout-store';
 
@@ -105,6 +106,46 @@ describe('Workout store', () => {
 			createdAt: tabata.createdAt,
 			items: [{ durationSec: 40 }]
 		});
+	});
+
+	it('keeps a Workout’s Lead-in and Cue overrides through edits and copies', async () => {
+		const store = await device().open();
+		const tabata = await store.add(workout('Tabata'));
+
+		await store.save({ ...tabata, leadInSec: 0, cueOverrides: { warningSec: 5, halfway: true } });
+		const copy = await store.duplicate(tabata.id);
+
+		for (const id of [tabata.id, copy.id]) {
+			expect(await store.get(id)).toMatchObject({ leadInSec: 0, cueOverrides: { warningSec: 5, halfway: true } });
+		}
+	});
+
+	it('starts with the default Settings, and keeps the trainer’s changes after the app reopens', async () => {
+		const { open } = device();
+		const first = await open();
+		expect(await first.getSettings()).toEqual(DEFAULT_SETTINGS);
+
+		const changed: Settings = {
+			voiceId: 'com.apple.voice.Daniel',
+			cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5, halfway: true },
+			resumeLeadIn: false
+		};
+		await first.saveSettings(changed);
+		first.close();
+
+		expect(await (await open()).getSettings()).toEqual(changed);
+	});
+
+	it('adds default Settings on a device that kept its Workouts under the first schema', async () => {
+		const { open } = device();
+		const v1 = await open({ migrations: MIGRATIONS.slice(0, 1) });
+		await v1.add(workout('Tabata'));
+		v1.close();
+
+		const store = await open();
+
+		expect((await store.list()).map((w) => w.name)).toEqual(['Tabata']);
+		expect(await store.getSettings()).toEqual(DEFAULT_SETTINGS);
 	});
 
 	it('on first launch only, seeds Workouts and asks for persistent storage', async () => {

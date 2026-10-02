@@ -2,8 +2,8 @@
 	import { untrack } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
-	import { DEFAULT_CUE_SETTINGS } from '#lib/engine/cues.ts';
 	import { ADJUST_MS, createSession, dispatch, intervalList, tick, view, type SessionCommand } from '#lib/engine/session.ts';
+	import { sessionOptions, type Settings } from '#lib/engine/settings.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 	import { createCuePlayer, playCues } from '#lib/platform/cue-player.ts';
@@ -12,11 +12,11 @@
 	import IntervalList from './IntervalList.svelte';
 	import SessionSummary from './SessionSummary.svelte';
 
-	/** `onstart` fires each time the Session leaves idle (its first start, or after a restart). */
-	let { workout, onstart }: { workout: Workout; onstart?: () => void } = $props();
-
-	/** On by default; hard-coded until Settings (ticket 08). */
-	const RESUME_LEAD_IN_MS = 3000;
+	/**
+	 * The Session runs with the effective `settings`: the global defaults overlaid with the Workout's overrides.
+	 * `onstart` fires each time the Session leaves idle (its first start, or after a restart).
+	 */
+	let { workout, settings, onstart }: { workout: Workout; settings: Settings; onstart?: () => void } = $props();
 	/** UI chrome only: how long the control bar lingers. Session timing stays in the engine. */
 	const CONTROLS_HIDE_MS = 3000;
 	/** How often to ask the engine for Cues due; it reports them a little ahead, so the player can time them exactly. */
@@ -26,13 +26,7 @@
 
 	// The Session engine owns all timing; this component only renders its view and forwards actions.
 	let session = $state.raw(
-		untrack(() =>
-			createSession(buildTimeline(workout.items), {
-				leadInMs: workout.leadInSec * 1000,
-				resumeLeadInMs: RESUME_LEAD_IN_MS,
-				cueSettings: DEFAULT_CUE_SETTINGS
-			})
-		)
+		untrack(() => createSession(buildTimeline(workout.items), sessionOptions(workout, settings)))
 	);
 	let now = $state(performance.now());
 	const sessionView = $derived(view(session, now));
@@ -47,6 +41,7 @@
 	});
 
 	const player = createCuePlayer();
+	player.selectVoice(untrack(() => settings.voiceId));
 	function hearCues(at: number) {
 		const result = tick(session, at);
 		session = result.state;

@@ -6,16 +6,29 @@ export type Cue = { type: 'speech'; text: string } | { type: 'beep' | 'final-ton
 /** A Cue due now, or shortly: `delayMs` from the tick that reported it, so the player can time it precisely. */
 export type DueCue = Cue & { delayMs: number };
 
-/** The effective Cue settings a Session runs with: global defaults overlaid with the Workout's overrides. */
+/** Which Cues a Session plays: the global defaults in Settings, or those overlaid with a Workout's overrides. */
 export interface CueSettings {
-	/** Seconds before an Interval ends to speak the Warning; 0 turns it off. */
+	/** Speak each Interval's name as it starts. */
+	announce: boolean;
+	/** Speak the Warning `warningSec` seconds before an Interval ends. */
+	warning: boolean;
 	warningSec: number;
+	/** Beep over an Interval's final seconds, with the distinct tone at 0. */
+	finalBeeps: boolean;
 	/** Speak "Halfway" on Intervals of 30 s or longer. */
 	halfway: boolean;
+	/** Speak "Workout complete" with a chime at the end. */
+	completion: boolean;
 }
 
-/** Hard-coded until Settings (ticket 08). */
-export const DEFAULT_CUE_SETTINGS: CueSettings = { warningSec: 10, halfway: false };
+/** A Workout's own Cue settings; any left unset inherit the default. */
+export type CueOverrides = Partial<CueSettings>;
+
+/** The effective Cue settings: `defaults` overlaid with whichever `overrides` are set. */
+export function effectiveCueSettings(defaults: CueSettings, overrides: CueOverrides = {}): CueSettings {
+	const set = Object.entries(overrides).filter(([, value]) => value !== undefined);
+	return { ...defaults, ...Object.fromEntries(set) };
+}
 
 /** A Cue at its moment on the Session clock (Lead-in first, then the Timeline). */
 export interface ScheduledCue {
@@ -39,14 +52,16 @@ export function scheduleCues(timeline: Timeline, leadInMs: number, settings: Cue
 	if (leadInMs > 0) {
 		cues.push(...countdownBeeps(leadInMs, leadInMs), { atMs: leadInMs, cue: { type: 'final-tone' }, marksEnd: true });
 	}
-	const warningMs = settings.warningSec * 1000;
+	const warningMs = settings.warning ? settings.warningSec * 1000 : 0;
 	timeline.entries.forEach((entry, i) => {
 		const next = timeline.entries[i + 1];
 		const startMs = leadInMs + entry.startMs;
 		const endMs = startMs + entry.durationMs;
 		// Too short for both: the Warning joins the start announcement, so they never talk over each other.
 		const merged = warningMs > 0 && warningMs >= entry.durationMs;
-		cues.push({ atMs: startMs, cue: speech(merged && next ? `${entry.name}. Next: ${next.name}.` : entry.name) });
+		const mergedWarning = merged && next ? `Next: ${next.name}.` : null;
+		const announcement = settings.announce ? [entry.name, mergedWarning].filter(Boolean).join('. ') : mergedWarning;
+		if (announcement) cues.push({ atMs: startMs, cue: speech(announcement) });
 		if (warningMs > 0 && !merged) {
 			const text = next ? `Next: ${next.name}` : `Last ${settings.warningSec} seconds`;
 			cues.push({ atMs: endMs - warningMs, cue: speech(text) });
@@ -57,9 +72,12 @@ export function scheduleCues(timeline: Timeline, leadInMs: number, settings: Cue
 			cues.push({ atMs: startMs + halfMs, cue: speech('Halfway') });
 		}
 		// Never a beep over the start announcement.
-		cues.push(...countdownBeeps(endMs, entry.durationMs - 1));
-		if (next) cues.push({ atMs: endMs, cue: { type: 'final-tone' }, marksEnd: true });
-		else cues.push({ atMs: endMs, cue: { type: 'chime' } }, { atMs: endMs, cue: speech('Workout complete') });
+		if (settings.finalBeeps) cues.push(...countdownBeeps(endMs, entry.durationMs - 1));
+		if (!next && settings.completion) {
+			cues.push({ atMs: endMs, cue: { type: 'chime' } }, { atMs: endMs, cue: speech('Workout complete') });
+		} else if (settings.finalBeeps) {
+			cues.push({ atMs: endMs, cue: { type: 'final-tone' }, marksEnd: true });
+		}
 	});
 	// Stable, so Cues at the same moment keep their order: an Interval's tone at 0 before the next one's announcement.
 	return cues.sort((a, b) => a.atMs - b.atMs);

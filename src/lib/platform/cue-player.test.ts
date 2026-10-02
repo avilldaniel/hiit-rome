@@ -35,4 +35,21 @@ describe('Recording Cue player', () => {
 
 		expect(log).toEqual([{ type: 'beep', at: 1000 }]);
 	});
+
+	it('offers its own voices, and records which one spoke once one is chosen', async () => {
+		const { player, log } = createRecordingCuePlayer([], () => 1000);
+		const [, second] = await player.listVoices();
+
+		player.speak('Burpees', 0);
+		player.selectVoice(second.id);
+		player.speak('Rest', 0);
+		player.selectVoice(null);
+		player.speak('Burpees', 0);
+
+		expect(log).toEqual([
+			{ type: 'speech', text: 'Burpees', at: 1000 },
+			{ type: 'speech', text: 'Rest', at: 1000, voice: second.id },
+			{ type: 'speech', text: 'Burpees', at: 1000 }
+		]);
+	});
 });

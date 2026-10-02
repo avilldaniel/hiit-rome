@@ -91,7 +91,11 @@ describe('Session', () => {
 		expect(view(done, s(2000)).status).toBe('completed');
 	});
 
-	it('starts straight into the first Interval when the Lead-in is zero', () => {
+	it('starts straight into the first Interval when the Lead-in is zero, but waits for the start like any other', () => {
+		const idle = createSession(timeline, { leadInMs: 0 });
+		expect(view(idle, s(5))).toMatchObject({ status: 'idle', current: null, upcoming: [{ name: 'Warm-up' }, {}, {}, {}, {}] });
+		expect(dispatch(idle, { type: 'toggle', at: T0 }).status).toBe('running');
+
 		expect(view(started(0), T0)).toMatchObject({ status: 'running', current: { name: 'Warm-up' } });
 	});
 });

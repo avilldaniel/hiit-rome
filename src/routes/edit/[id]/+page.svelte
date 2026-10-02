@@ -2,17 +2,23 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import WorkoutEditor from '#lib/editor/WorkoutEditor.svelte';
+	import type { Settings } from '#lib/engine/settings.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 	import { deviceStore } from '#lib/store/device.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
 
 	const id = $derived(page.params.id!);
 	let workout = $state.raw<StoredWorkout | null | undefined>();
+	let settings = $state.raw<Settings>();
 	$effect(() => {
 		const wanted = id;
 		workout = undefined;
 		deviceStore()
-			.then((store) => store.get(wanted))
+			.then(async (store) => {
+				const [found, current] = await Promise.all([store.get(wanted), store.getSettings()]);
+				settings = current;
+				return found;
+			})
 			.catch(() => undefined)
 			.then((found) => wanted === id && (workout = found ?? null));
 	});
@@ -23,9 +29,9 @@
 	<title>Edit {workout?.name ?? 'Workout'} · hiit-rome</title>
 </svelte:head>
 
-{#if workout}
+{#if workout && settings}
 	{#key workout.id}
-		<WorkoutEditor {workout} onsave={save} onstart={() => goto(`/session/${workout!.id}`)} />
+		<WorkoutEditor {workout} cueDefaults={settings.cues} onsave={save} onstart={() => goto(`/session/${workout!.id}`)} />
 	{/key}
 {:else if workout === null}
 	<main class="missing">

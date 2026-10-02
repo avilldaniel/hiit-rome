@@ -1,3 +1,4 @@
+import type { CueOverrides } from './cues';
 import type { PaletteToken } from './palette';
 
 /** The role an Interval plays in a Workout. */
@@ -38,7 +39,10 @@ export type Item = Interval | Group;
 export interface Workout {
 	id: string;
 	name: string;
+	/** The Lead-in before the first Interval, in seconds; 0 for none. */
 	leadInSec: number;
+	/** This Workout's own Cue settings, overlaid on the defaults in Settings. */
+	cueOverrides?: CueOverrides;
 	items: Item[];
 }
 
@@ -46,7 +50,8 @@ export const LIMITS = {
 	minDurationSec: 1,
 	maxDurationSec: 99 * 60 + 59,
 	minRounds: 1,
-	maxRounds: 99
+	maxRounds: 99,
+	maxLeadInSec: 99
 } as const;
 
 export interface Problem {
@@ -57,6 +62,7 @@ export interface Problem {
 const inRange = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
 export const isValidDuration = (sec: number) => inRange(sec, LIMITS.minDurationSec, LIMITS.maxDurationSec);
 export const isValidRounds = (rounds: number) => inRange(rounds, LIMITS.minRounds, LIMITS.maxRounds);
+export const isValidLeadIn = (sec: number) => inRange(sec, 0, LIMITS.maxLeadInSec);
 
 /** Every Interval or Group whose values fall outside the allowed limits, in document order. */
 export function validateItems(items: Item[]): Problem[] {

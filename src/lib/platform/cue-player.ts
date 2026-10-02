@@ -1,5 +1,13 @@
 import type { Cue, DueCue } from '#lib/engine/cues.ts';
 
+/** A voice on this device that can speak Cues. */
+export interface Voice {
+	id: string;
+	name: string;
+	/** BCP 47 language tag, e.g. "en-GB". */
+	lang: string;
+}
+
 /**
  * Plays Cues on the device: speech through the Web Speech API, beeps, tones and chimes through Web Audio.
  * A future music source would sit behind the same kind of seam.
@@ -13,6 +21,10 @@ export interface CuePlayer {
 	chime(delayMs: number): void;
 	/** Drops Cues told ahead of time that haven't started yet, and stops speech, e.g. when the Session pauses or jumps. */
 	cancelPending(): void;
+	/** The voices on this device to choose from. */
+	listVoices(): Promise<Voice[]>;
+	/** Speaks with this voice from now on; null, or a voice no longer on the device, for the device's default. */
+	selectVoice(id: string | null): void;
 }
 
 export function playCues(player: CuePlayer, cues: DueCue[]) {
@@ -24,22 +36,31 @@ export function playCues(player: CuePlayer, cues: DueCue[]) {
 	}
 }
 
-/** A Cue as the recording fake heard it, and when it was due to play. */
-export type RecordedCue = Cue & { at: number };
+/** A Cue as the recording fake heard it, when it was due to play, and, for speech, the voice chosen if any. */
+export type RecordedCue = Cue & { at: number; voice?: string };
+
+/** The voices the recording fake offers. */
+export const FAKE_VOICES: Voice[] = [
+	{ id: 'fake-alex', name: 'Alex', lang: 'en-US' },
+	{ id: 'fake-moira', name: 'Moira', lang: 'en-IE' }
+];
 
 /** A fake that records what it is asked to play, into `log`, instead of making a sound. */
 export function createRecordingCuePlayer(log: RecordedCue[] = [], now = () => performance.now()) {
+	let voice: string | null = null;
 	const record = (cue: Cue, delayMs: number) => log.push({ ...cue, at: now() + delayMs });
 	const player: CuePlayer = {
 		unlock() {},
-		speak: (text, delayMs) => record({ type: 'speech', text }, delayMs),
+		speak: (text, delayMs) => record({ type: 'speech', text, ...(voice && { voice }) }, delayMs),
 		beep: (delayMs) => record({ type: 'beep' }, delayMs),
 		finalTone: (delayMs) => record({ type: 'final-tone' }, delayMs),
 		chime: (delayMs) => record({ type: 'chime' }, delayMs),
 		cancelPending() {
 			const t = now();
 			for (let i = log.length - 1; i >= 0; i--) if (log[i].at > t) log.splice(i, 1);
-		}
+		},
+		listVoices: async () => FAKE_VOICES,
+		selectVoice: (id) => void (voice = FAKE_VOICES.some((v) => v.id === id) ? id : null)
 	};
 	return { player, log };
 }
@@ -65,6 +86,8 @@ const CHIME = [1047, 1319, 1568];
 const CHIME_STEP_SEC = 0.15;
 const CHIME_RING_SEC = 1.2;
 const VOLUME = 0.3;
+/** How long to wait for the device's voices to load before taking what there is. */
+const VOICES_WAIT_MS = 1000;
 
 function createWebCuePlayer(): CuePlayer {
 	let audio: AudioContext | null = null;
@@ -90,8 +113,17 @@ function createWebCuePlayer(): CuePlayer {
 		oscillator.onended = () => pendingTones.delete(pending);
 	}
 
+	let voice: SpeechSynthesisVoice | null = null;
 	// Announcements queue rather than cut each other off; a pause or skip clears the queue (see cancelPending).
-	const say = (text: string) => speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+	function say(text: string) {
+		const utterance = new SpeechSynthesisUtterance(text);
+		utterance.voice = voice;
+		speechSynthesis.speak(utterance);
+	}
+	let selectedId: string | null = null;
+	const findVoice = () => speechSynthesis.getVoices().find((v) => v.voiceURI === selectedId) ?? null;
+	// Some browsers load their voices only after the page asks for them.
+	speechSynthesis.addEventListener('voiceschanged', () => (voice = findVoice()));
 
 	return {
 		unlock() {
@@ -126,6 +158,19 @@ function createWebCuePlayer(): CuePlayer {
 					pendingTones.delete(pending);
 				}
 			}
+		},
+		listVoices: () =>
+			new Promise((resolve) => {
+				const list = () =>
+					resolve(speechSynthesis.getVoices().map((v) => ({ id: v.voiceURI, name: v.name, lang: v.lang })));
+				if (speechSynthesis.getVoices().length) return list();
+				speechSynthesis.addEventListener('voiceschanged', list, { once: true });
+				// Some devices have no voices at all, and never say so.
+				setTimeout(list, VOICES_WAIT_MS);
+			}),
+		selectVoice(id) {
+			selectedId = id;
+			voice = findVoice();
 		}
 	};
 }

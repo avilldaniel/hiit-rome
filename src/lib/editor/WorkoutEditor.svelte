@@ -20,19 +20,27 @@
 	} from '#lib/engine/outline.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
+	import type { CueSettings } from '#lib/engine/cues.ts';
 	import { group, interval, UNTITLED, type Item, type Workout } from '#lib/engine/workout.ts';
 	import OutlineItems from './OutlineItems.svelte';
+	import WorkoutSettings from './WorkoutSettings.svelte';
 	import type { DropTarget, OutlineActions } from './outline-actions.ts';
 
 	/**
 	 * `onsave` stores each change as it's made; `onstart` opens a Session of the Workout once
-	 * everything is saved.
+	 * everything is saved. `cueDefaults` are the global Cue defaults from Settings, which the Workout's overrides sit on.
 	 */
 	let {
 		workout: initial,
+		cueDefaults,
 		onsave,
 		onstart
-	}: { workout: Workout; onsave: (workout: Workout) => Promise<void>; onstart: () => void } = $props();
+	}: {
+		workout: Workout;
+		cueDefaults: CueSettings;
+		onsave: (workout: Workout) => Promise<void>;
+		onstart: () => void;
+	} = $props();
 
 	/** How long a change can be undone. */
 	const UNDO_MS = 8000;
@@ -188,6 +196,8 @@
 	{#if saveFailed}
 		<p class="message" role="alert">Your changes couldn’t be saved. Try reloading the page.</p>
 	{/if}
+
+	<WorkoutSettings {workout} defaults={cueDefaults} onchange={change} />
 
 	{#if selection.length}
 		<div class="selection" role="toolbar" aria-label="Selected Intervals">

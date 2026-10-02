@@ -109,3 +109,42 @@ test('the outline is restructured by duplicating, wrapping and dragging, each un
 	await expect(added.getByRole('region')).toHaveCount(0);
 	await expect(total).toHaveText('3:50');
 });
+
+test('a Workout’s own Lead-in and Cue overrides apply to its Sessions; unset ones follow Settings', async ({ page }) => {
+	await page.addInitScript(() => (window.__hiitCueLog = []));
+	await page.clock.install();
+	await page.goto('/');
+	await page.getByRole('link', { name: 'Edit Thursday Tabatas' }).click();
+
+	await page.getByText('Workout settings').click();
+	const panel = page.getByRole('group', { name: 'Workout settings' });
+	await expect(panel.getByRole('spinbutton', { name: 'Lead-in seconds' })).toHaveValue('10');
+	await expect(panel.getByRole('combobox', { name: 'Halfway' })).toHaveValue('');
+	await expect(panel.getByRole('combobox', { name: 'Halfway' })).toContainText('Default (Off)');
+	await expect(panel.getByRole('spinbutton', { name: 'Warning seconds' })).toHaveAttribute('placeholder', '10');
+
+	await panel.getByRole('spinbutton', { name: 'Lead-in seconds' }).fill('0');
+	await panel.getByRole('spinbutton', { name: 'Warning seconds' }).fill('5');
+	await panel.getByRole('combobox', { name: 'Announce each Interval' }).selectOption('Off');
+	await panel.getByRole('combobox', { name: 'Announce each Interval' }).selectOption('Default (On)');
+
+	// Kept with the Workout.
+	await page.getByRole('link', { name: '← My Workouts' }).click();
+	await page.getByRole('link', { name: 'Edit Thursday Tabatas' }).click();
+	await page.getByText('Workout settings').click();
+	await expect(panel.getByRole('spinbutton', { name: 'Lead-in seconds' })).toHaveValue('0');
+	await expect(panel.getByRole('spinbutton', { name: 'Warning seconds' })).toHaveValue('5');
+
+	// Seeded Workout: Warm-up 0:20, then Mountain Climbers 0:20; no Lead-in now, and the Warning at 5 s.
+	await page.getByRole('button', { name: 'Start' }).click();
+	await expect(page.getByText('Press Space or tap to start')).toBeVisible();
+	await page.keyboard.press('Space');
+	await page.clock.runFor(21_000);
+	const heard = await page.evaluate(() => window.__hiitCueLog!.map((cue) => (cue.type === 'speech' ? cue.text : cue.type)));
+	expect(heard).toEqual([
+		'Warm-up',
+		'Next: Mountain Climbers',
+		...['beep', 'beep', 'beep', 'final-tone', 'Mountain Climbers']
+	]);
+});
+
