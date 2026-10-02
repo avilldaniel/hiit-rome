@@ -2,10 +2,12 @@
 	import { untrack } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
-	import { ADJUST_MS, createSession, dispatch, intervalList, view, type SessionCommand } from '#lib/engine/session.ts';
+	import { DEFAULT_CUE_SETTINGS } from '#lib/engine/cues.ts';
+	import { ADJUST_MS, createSession, dispatch, intervalList, tick, view, type SessionCommand } from '#lib/engine/session.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
-		import ConfirmDialog from './ConfirmDialog.svelte';
+	import { createCuePlayer, playCues } from '#lib/platform/cue-player.ts';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import ControlBar from './ControlBar.svelte';
 	import IntervalList from './IntervalList.svelte';
 	import SessionSummary from './SessionSummary.svelte';
@@ -16,6 +18,8 @@
 	const RESUME_LEAD_IN_MS = 3000;
 	/** UI chrome only: how long the control bar lingers. Session timing stays in the engine. */
 	const CONTROLS_HIDE_MS = 3000;
+	/** How often to ask the engine for Cues due; it reports them a little ahead, so the player can time them exactly. */
+	const CUE_TICK_MS = 250;
 	const SWIPE_MIN_PX = 60;
 	const TAP_MAX_PX = 12;
 
@@ -24,7 +28,8 @@
 		untrack(() =>
 			createSession(buildTimeline(workout.items), {
 				leadInMs: workout.leadInSec * 1000,
-				resumeLeadInMs: RESUME_LEAD_IN_MS
+				resumeLeadInMs: RESUME_LEAD_IN_MS,
+				cues: DEFAULT_CUE_SETTINGS
 			})
 		)
 	);
@@ -40,9 +45,24 @@
 		return () => cancelAnimationFrame(frame);
 	});
 
+	const player = createCuePlayer();
+	function hearCues(at: number) {
+		const result = tick(session, at);
+		session = result.state;
+		playCues(player, result.cues);
+	}
+	// A timer rather than animation frames, which stop altogether in a background tab.
+	$effect(() => {
+		const timer = setInterval(() => hearCues(performance.now()), CUE_TICK_MS);
+		return () => clearInterval(timer);
+	});
+
 	function act(command: SessionCommand) {
 		now = performance.now();
+		// Whatever was told ahead of time may no longer apply; the engine reports afresh from here.
+		player.cancelPending();
 		session = dispatch(session, { ...command, at: now });
+		hearCues(now);
 	}
 
 	// Ending and restarting both ask first.
@@ -71,6 +91,7 @@
 	};
 
 	function onkeydown(e: KeyboardEvent) {
+		player.unlock();
 		// An open dialog handles its own keys; browser shortcuts (e.g. ⌘R) stay the browser's.
 		if (confirming || finished || e.metaKey || e.ctrlKey || e.altKey) return;
 		// So does the Interval list, but Space still pauses and resumes there, and J closes it.
@@ -96,6 +117,7 @@
 
 	let press: { id: number; x: number; y: number } | null = null;
 	function onpointerdown(e: PointerEvent) {
+		player.unlock();
 		if (finished) return;
 		revealControls();
 		const onControls = (e.target as Element).closest('[data-controls], dialog');

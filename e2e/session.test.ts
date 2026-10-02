@@ -34,6 +34,35 @@ test('the demo Workout runs from Lead-in to completion on the Session screen', a
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Workout complete');
 });
 
+test('the Session speaks and beeps its Cues, in order', async ({ page }) => {
+	// Swap the device's Cue player for the recording fake.
+	await page.addInitScript(() => (window.__hiitCueLog = []));
+	await page.clock.install();
+	await page.goto('/');
+	const heard = () => page.evaluate(() => window.__hiitCueLog!.map((cue) => (cue.type === 'speech' ? cue.text : cue.type)));
+
+	// Demo Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20.
+	await expect(page.getByText('Press Space or tap to start')).toBeVisible();
+	await page.keyboard.press('Space');
+	await page.clock.runFor(31_000);
+	expect(await heard()).toEqual([
+		...['beep', 'beep', 'beep', 'final-tone', 'Warm-up'],
+		'Next: Mountain Climbers',
+		...['beep', 'beep', 'beep', 'final-tone', 'Mountain Climbers']
+	]);
+
+	// Jump to the final Interval and let it play out.
+	await page.keyboard.press('KeyJ');
+	await page.getByRole('dialog', { name: 'Intervals' }).getByRole('button', { name: /Cool-down/ }).click();
+	await page.clock.runFor(21_000);
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Workout complete');
+	expect((await heard()).slice(11)).toEqual([
+		'Cool-down',
+		'Last 10 seconds',
+		...['beep', 'beep', 'beep', 'chime', 'Workout complete']
+	]);
+});
+
 test.describe('Session controls', () => {
 	// Demo Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20 … 3:50 in all.
 	test.beforeEach(async ({ page }) => {
