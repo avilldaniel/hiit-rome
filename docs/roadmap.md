@@ -1,6 +1,6 @@
 # Roadmap: deferred from v1
 
-Everything below was deliberately left out of v1 during the initial design grilling (2026-10-01). Each item notes why it was deferred and what v1 does to keep it cheap to add later. Terms follow [CONTEXT.md](../CONTEXT.md).
+Everything below was deliberately left out of v1 during the initial design grilling (2026-10-01). Each item notes why it was deferred and what v1 does to keep it cheap to add later. Terms follow [GLOSSARY.md](../GLOSSARY.md).
 
 ## Music
 

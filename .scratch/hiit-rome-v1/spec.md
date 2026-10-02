@@ -2,7 +2,7 @@
 
 Status: ready-for-agent
 
-Vocabulary follows [CONTEXT.md](../../CONTEXT.md). Respect [ADR 0001](../../docs/adr/0001-device-local-data-no-backend.md) (device-local data, no backend) and [ADR 0002](../../docs/adr/0002-sveltekit-static-spa.md) (SvelteKit static SPA, framework-free timer engine). Deferred work is tracked in [docs/roadmap.md](../../docs/roadmap.md).
+Vocabulary follows [GLOSSARY.md](../../GLOSSARY.md). Respect [ADR 0001](../../docs/adr/0001-device-local-data-no-backend.md) (device-local data, no backend) and [ADR 0002](../../docs/adr/0002-sveltekit-static-spa.md) (SvelteKit static SPA, framework-free timer engine). Deferred work is tracked in [docs/roadmap.md](../../docs/roadmap.md).
 
 ## Problem Statement
 
