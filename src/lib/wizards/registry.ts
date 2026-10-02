@@ -5,17 +5,23 @@ import EmomForm from './EmomForm.svelte';
 import HiitForm from './HiitForm.svelte';
 import TabataForm from './TabataForm.svelte';
 
-/** Where a finished Wizard goes once its Workout is saved: a Session of it, or the editor. */
-export type Next = 'start' | 'edit';
-/** Saves a Wizard's Workout as one of the trainer's own, then goes on to `next`. */
-export type OnFinish = (workout: Workout, next: Next) => Promise<void>;
+/** How a Wizard is finished: "Start now" (a Session of its Workout) or "Save & edit" (the editor). */
+export type Finish = 'start' | 'edit';
+/** Saves a Wizard's Workout as one of the trainer's own, then starts or edits it. */
+export type OnFinish = (workout: Workout, how: Finish) => Promise<void>;
+
+/** What every Wizard's form is given. */
+export interface WizardProps {
+	title: string;
+	onfinish: OnFinish;
+}
 
 export interface Wizard {
 	/** Its place in the URL. */
 	style: string;
 	title: string;
 	blurb: string;
-	form: Component<{ title: string; onfinish: OnFinish }>;
+	form: Component<WizardProps>;
 }
 
 /** Every Wizard, in the order the picker offers them. */

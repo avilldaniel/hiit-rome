@@ -1,54 +1,34 @@
 <script lang="ts">
-	import DurationInput from '#lib/editor/DurationInput.svelte';
-	import { CIRCUIT_DEFAULTS, circuit } from '#lib/engine/wizards.ts';
-	import CountInput from './CountInput.svelte';
-	import ExercisesInput from './ExercisesInput.svelte';
+	import { CIRCUIT_DEFAULTS, circuit, type CircuitParams } from '#lib/engine/wizards.ts';
+	import BookendFields from './BookendFields.svelte';
+	import CountField from './CountField.svelte';
+	import DurationField from './DurationField.svelte';
+	import ExercisesField from './ExercisesField.svelte';
 	import WizardForm from './WizardForm.svelte';
-	import type { OnFinish } from './wizards.ts';
+	import type { WizardProps } from './registry.ts';
 
-	let { title, onfinish }: { title: string; onfinish: OnFinish } = $props();
+	let { title, onfinish }: WizardProps = $props();
 
-	const params = $state({ ...CIRCUIT_DEFAULTS });
+	let params = $state.raw(CIRCUIT_DEFAULTS);
+	const set = (change: Partial<CircuitParams>) => (params = { ...params, ...change });
 	const workout = $derived(circuit(params));
 </script>
 
 <WizardForm {title} {workout} {onfinish}>
-	<label>
-		<span>Exercises</span>
-		<ExercisesInput exercises={params.exercises} onchange={(list) => (params.exercises = list)} />
-	</label>
-	<label>
-		<span>Work per exercise</span>
-		<DurationInput label="Work per exercise" seconds={params.workSec} onchange={(s) => (params.workSec = s)} />
-	</label>
-	<label>
-		<span>Rest between exercises</span>
-		<DurationInput
-			label="Rest between exercises"
-			optional
-			seconds={params.restSec}
-			onchange={(s) => (params.restSec = s)}
-		/>
-	</label>
-	<label>
-		<span>Rounds</span>
-		<CountInput label="Rounds" value={params.rounds} onchange={(n) => (params.rounds = n)} />
-	</label>
-	<label>
-		<span>Rest between Rounds</span>
-		<DurationInput
-			label="Rest between Rounds"
-			optional
-			seconds={params.roundRestSec}
-			onchange={(s) => (params.roundRestSec = s)}
-		/>
-	</label>
-	<label>
-		<span>Warm-up</span>
-		<DurationInput label="Warm-up" optional seconds={params.warmupSec} onchange={(s) => (params.warmupSec = s)} />
-	</label>
-	<label>
-		<span>Cool-down</span>
-		<DurationInput label="Cool-down" optional seconds={params.cooldownSec} onchange={(s) => (params.cooldownSec = s)} />
-	</label>
+	<ExercisesField exercises={params.exercises} onchange={(exercises) => set({ exercises })} />
+	<DurationField label="Work per exercise" seconds={params.workSec} onchange={(workSec) => set({ workSec })} />
+	<DurationField
+		label="Rest between exercises"
+		optional
+		seconds={params.restSec}
+		onchange={(restSec) => set({ restSec })}
+	/>
+	<CountField label="Rounds" value={params.rounds} onchange={(rounds) => set({ rounds })} />
+	<DurationField
+		label="Rest between Rounds"
+		optional
+		seconds={params.roundRestSec}
+		onchange={(roundRestSec) => set({ roundRestSec })}
+	/>
+	<BookendFields {params} onchange={set} />
 </WizardForm>

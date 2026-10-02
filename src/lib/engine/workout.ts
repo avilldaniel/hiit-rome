@@ -63,6 +63,8 @@ export interface Problem {
 
 const inRange = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
 export const isValidDuration = (sec: number) => inRange(sec, LIMITS.minDurationSec, LIMITS.maxDurationSec);
+/** A duration for an Interval that can be left out, such as a Wizard's Warm-up: 0 for none. */
+export const isValidOptionalDuration = (sec: number) => sec === 0 || isValidDuration(sec);
 export const isValidRounds = (rounds: number) => inRange(rounds, LIMITS.minRounds, LIMITS.maxRounds);
 export const isValidLeadIn = (sec: number) => inRange(sec, 0, LIMITS.maxLeadInSec);
 /** How long before an Interval ends the Warning can come. */

@@ -6,7 +6,7 @@ import { blankWorkout, group, interval, type Interval, type Item, type Kind, typ
  */
 
 /** The Warm-up and Cool-down every Wizard offers. */
-interface Bookends {
+export interface Bookends {
 	warmupSec: number;
 	cooldownSec: number;
 }
@@ -16,7 +16,7 @@ const optional = (name: string, kind: Kind, durationSec: number): Interval[] =>
 	durationSec > 0 ? [interval(name, kind, durationSec)] : [];
 
 /** A new Workout of `items` between the Warm-up and Cool-down. */
-function build(name: string, { warmupSec, cooldownSec }: Bookends, items: Item[]): Workout {
+function newWorkout(name: string, { warmupSec, cooldownSec }: Bookends, items: Item[]): Workout {
 	return {
 		...blankWorkout(),
 		name,
@@ -38,7 +38,7 @@ export const HIIT_DEFAULTS: HiitParams = { workSec: 40, restSec: 20, rounds: 8, 
 export function hiit(params: HiitParams): Workout {
 	const { workSec, restSec, rounds } = params;
 	const exercise = params.exercise.trim();
-	return build(`${exercise || 'HIIT'} ×${rounds} (${workSec}/${restSec})`, params, [
+	return newWorkout(`${exercise || 'HIIT'} ×${rounds} (${workSec}/${restSec})`, params, [
 		group(rounds, [interval(exercise || 'Work', 'work', workSec), ...optional('Rest', 'rest', restSec)])
 	]);
 }
@@ -69,10 +69,10 @@ export const TABATA_DEFAULTS: TabataParams = {
  */
 export function tabata(params: TabataParams): Workout {
 	const { workSec, restSec, rounds, tabatas, betweenSec } = params;
-	const one = group(rounds, [interval('Work', 'work', workSec), ...optional('Rest', 'rest', restSec)]);
-	if (tabatas === 1) return build(`Tabata (${workSec}/${restSec})`, params, [one]);
-	return build(`Tabata ×${tabatas} (${workSec}/${restSec})`, params, [
-		group(tabatas, [one, ...optional('Between Tabatas', 'rest', betweenSec)], { name: 'Tabata' })
+	const oneTabata = group(rounds, [interval('Work', 'work', workSec), ...optional('Rest', 'rest', restSec)]);
+	if (tabatas === 1) return newWorkout(`Tabata (${workSec}/${restSec})`, params, [oneTabata]);
+	return newWorkout(`Tabata ×${tabatas} (${workSec}/${restSec})`, params, [
+		group(tabatas, [oneTabata, ...optional('Between Tabatas', 'rest', betweenSec)], { name: 'Tabata' })
 	]);
 }
 
@@ -104,7 +104,7 @@ export function circuit(params: CircuitParams): Workout {
 		interval(exercise, 'work', workSec),
 		...(i < exercises.length - 1 ? optional('Rest', 'rest', restSec) : optional('Round rest', 'rest', roundRestSec))
 	]);
-	return build(`Circuit ×${rounds} (${workSec}/${restSec})`, params, [group(rounds, round)]);
+	return newWorkout(`Circuit ×${rounds} (${workSec}/${restSec})`, params, [group(rounds, round)]);
 }
 
 export interface EmomParams extends Bookends {
@@ -119,7 +119,7 @@ export const EMOM_DEFAULTS: EmomParams = { exercises: [], rounds: 10, warmupSec:
 export function emom(params: EmomParams): Workout {
 	const { exercises, rounds } = params;
 	const count = `${exercises.length} ${exercises.length === 1 ? 'exercise' : 'exercises'}`;
-	return build(`EMOM ×${rounds} (${count})`, params, [
+	return newWorkout(`EMOM ×${rounds} (${count})`, params, [
 		group(rounds, exercises.map((exercise) => interval(exercise, 'work', 60)))
 	]);
 }

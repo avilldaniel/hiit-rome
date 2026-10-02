@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { PALETTE } from '#lib/engine/palette.ts';
-	import { WIZARDS } from '#lib/wizards/wizards.ts';
+	import { WIZARDS } from '#lib/wizards/registry.ts';
 </script>
 
 <svelte:head>

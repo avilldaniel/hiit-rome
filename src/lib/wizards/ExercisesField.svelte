@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 
-	/** Exercise names, one per line; blank lines are ignored, and at least one is needed. */
+	/** The exercises row of a Wizard's form: names one per line, blank lines ignored, and at least one needed. */
 	let { exercises, onchange }: { exercises: string[]; onchange: (exercises: string[]) => void } = $props();
 
 	// Left as typed: tidying it into `exercises` on every keystroke would swallow a new line as it's started.
@@ -17,14 +17,16 @@
 	$effect(() => field.setCustomValidity(exercises.length ? '' : 'Add at least one exercise, one per line.'));
 </script>
 
-<textarea
-	bind:this={field}
-	aria-label="Exercises"
-	rows="8"
-	placeholder={'Squats\nPush-ups\nLunges'}
-	value={initial}
-	oninput={(event) => onchange(lines(event.currentTarget.value))}
-></textarea>
+<label>
+	<span>Exercises</span>
+	<textarea
+		bind:this={field}
+		rows="8"
+		placeholder={'Squats\nPush-ups\nLunges'}
+		value={initial}
+		oninput={(event) => onchange(lines(event.currentTarget.value))}
+	></textarea>
+</label>
 
 <style>
 	textarea {

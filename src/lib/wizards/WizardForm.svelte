@@ -4,37 +4,36 @@
 	import { PALETTE } from '#lib/engine/palette.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
-	import type { OnFinish, Next } from './wizards.ts';
+	import type { Finish, OnFinish } from './registry.ts';
 
 	/**
-	 * The frame every Wizard's form sits in: its fields (`children`), the Workout they make so far
-	 * with its live total, and the two ways to finish. The name follows the Wizard's proposal until
-	 * the trainer types their own.
+	 * The frame every Wizard's form sits in: its fields (`children`, one <label> each), the Workout
+	 * they make so far with its live total, and the two ways to finish. The name follows the Wizard's
+	 * proposal until the trainer types their own.
 	 */
 	let {
 		title,
 		workout,
 		onfinish,
+		hint = 'Set Warm-up, Cool-down or any Rest to 0:00 to leave it out.',
 		children
-	}: { title: string; workout: Workout; onfinish: OnFinish; children: Snippet } = $props();
+	}: { title: string; workout: Workout; onfinish: OnFinish; hint?: string; children: Snippet } = $props();
 
 	// The Timeline is the source of truth for the total, so skipped rests are already accounted for.
 	const totalMs = $derived(buildTimeline(workout.items).totalMs);
 	let typedName = $state<string | null>(null);
 	const name = $derived(typedName ?? workout.name);
 
-	let fields: HTMLElement;
+	let form: HTMLFormElement;
 	let busy = $state(false);
 	let failed = $state(false);
-	async function finish(next: Next) {
-		if (busy) return;
+	async function finish(how: Finish) {
 		// The browser points out the first field that's wrong.
-		const inputs = fields.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea');
-		if (![...inputs].every((input) => input.reportValidity())) return;
+		if (busy || !form.reportValidity()) return;
 		busy = true;
 		failed = false;
 		try {
-			await onfinish({ ...workout, name: name.trim() || workout.name }, next);
+			await onfinish({ ...workout, name: name.trim() || workout.name }, how);
 		} catch {
 			failed = true;
 			busy = false;
@@ -48,10 +47,11 @@
 		<h1>{title}</h1>
 	</header>
 
-	<main>
-		<div class="fields" role="group" aria-label="{title} Wizard" bind:this={fields}>
+	<!-- Never submitted: its buttons finish the Wizard themselves, once the browser finds every field valid. -->
+	<form bind:this={form} onsubmit={(event) => event.preventDefault()}>
+		<div class="fields" role="group" aria-label="{title} Wizard">
 			{@render children()}
-			<p class="hint">Set Warm-up, Cool-down or any Rest to 0:00 to leave it out.</p>
+			<p class="hint">{hint}</p>
 		</div>
 
 		<section class="finish" aria-label="Your Workout">
@@ -81,7 +81,7 @@
 				<button type="button" disabled={busy} onclick={() => finish('edit')}>Save & edit</button>
 			</div>
 		</section>
-	</main>
+	</form>
 </div>
 
 <style>
@@ -108,7 +108,7 @@
 		font-size: 36px;
 	}
 
-	main {
+	form {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: flex-start;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTimeline, type Timeline } from './timeline';
-import { validateItems } from './workout';
+import { blankWorkout, validateItems } from './workout';
 import { circuit, emom, hiit, tabata } from './wizards';
 
 const names = (t: Timeline) => t.entries.map((e) => e.name);
@@ -154,7 +154,7 @@ describe('every Wizard', () => {
 	it('makes an ordinary, valid Workout with its own id and no link back to the Wizard', () => {
 		const [first, second] = [made(), made()];
 		for (const [i, workout] of first.entries()) {
-			expect(Object.keys(workout).sort()).toEqual(['id', 'items', 'leadInSec', 'name']);
+			expect(Object.keys(workout).sort()).toEqual(Object.keys(blankWorkout()).sort());
 			expect(workout.leadInSec).toBe(10);
 			expect(validateItems(workout.items)).toEqual([]);
 			expect(workout.id).not.toBe(second[i].id);

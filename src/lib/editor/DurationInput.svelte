@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { formatClock, parseDuration } from '#lib/engine/format.ts';
-	import { isValidDuration } from '#lib/engine/workout.ts';
+	import { isValidDuration, isValidOptionalDuration } from '#lib/engine/workout.ts';
 
 	/**
 	 * Accepts "90" or "1:30"; reports only valid durations, so a half-typed one never reaches the Workout.
@@ -31,7 +31,7 @@
 
 	function commit() {
 		const parsed = parseDuration(text);
-		setInvalid(parsed === null || !((optional && parsed === 0) || isValidDuration(parsed)));
+		setInvalid(parsed === null || !(optional ? isValidOptionalDuration : isValidDuration)(parsed));
 		if (invalid) return;
 		text = show(parsed!);
 		if (parsed !== seconds) onchange(parsed!);

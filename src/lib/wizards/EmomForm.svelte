@@ -1,32 +1,20 @@
 <script lang="ts">
-	import DurationInput from '#lib/editor/DurationInput.svelte';
-	import { EMOM_DEFAULTS, emom } from '#lib/engine/wizards.ts';
-	import CountInput from './CountInput.svelte';
-	import ExercisesInput from './ExercisesInput.svelte';
+	import { EMOM_DEFAULTS, emom, type EmomParams } from '#lib/engine/wizards.ts';
+	import BookendFields from './BookendFields.svelte';
+	import CountField from './CountField.svelte';
+	import ExercisesField from './ExercisesField.svelte';
 	import WizardForm from './WizardForm.svelte';
-	import type { OnFinish } from './wizards.ts';
+	import type { WizardProps } from './registry.ts';
 
-	let { title, onfinish }: { title: string; onfinish: OnFinish } = $props();
+	let { title, onfinish }: WizardProps = $props();
 
-	const params = $state({ ...EMOM_DEFAULTS });
+	let params = $state.raw(EMOM_DEFAULTS);
+	const set = (change: Partial<EmomParams>) => (params = { ...params, ...change });
 	const workout = $derived(emom(params));
 </script>
 
-<WizardForm {title} {workout} {onfinish}>
-	<label>
-		<span>Exercises <small>(a minute each)</small></span>
-		<ExercisesInput exercises={params.exercises} onchange={(list) => (params.exercises = list)} />
-	</label>
-	<label>
-		<span>Rounds</span>
-		<CountInput label="Rounds" value={params.rounds} onchange={(n) => (params.rounds = n)} />
-	</label>
-	<label>
-		<span>Warm-up</span>
-		<DurationInput label="Warm-up" optional seconds={params.warmupSec} onchange={(s) => (params.warmupSec = s)} />
-	</label>
-	<label>
-		<span>Cool-down</span>
-		<DurationInput label="Cool-down" optional seconds={params.cooldownSec} onchange={(s) => (params.cooldownSec = s)} />
-	</label>
+<WizardForm {title} {workout} {onfinish} hint="Each exercise gets a minute. Set Warm-up or Cool-down to 0:00 to leave it out.">
+	<ExercisesField exercises={params.exercises} onchange={(exercises) => set({ exercises })} />
+	<CountField label="Rounds" value={params.rounds} onchange={(rounds) => set({ rounds })} />
+	<BookendFields {params} onchange={set} />
 </WizardForm>

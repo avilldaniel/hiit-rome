@@ -3,13 +3,13 @@
 	import { page } from '$app/state';
 	import type { Workout } from '#lib/engine/workout.ts';
 	import { deviceStore } from '#lib/store/device.ts';
-	import { WIZARDS, type Next } from '#lib/wizards/wizards.ts';
+	import { WIZARDS, type Finish } from '#lib/wizards/registry.ts';
 
 	const wizard = $derived(WIZARDS.find((w) => w.style === page.params.style));
 
-	async function finish(workout: Workout, next: Next) {
+	async function finish(workout: Workout, how: Finish) {
 		const saved = await (await deviceStore()).add(workout);
-		await goto(next === 'start' ? `/session/${saved.id}` : `/edit/${saved.id}`);
+		await goto(how === 'start' ? `/session/${saved.id}` : `/edit/${saved.id}`);
 	}
 </script>
 
