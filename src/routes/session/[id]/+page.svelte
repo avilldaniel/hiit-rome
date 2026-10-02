@@ -3,13 +3,14 @@
 	import { startBlocker } from '#lib/engine/outline.ts';
 	import type { SessionSnapshot } from '#lib/engine/session.ts';
 	import type { Settings } from '#lib/engine/settings.ts';
+	import type { Workout } from '#lib/engine/workout.ts';
+	import { findSample } from '#lib/library/samples.ts';
 	import { takeResumed } from '#lib/session/recovery.ts';
 	import SessionScreen from '#lib/session/SessionScreen.svelte';
 	import { deviceStore, workoutWithSettings } from '#lib/store/device.ts';
-	import type { StoredWorkout } from '#lib/store/workout-store.ts';
 
 	const id = $derived(page.params.id!);
-	let workout = $state.raw<StoredWorkout | null | undefined>();
+	let workout = $state.raw<Workout | null | undefined>();
 	let settings = $state.raw<Settings>();
 	/** The saved Session to carry on from, when the trainer chose to resume one. */
 	let restored = $state.raw<SessionSnapshot>();
@@ -18,7 +19,7 @@
 		workout = undefined;
 		const resuming = (restored = takeResumed(wanted));
 		workoutWithSettings(wanted)
-			.then((loaded) => ((settings = loaded.settings), loaded.workout))
+			.then((loaded) => ((settings = loaded.settings), loaded.workout ?? findSample(wanted)?.workout))
 			.catch(() => undefined)
 			.then((found) => {
 				if (wanted !== id) return;
@@ -28,8 +29,11 @@
 			});
 	});
 	const blocker = $derived(workout && startBlocker(workout.items));
-	// Bookkeeping only: a Workout deleted meanwhile (in another tab) has nothing to update.
-	const markUsed = () => void deviceStore().then((store) => store.markUsed(id)).catch(() => {});
+	// Bookkeeping only: a Workout deleted meanwhile (in another tab) has nothing to update, and a Sample,
+	// played straight from the Library, is never marked.
+	const markUsed = () => {
+		if (!findSample(id)) void deviceStore().then((store) => store.markUsed(id)).catch(() => {});
+	};
 	// Saved as it goes, to be offered back after a reload or crash; at worst, the trainer starts over.
 	const save = (session: SessionSnapshot) =>
 		void deviceStore()

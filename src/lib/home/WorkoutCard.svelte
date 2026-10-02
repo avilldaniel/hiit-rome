@@ -2,6 +2,7 @@
 	import { formatClock } from '#lib/engine/format.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
+	import TimelineStrip from './TimelineStrip.svelte';
 
 	let {
 		workout,
@@ -21,12 +22,7 @@
 </script>
 
 <article class="card" aria-labelledby={headingId}>
-	<!-- The Interval sequence at a glance, each Interval as wide as its share of the total. -->
-	<div class="strip" aria-hidden="true">
-		{#each timeline.entries as entry (entry.index)}
-			<span style:flex-grow={entry.durationMs} style:background-color={entry.colors.background}></span>
-		{/each}
-	</div>
+	<TimelineStrip {timeline} />
 	<div class="body">
 		<h2 id={headingId}>{workout.name}</h2>
 		<p class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</p>
@@ -49,16 +45,6 @@
 		border-radius: 12px;
 		background: rgb(255 255 255 / 0.08);
 		overflow: hidden;
-	}
-
-	.strip {
-		display: flex;
-		height: 12px;
-	}
-
-	.strip span {
-		flex-basis: 0;
-		min-width: 2px;
 	}
 
 	.body {

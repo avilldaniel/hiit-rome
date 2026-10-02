@@ -29,7 +29,7 @@ A short form for one style of workout (e.g. Tabata) that generates a new, indepe
 _Avoid_: Template, builder, generator
 
 **Sample**:
-A ready-made Workout in the built-in Library that a user copies into their own Workouts.
+A ready-made Workout in the built-in Library that a user can start as it is, or copy into their own Workouts to change.
 _Avoid_: Preset, template, example
 
 **Library**:
