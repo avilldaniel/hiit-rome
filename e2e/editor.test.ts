@@ -58,3 +58,54 @@ test('Edit on a card opens the editor, and a deleted Interval can be undone', as
 	await expect(page.getByTestId('total')).toHaveText('3:50');
 	await expect(page.getByRole('group', { name: 'Interval Cool-down' })).toBeVisible();
 });
+
+test('the outline is restructured by duplicating, wrapping and dragging, each undoable', async ({ page }) => {
+	await page.goto('/');
+	await page.getByRole('link', { name: 'Edit Thursday Tabatas' }).click();
+	const total = page.getByTestId('total');
+	await expect(total).toHaveText('3:50');
+
+	// Duplicate goes right after the original, and Undo takes it away again.
+	await page.getByRole('button', { name: 'Duplicate Warm-up' }).click();
+	await expect(page.getByRole('group', { name: 'Interval Warm-up' })).toHaveCount(2);
+	await expect(total).toHaveText('4:10');
+	await page.getByRole('button', { name: 'Undo' }).click();
+	await expect(total).toHaveText('3:50');
+
+	// Wrap two Intervals in a Group.
+	await page.getByRole('checkbox', { name: 'Select Warm-up' }).check();
+	await page.getByRole('checkbox', { name: 'Select Cool-down' }).check();
+	await page.getByRole('button', { name: 'Wrap in Group' }).click();
+	// The seed's inner Tabata Group is unnamed too; the new one comes first.
+	const wrapper = page.getByRole('region', { name: 'Unnamed Group' }).first();
+	await expect(wrapper.getByRole('group', { name: 'Interval Warm-up' })).toBeVisible();
+	await expect(wrapper.getByRole('group', { name: 'Interval Cool-down' })).toBeVisible();
+	await expect(wrapper.getByRole('spinbutton', { name: 'Rounds' })).toHaveValue('1');
+	await expect(total).toHaveText('3:50');
+	await page.getByRole('button', { name: 'Undo' }).click();
+	await expect(page.getByRole('region', { name: 'Unnamed Group' })).toHaveCount(1);
+
+	// Drag Cool-down into the Tabata Group, before Between Tabatas: it now plays each Round.
+	await page
+		.getByRole('img', { name: 'Drag Interval Cool-down' })
+		.dragTo(page.getByRole('group', { name: 'Interval Between Tabatas' }));
+	const tabata = page.getByRole('region', { name: 'Group Tabata' });
+	await expect(tabata.getByRole('group', { name: 'Interval Cool-down' })).toBeVisible();
+	await expect(total).toHaveText('4:10');
+	await page.getByRole('button', { name: 'Undo' }).click();
+	await expect(tabata.getByRole('group', { name: 'Interval Cool-down' })).toHaveCount(0);
+	await expect(total).toHaveText('3:50');
+
+	// Tabata is already two levels deep, so it can't go inside another Group.
+	await page.getByRole('button', { name: '+ Add Group' }).last().click();
+	const added = page.getByRole('region', { name: 'Unnamed Group' }).last();
+	const target = added.getByRole('button', { name: '+ Add Interval' });
+	await tabata.getByRole('img', { name: 'Drag Group Tabata' }).hover();
+	await page.mouse.down();
+	await target.hover();
+	await target.hover({ position: { x: 5, y: 5 } });
+	await expect(page.getByText('Can’t drop here: Groups nest at most 2 levels deep')).toBeVisible();
+	await page.mouse.up();
+	await expect(added.getByRole('region')).toHaveCount(0);
+	await expect(total).toHaveText('3:50');
+});

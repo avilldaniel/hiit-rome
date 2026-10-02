@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { PALETTE, PALETTE_TOKENS, type PaletteToken } from '#lib/engine/palette.ts';
 	import { KIND_LABEL, type Interval, type Kind } from '#lib/engine/workout.ts';
+	import DragHandle from './DragHandle.svelte';
 	import DurationInput from './DurationInput.svelte';
 	import type { OutlineActions } from './outline-actions.ts';
 
@@ -26,6 +27,13 @@
 	style:background-color={colors.background}
 	style:color={colors.text}
 >
+	<DragHandle id={interval.id} label="Interval {label}" {actions} />
+	<input
+		type="checkbox"
+		aria-label="Select {label}"
+		checked={actions.isSelected(interval.id)}
+		onchange={() => actions.toggleSelected(interval.id)}
+	/>
 	<input
 		class="name"
 		type="text"
@@ -59,6 +67,7 @@
 			<option value={token}>{COLOR_LABEL[token]}</option>
 		{/each}
 	</select>
+	<button type="button" aria-label="Duplicate {label}" onclick={() => actions.duplicate(interval.id)}>Duplicate</button>
 	<button type="button" aria-label="Delete {label}" onclick={() => actions.remove(interval.id)}>Delete</button>
 </div>
 

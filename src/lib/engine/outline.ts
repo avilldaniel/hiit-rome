@@ -1,5 +1,5 @@
 import { buildTimeline } from './timeline';
-import type { Group, Interval, Item } from './workout';
+import { copyItem, group, type Group, type Interval, type Item } from './workout';
 
 /**
  * Pure edits to a Workout's outline, as the editor makes them. Each takes the current items and
@@ -35,11 +35,23 @@ function depthOf(items: Item[], parentId: string, depth = 1): number | undefined
 	return undefined;
 }
 
+/** How many levels of Group `item` itself makes: 0 for an Interval, 1 for a Group of Intervals. */
+function heightOf(item: Item): number {
+	return item.type === 'group' ? 1 + Math.max(0, ...item.items.map(heightOf)) : 0;
+}
+
+/** Whether something `height` levels of Group tall fits inside `parentId` (or the root) within the nesting limit. */
+function fitsIn(items: Item[], parentId: string | null, height: number): boolean {
+	const depth = parentId === null ? 0 : depthOf(items, parentId);
+	return depth !== undefined && depth + height <= MAX_GROUP_DEPTH;
+}
+
 /** Whether a new Group may go inside `parentId` (or the root) without nesting too deep. */
 export function canHoldGroup(items: Item[], parentId: string | null): boolean {
-	const depth = parentId === null ? 0 : depthOf(items, parentId);
-	return depth !== undefined && depth < MAX_GROUP_DEPTH;
+	return fitsIn(items, parentId, 1);
 }
+
+const TOO_DEEP = `Groups nest at most ${MAX_GROUP_DEPTH} levels deep`;
 
 /** The editable fields of an Interval or a Group. A field set to `undefined` is removed. */
 export type ItemChange = Partial<Omit<Interval, 'type' | 'id'>> | Partial<Omit<Group, 'type' | 'id' | 'items'>>;
@@ -73,6 +85,11 @@ function locate(items: Item[], id: string, parentId: string | null = null): Remo
 	return undefined;
 }
 
+/** The item `id`, wherever it sits. */
+export function findItem(items: Item[], id: string): Item | undefined {
+	return locate(items, id)?.item;
+}
+
 /** Deletes the item `id` (a Group with everything inside it). */
 export function removeItem(items: Item[], id: string): { items: Item[]; removed: Removed } {
 	const removed = locate(items, id);
@@ -87,6 +104,64 @@ export function removeItem(items: Item[], id: string): { items: Item[]; removed:
 export function restoreItem(items: Item[], { item, parentId, index }: Removed): Item[] {
 	if (parentId !== null && !locate(items, parentId)) return [...items, item];
 	return withChildren(items, parentId, (children) => children.toSpliced(index, 0, item));
+}
+
+/** Why the item `id` can't move inside `parentId` (or the root), or null if it can. */
+export function moveBlocker(items: Item[], id: string, parentId: string | null): string | null {
+	const moving = locate(items, id)?.item;
+	if (!moving) throw new Error(`No item with id ${id}`);
+	if (parentId !== null && (parentId === id || locate([moving], parentId))) return 'A Group can’t go inside itself';
+	return fitsIn(items, parentId, heightOf(moving)) ? null : TOO_DEEP;
+}
+
+/**
+ * Moves the item `id` inside `parentId` (or the root), just before the item `beforeId`, or to the
+ * end when `beforeId` is null. Returns `items` itself when that's where it already is.
+ */
+export function moveItem(items: Item[], id: string, parentId: string | null, beforeId: string | null): Item[] {
+	if (beforeId === id) return items;
+	const blocker = moveBlocker(items, id, parentId);
+	if (blocker) throw new Error(blocker);
+	const { items: without, removed } = removeItem(items, id);
+	const siblings = parentId === null ? without : (locate(without, parentId)!.item as Group).items;
+	const found = siblings.findIndex((item) => item.id === beforeId);
+	const index = found === -1 ? siblings.length : found;
+	if (parentId === removed.parentId && index === removed.index) return items;
+	return withChildren(without, parentId, (children) => children.toSpliced(index, 0, removed.item));
+}
+
+/** "Exercise 1" → "Exercise 2", so duplicating builds a numbered series; other names stay as they are. */
+const nextName = (name: string) => name.replace(/\d+$/, (n) => String(Number(n) + 1));
+
+/** Puts a deep copy of the item `id` (fresh ids throughout) right after it. */
+export function duplicateItem(items: Item[], id: string): Item[] {
+	const found = locate(items, id);
+	if (!found) throw new Error(`No item with id ${id}`);
+	const copy = copyItem(found.item);
+	if (copy.name !== undefined) copy.name = nextName(copy.name);
+	return withChildren(items, found.parentId, (children) => children.toSpliced(found.index + 1, 0, copy));
+}
+
+/** Why the Intervals `ids` can't be wrapped in a Group, or null if they can. */
+export function wrapBlocker(items: Item[], ids: string[]): string | null {
+	if (ids.length === 0) return 'Select Intervals to wrap';
+	const found = ids.map((id) => locate(items, id));
+	if (found.some((at) => at?.item.type !== 'interval')) return 'Only Intervals can be wrapped';
+	const parentId = found[0]!.parentId;
+	if (found.some((at) => at!.parentId !== parentId)) return 'Select Intervals at the same level';
+	return canHoldGroup(items, parentId) ? null : TOO_DEEP;
+}
+
+/** Wraps the Intervals `ids`, in outline order, in a new 1-Round Group where the first of them stood. */
+export function wrapInGroup(items: Item[], ids: string[]): Item[] {
+	const blocker = wrapBlocker(items, ids);
+	if (blocker) throw new Error(blocker);
+	const chosen = new Set(ids);
+	return withChildren(items, locate(items, ids[0])!.parentId, (children) => {
+		const index = children.findIndex((item) => chosen.has(item.id));
+		const rest = children.filter((item) => !chosen.has(item.id));
+		return rest.toSpliced(index, 0, group(1, children.filter((item) => chosen.has(item.id))));
+	});
 }
 
 /** Every Group that adds nothing to the Timeline (no Intervals, or only Rests that Skip last rest drops), so the editor can flag it. */

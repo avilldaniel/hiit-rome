@@ -102,6 +102,13 @@ export function group(
 	};
 }
 
+/** A deep copy of `item` in which it and everything inside it get fresh ids. */
+export function copyItem(item: Item): Item {
+	return item.type === 'group'
+		? { ...item, id: newId(), items: item.items.map(copyItem) }
+		: { ...item, id: newId() };
+}
+
 /** The name a Workout gets until it's given one. */
 export const UNTITLED = 'Untitled Workout';
 

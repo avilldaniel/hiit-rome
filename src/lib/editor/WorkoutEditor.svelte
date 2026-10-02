@@ -5,18 +5,23 @@
 	import {
 		addItem,
 		canHoldGroup,
+		duplicateItem,
 		emptyGroupIds,
+		findItem,
+		moveBlocker,
+		moveItem,
 		removeItem,
 		restoreItem,
 		startBlocker,
 		updateItem,
-		type Removed
+		wrapBlocker,
+		wrapInGroup
 	} from '#lib/engine/outline.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import { group, interval, UNTITLED, type Item, type Workout } from '#lib/engine/workout.ts';
 	import OutlineItems from './OutlineItems.svelte';
-	import type { OutlineActions } from './outline-actions.ts';
+	import type { DropTarget, OutlineActions } from './outline-actions.ts';
 
 	/**
 	 * `onsave` stores each change as it's made; `onstart` opens a Session of the Workout once
@@ -28,7 +33,7 @@
 		onstart
 	}: { workout: Workout; onsave: (workout: Workout) => Promise<void>; onstart: () => void } = $props();
 
-	/** How long a deletion can be undone. */
+	/** How long a change can be undone. */
 	const UNDO_MS = 8000;
 
 	let workout = $state.raw(untrack(() => initial));
@@ -47,26 +52,63 @@
 			() => void (saveFailed = true)
 		);
 	}
-	const setItems = (items: Item[]) => change({ items });
 
-	let removed = $state.raw<Removed | null>(null);
+	/**
+	 * The most recent deletion or restructuring, which Undo reverts. Any later change to the outline
+	 * replaces or dismisses it, so reverting never throws away an edit made since.
+	 */
+	let undoable = $state.raw<{ message: string; revert: (items: Item[]) => Item[] } | null>(null);
 	let forget: ReturnType<typeof setTimeout> | undefined;
-	function undo() {
-		if (removed) setItems(restoreItem(workout.items, removed));
-		removed = null;
+	function setItems(items: Item[]) {
+		change({ items });
+		undoable = null;
 		clearTimeout(forget);
 	}
+	/** Applies `items`, offering to undo back to what was there before. */
+	function restructure(items: Item[], message: string) {
+		const before = workout.items;
+		setItems(items);
+		offerUndo(message, () => before);
+	}
+	function offerUndo(message: string, revert: (items: Item[]) => Item[]) {
+		undoable = { message, revert };
+		forget = setTimeout(() => (undoable = null), UNDO_MS);
+	}
+	function undo() {
+		if (undoable) setItems(undoable.revert(workout.items));
+	}
 	$effect(() => () => clearTimeout(forget));
+
+	const noun = (item: Item) => (item.type === 'group' ? 'Group' : 'Interval');
+
+	/** Intervals ticked for "Wrap in Group", leaving out any deleted since. */
+	const selected = new SvelteSet<string>();
+	const selection = $derived([...selected].filter((id) => intervalIds(workout.items).has(id)));
+	const wrapProblem = $derived(selection.length ? wrapBlocker(workout.items, selection) : null);
+	function intervalIds(items: Item[]): Set<string> {
+		return new Set(items.flatMap((item) => (item.type === 'group' ? [...intervalIds(item.items)] : [item.id])));
+	}
+	function wrap() {
+		if (wrapProblem) return;
+		restructure(wrapInGroup(workout.items, selection), `Wrapped ${selection.length} ${selection.length === 1 ? 'Interval' : 'Intervals'} in a Group`);
+		selected.clear();
+	}
+
+	/** The item being dragged, and the spot it's over with why it can't drop there (if it can't). */
+	let drag = $state.raw<{ id: string; over: DropTarget | null; blocker: string | null } | null>(null);
+	const sameTarget = (a: DropTarget | null, b: DropTarget) =>
+		a !== null && a.parentId === b.parentId && a.beforeId === b.beforeId;
 
 	const collapsed = new SvelteSet<string>();
 	const actions: OutlineActions = {
 		update: (id, itemChange) => setItems(updateItem(workout.items, id, itemChange)),
 		remove(id) {
-			const result = removeItem(workout.items, id);
-			setItems(result.items);
-			removed = result.removed;
-			clearTimeout(forget);
-			forget = setTimeout(() => (removed = null), UNDO_MS);
+			const { items, removed } = removeItem(workout.items, id);
+			setItems(items);
+			offerUndo(`Deleted ${noun(removed.item)}`, (later) => restoreItem(later, removed));
+		},
+		duplicate(id) {
+			restructure(duplicateItem(workout.items, id), `Duplicated ${noun(findItem(workout.items, id)!)}`);
 		},
 		addInterval: (parentId) => setItems(addItem(workout.items, parentId, interval('', 'work', 30))),
 		addGroup(parentId) {
@@ -75,7 +117,32 @@
 		canHoldGroup: (parentId) => canHoldGroup(workout.items, parentId),
 		isEmpty: (groupId) => empty.has(groupId),
 		isCollapsed: (groupId) => collapsed.has(groupId),
-		toggleCollapsed: (groupId) => void (collapsed.delete(groupId) || collapsed.add(groupId))
+		toggleCollapsed: (groupId) => void (collapsed.delete(groupId) || collapsed.add(groupId)),
+		isSelected: (intervalId) => selected.has(intervalId),
+		toggleSelected: (intervalId) => void (selected.delete(intervalId) || selected.add(intervalId)),
+		startDrag: (id) => void (drag = { id, over: null, blocker: null }),
+		endDrag: () => void (drag = null),
+		dragOver(target) {
+			if (!drag) return false;
+			if (!sameTarget(drag.over, target)) {
+				drag = { ...drag, over: target, blocker: moveBlocker(workout.items, drag.id, target.parentId) };
+			}
+			return drag.blocker === null;
+		},
+		dragLeave(target) {
+			if (drag && sameTarget(drag.over, target)) drag = { ...drag, over: null, blocker: null };
+		},
+		drop(target) {
+			if (!drag || moveBlocker(workout.items, drag.id, target.parentId)) return;
+			const { id } = drag;
+			const items = moveItem(workout.items, id, target.parentId, target.beforeId);
+			drag = null;
+			if (items !== workout.items) restructure(items, `Moved ${noun(findItem(workout.items, id)!)}`);
+		},
+		dropState(target) {
+			if (!drag || !sameTarget(drag.over, target)) return null;
+			return drag.blocker ? 'refused' : 'allowed';
+		}
 	};
 
 	let blocked = $state<string | null>(null);
@@ -120,13 +187,28 @@
 		<p class="message" role="alert">Your changes couldn’t be saved. Try reloading the page.</p>
 	{/if}
 
+	{#if selection.length}
+		<div class="selection" role="toolbar" aria-label="Selected Intervals">
+			<span>{selection.length} selected</span>
+			<button type="button" disabled={wrapProblem !== null} onclick={wrap}>Wrap in Group</button>
+			<button type="button" onclick={() => selected.clear()}>Clear</button>
+			{#if wrapProblem}
+				<span class="problem">{wrapProblem}</span>
+			{/if}
+		</div>
+	{/if}
+
 	<main>
 		<OutlineItems items={workout.items} parentId={null} {actions} />
 	</main>
 
-	{#if removed}
+	{#if drag?.blocker}
+		<p class="refusal" role="status">Can’t drop here: {drag.blocker}</p>
+	{/if}
+
+	{#if undoable}
 		<div class="toast" role="status">
-			Deleted {removed.item.type === 'group' ? 'Group' : 'Interval'}
+			{undoable.message}
 			<button type="button" onclick={undo}>Undo</button>
 		</div>
 	{/if}
@@ -177,6 +259,40 @@
 		background: #ffd166;
 		color: #073b4c;
 		font-weight: 600;
+	}
+
+	.selection {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		margin: 0 0 16px;
+		padding: 12px 32px;
+		background: inherit;
+		font-weight: 600;
+		box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+	}
+
+	.problem {
+		color: #ffd166;
+	}
+
+	.refusal {
+		position: fixed;
+		top: 24px;
+		left: 50%;
+		transform: translateX(-50%);
+		margin: 0;
+		padding: 12px 20px;
+		border-radius: 12px;
+		background: #ef476f;
+		color: #fff;
+		font-weight: 700;
+		box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+		pointer-events: none;
 	}
 
 	main {

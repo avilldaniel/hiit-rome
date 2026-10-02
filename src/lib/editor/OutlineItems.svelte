@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MAX_GROUP_DEPTH } from '#lib/engine/outline.ts';
 	import { isValidRounds, LIMITS, type Item } from '#lib/engine/workout.ts';
+	import DragHandle from './DragHandle.svelte';
 	import IntervalRow from './IntervalRow.svelte';
 	import OutlineItems from './OutlineItems.svelte';
 	import type { OutlineActions } from './outline-actions.ts';
@@ -14,19 +15,43 @@
 		if (isValidRounds(rounds)) actions.update(id, { rounds });
 		else input.value = String(stored);
 	}
+
+	/** Drag handlers for a spot in this level: before the item `beforeId`, or the end when null. */
+	function dropZone(beforeId: string | null) {
+		const target = { parentId, beforeId };
+		return {
+			ondragover(event: DragEvent) {
+				event.stopPropagation();
+				// Only an allowed drop cancels the default, so a refused one shows the not-allowed cursor.
+				if (actions.dragOver(target)) event.preventDefault();
+			},
+			ondragleave(event: DragEvent & { currentTarget: HTMLElement }) {
+				if (!event.currentTarget.contains(event.relatedTarget as Node | null)) actions.dragLeave(target);
+			},
+			ondrop(event: DragEvent) {
+				event.preventDefault();
+				event.stopPropagation();
+				actions.drop(target);
+			}
+		};
+	}
 </script>
 
 <ul class="items">
 	{#each items as item (item.id)}
-		<li>
+		{@const dropState = actions.dropState({ parentId, beforeId: item.id })}
+		<li class:drop-allowed={dropState === 'allowed'} class:drop-refused={dropState === 'refused'}>
 			{#if item.type === 'interval'}
-				<IntervalRow interval={item} {actions} />
+				<div {...dropZone(item.id)}>
+					<IntervalRow interval={item} {actions} />
+				</div>
 			{:else}
 				{@const label = item.name?.trim() ? `Group ${item.name.trim()}` : 'Unnamed Group'}
 				{@const collapsed = actions.isCollapsed(item.id)}
 				{@const empty = actions.isEmpty(item.id)}
 				<section class="group" class:empty aria-label={label}>
-					<div class="group-header">
+					<div class="group-header" {...dropZone(item.id)}>
+						<DragHandle id={item.id} {label} {actions} />
 						<button
 							type="button"
 							class="toggle"
@@ -63,6 +88,7 @@
 							/>
 							Skip last rest
 						</label>
+						<button type="button" aria-label="Duplicate {label}" onclick={() => actions.duplicate(item.id)}>Duplicate</button>
 						<button type="button" aria-label="Delete {label}" onclick={() => actions.remove(item.id)}>Delete</button>
 					</div>
 					{#if empty}
@@ -75,7 +101,12 @@
 			{/if}
 		</li>
 	{/each}
-	<li class="add">
+	<li
+		class="add"
+		class:drop-allowed={actions.dropState({ parentId, beforeId: null }) === 'allowed'}
+		class:drop-refused={actions.dropState({ parentId, beforeId: null }) === 'refused'}
+		{...dropZone(null)}
+	>
 		<button type="button" onclick={() => actions.addInterval(parentId)}>+ Add Interval</button>
 		<button
 			type="button"
@@ -150,6 +181,15 @@
 	.add {
 		display: flex;
 		gap: 8px;
+	}
+
+	/* A line above the spot where the dragged item would land. */
+	.drop-allowed {
+		box-shadow: 0 -5px 0 #fff;
+	}
+
+	.drop-refused {
+		box-shadow: 0 -5px 0 #ef476f;
 	}
 
 	.add button {
