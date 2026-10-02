@@ -85,6 +85,12 @@ function locate(items: Item[], id: string, parentId: string | null = null): Remo
 	return undefined;
 }
 
+function locateOrThrow(items: Item[], id: string): Removed {
+	const found = locate(items, id);
+	if (!found) throw new Error(`No item with id ${id}`);
+	return found;
+}
+
 /** The item `id`, wherever it sits. */
 export function findItem(items: Item[], id: string): Item | undefined {
 	return locate(items, id)?.item;
@@ -92,8 +98,7 @@ export function findItem(items: Item[], id: string): Item | undefined {
 
 /** Deletes the item `id` (a Group with everything inside it). */
 export function removeItem(items: Item[], id: string): { items: Item[]; removed: Removed } {
-	const removed = locate(items, id);
-	if (!removed) throw new Error(`No item with id ${id}`);
+	const removed = locateOrThrow(items, id);
 	return {
 		items: withChildren(items, removed.parentId, (children) => children.filter((item) => item.id !== id)),
 		removed
@@ -108,8 +113,7 @@ export function restoreItem(items: Item[], { item, parentId, index }: Removed): 
 
 /** Why the item `id` can't move inside `parentId` (or the root), or null if it can. */
 export function moveBlocker(items: Item[], id: string, parentId: string | null): string | null {
-	const moving = locate(items, id)?.item;
-	if (!moving) throw new Error(`No item with id ${id}`);
+	const moving = locateOrThrow(items, id).item;
 	if (parentId !== null && (parentId === id || locate([moving], parentId))) return 'A Group can’t go inside itself';
 	return fitsIn(items, parentId, heightOf(moving)) ? null : TOO_DEEP;
 }
@@ -135,11 +139,15 @@ const nextName = (name: string) => name.replace(/\d+$/, (n) => String(Number(n) 
 
 /** Puts a deep copy of the item `id` (fresh ids throughout) right after it. */
 export function duplicateItem(items: Item[], id: string): Item[] {
-	const found = locate(items, id);
-	if (!found) throw new Error(`No item with id ${id}`);
+	const found = locateOrThrow(items, id);
 	const copy = copyItem(found.item);
 	if (copy.name !== undefined) copy.name = nextName(copy.name);
 	return withChildren(items, found.parentId, (children) => children.toSpliced(found.index + 1, 0, copy));
+}
+
+/** The ids of every Interval in the outline, at any depth. */
+export function intervalIds(items: Item[]): Set<string> {
+	return new Set(items.flatMap((item) => (item.type === 'group' ? [...intervalIds(item.items)] : [item.id])));
 }
 
 /** Why the Intervals `ids` can't be wrapped in a Group, or null if they can. */

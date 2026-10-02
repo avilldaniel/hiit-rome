@@ -59,15 +59,15 @@ describe('canHoldGroup', () => {
 describe('updateItem', () => {
 	it('changes an Interval or Group anywhere in the outline, keeping the rest', () => {
 		const squats = interval('Squats', 'work', 20);
-		const block = group(3, [squats]);
+		const legs = group(3, [squats]);
 		const warmUp = interval('Warm-up', 'warmup', 60);
 
-		let items = updateItem([warmUp, block], squats.id, { name: 'Jump squats', durationSec: 45, color: 'rest' });
-		items = updateItem(items, block.id, { name: 'Legs', rounds: 5, skipLastRest: false });
+		let items = updateItem([warmUp, legs], squats.id, { name: 'Jump squats', durationSec: 45, color: 'rest' });
+		items = updateItem(items, legs.id, { name: 'Legs', rounds: 5, skipLastRest: false });
 
 		expect(items).toEqual([
 			warmUp,
-			{ ...block, name: 'Legs', rounds: 5, skipLastRest: false, items: [{ ...squats, name: 'Jump squats', durationSec: 45, color: 'rest' }] }
+			{ ...legs, name: 'Legs', rounds: 5, skipLastRest: false, items: [{ ...squats, name: 'Jump squats', durationSec: 45, color: 'rest' }] }
 		]);
 	});
 
@@ -94,22 +94,22 @@ describe('removeItem and restoreItem', () => {
 	});
 
 	it('deletes a Group with everything inside it', () => {
-		const block = group(2, [group(3, [interval('Squats', 'work', 20)])]);
+		const legs = group(2, [group(3, [interval('Squats', 'work', 20)])]);
 		const coolDown = interval('Cool-down', 'cooldown', 60);
 
-		const { items, removed } = removeItem([block, coolDown], block.id);
+		const { items, removed } = removeItem([legs, coolDown], legs.id);
 
 		expect(items).toEqual([coolDown]);
-		expect(restoreItem(items, removed)).toEqual([block, coolDown]);
+		expect(restoreItem(items, removed)).toEqual([legs, coolDown]);
 	});
 
 	it('restores to the end of the root when the item’s Group has since gone', () => {
 		const squats = interval('Squats', 'work', 20);
-		const block = group(3, [squats]);
+		const legs = group(3, [squats]);
 		const warmUp = interval('Warm-up', 'warmup', 60);
 
-		const first = removeItem([warmUp, block], squats.id);
-		const second = removeItem(first.items, block.id);
+		const first = removeItem([warmUp, legs], squats.id);
+		const second = removeItem(first.items, legs.id);
 
 		expect(restoreItem(second.items, first.removed)).toEqual([warmUp, squats]);
 	});
@@ -159,14 +159,14 @@ describe('moveItem', () => {
 
 	it('moves an item into a Group and back out again', () => {
 		const squats = interval('Squats', 'work', 20);
-		const block = group(3, [squats]);
+		const legs = group(3, [squats]);
 		const lunges = interval('Lunges', 'work', 20);
 
-		const inside = moveItem([lunges, block], lunges.id, block.id, squats.id);
-		expect(inside).toEqual([{ ...block, items: [lunges, squats] }]);
+		const inside = moveItem([lunges, legs], lunges.id, legs.id, squats.id);
+		expect(inside).toEqual([{ ...legs, items: [lunges, squats] }]);
 
-		const outside = moveItem(inside, squats.id, null, block.id);
-		expect(outside).toEqual([squats, { ...block, items: [lunges] }]);
+		const outside = moveItem(inside, squats.id, null, legs.id);
+		expect(outside).toEqual([squats, { ...legs, items: [lunges] }]);
 	});
 
 	it('leaves the outline as it was when dropped where it already is', () => {
@@ -245,9 +245,9 @@ describe('duplicateItem', () => {
 
 	it('duplicates inside a nested Group', () => {
 		const squats = interval('Squats', 'work', 20);
-		const block = group(3, [squats]);
+		const legs = group(3, [squats]);
 
-		const [updated] = duplicateItem([block], squats.id);
+		const [updated] = duplicateItem([legs], squats.id);
 
 		expect(updated.type === 'group' && updated.items.map((item) => item.name)).toEqual(['Squats', 'Squats']);
 	});
@@ -275,11 +275,11 @@ describe('wrapInGroup', () => {
 
 	it('wraps Intervals inside a Group', () => {
 		const [a, b] = [interval('A', 'work', 20), interval('B', 'work', 20)];
-		const block = group(3, [a, b]);
+		const legs = group(3, [a, b]);
 
-		const [updated] = wrapInGroup([block], [a.id, b.id]);
+		const [updated] = wrapInGroup([legs], [a.id, b.id]);
 
-		expect(updated).toMatchObject({ id: block.id, items: [{ type: 'group', rounds: 1, items: [a, b] }] });
+		expect(updated).toMatchObject({ id: legs.id, items: [{ type: 'group', rounds: 1, items: [a, b] }] });
 	});
 
 	it('refuses anything but Intervals at one level that may hold another Group', () => {

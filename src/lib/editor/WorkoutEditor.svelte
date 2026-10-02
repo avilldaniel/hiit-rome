@@ -8,6 +8,7 @@
 		duplicateItem,
 		emptyGroupIds,
 		findItem,
+		intervalIds,
 		moveBlocker,
 		moveItem,
 		removeItem,
@@ -79,15 +80,15 @@
 	}
 	$effect(() => () => clearTimeout(forget));
 
-	const noun = (item: Item) => (item.type === 'group' ? 'Group' : 'Interval');
+	const typeLabel = (item: Item) => (item.type === 'group' ? 'Group' : 'Interval');
 
 	/** Intervals ticked for "Wrap in Group", leaving out any deleted since. */
 	const selected = new SvelteSet<string>();
-	const selection = $derived([...selected].filter((id) => intervalIds(workout.items).has(id)));
+	const selection = $derived.by(() => {
+		const present = intervalIds(workout.items);
+		return [...selected].filter((id) => present.has(id));
+	});
 	const wrapProblem = $derived(selection.length ? wrapBlocker(workout.items, selection) : null);
-	function intervalIds(items: Item[]): Set<string> {
-		return new Set(items.flatMap((item) => (item.type === 'group' ? [...intervalIds(item.items)] : [item.id])));
-	}
 	function wrap() {
 		if (wrapProblem) return;
 		restructure(wrapInGroup(workout.items, selection), `Wrapped ${selection.length} ${selection.length === 1 ? 'Interval' : 'Intervals'} in a Group`);
@@ -105,10 +106,10 @@
 		remove(id) {
 			const { items, removed } = removeItem(workout.items, id);
 			setItems(items);
-			offerUndo(`Deleted ${noun(removed.item)}`, (later) => restoreItem(later, removed));
+			offerUndo(`Deleted ${typeLabel(removed.item)}`, (later) => restoreItem(later, removed));
 		},
 		duplicate(id) {
-			restructure(duplicateItem(workout.items, id), `Duplicated ${noun(findItem(workout.items, id)!)}`);
+			restructure(duplicateItem(workout.items, id), `Duplicated ${typeLabel(findItem(workout.items, id)!)}`);
 		},
 		addInterval: (parentId) => setItems(addItem(workout.items, parentId, interval('', 'work', 30))),
 		addGroup(parentId) {
@@ -133,11 +134,12 @@
 			if (drag && sameTarget(drag.over, target)) drag = { ...drag, over: null, blocker: null };
 		},
 		drop(target) {
-			if (!drag || moveBlocker(workout.items, drag.id, target.parentId)) return;
+			// Only a target that allowed the drop receives it, so `drag.blocker` is the hovered target's.
+			if (!drag || drag.blocker) return;
 			const { id } = drag;
 			const items = moveItem(workout.items, id, target.parentId, target.beforeId);
 			drag = null;
-			if (items !== workout.items) restructure(items, `Moved ${noun(findItem(workout.items, id)!)}`);
+			if (items !== workout.items) restructure(items, `Moved ${typeLabel(findItem(workout.items, id)!)}`);
 		},
 		dropState(target) {
 			if (!drag || !sameTarget(drag.over, target)) return null;
