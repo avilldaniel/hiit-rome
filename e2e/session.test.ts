@@ -9,6 +9,15 @@ async function startSeeded(page: Page) {
 	await page.getByRole('link', { name: 'Start Thursday Tabatas' }).click();
 }
 
+/** Opens the seeded Workout's Session screen with the page clock stopped, then starts it: time moves only when the test says so. */
+async function startSeededPaused(page: Page) {
+	await page.clock.install({ time: new Date('2026-10-01T09:00:00') });
+	await startSeeded(page);
+	await expect(page.getByText('Press Space or tap to start')).toBeVisible();
+	await page.clock.pauseAt(new Date('2026-10-01T09:00:01'));
+	await page.keyboard.press('Space');
+}
+
 test('the seeded Workout runs from Lead-in to completion on the Session screen', async ({ page }) => {
 	await page.clock.install();
 	await startSeeded(page);
@@ -34,10 +43,62 @@ test('the seeded Workout runs from Lead-in to completion on the Session screen',
 	await page.clock.runFor(5_000);
 	await expect(page.getByTestId('remaining')).toHaveText(frozen!);
 	await page.keyboard.press('Space');
+	await page.clock.runFor(3_000); // the resume Lead-in
+	await expect(screen).toHaveCSS('background-color', WARM_UP_YELLOW);
 
-	// Jump the clock rather than replaying every frame: the timestamp-based engine must land on completion anyway.
-	await page.clock.fastForward(10 * 60_000);
+	// Jump to the last Interval and let it play out.
+	await page.keyboard.press('KeyJ');
+	await page.getByRole('dialog', { name: 'Intervals' }).getByRole('button', { name: /Cool-down/ }).click();
+	await page.clock.runFor(21_000);
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Workout complete');
+});
+
+test('the Session pauses itself where it was when the laptop sleeps', async ({ page }) => {
+	await startSeededPaused(page);
+	await page.clock.runFor(15_000); // 5 s into the Warm-up
+	await expect(page.getByTestId('remaining')).toHaveText('0:15');
+
+	// Asleep for 10 minutes: no timer fires until the clock lands.
+	await page.clock.fastForward(10 * 60_000);
+	await expect(page.getByText('Paused', { exact: true })).toBeVisible();
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Warm-up');
+	await expect(page.getByTestId('remaining')).toHaveText('0:15');
+});
+
+test.describe('Session recovery', () => {
+	test.beforeEach(async ({ page }) => {
+		await startSeededPaused(page);
+		await page.keyboard.press('ArrowRight'); // into the Warm-up
+		await page.keyboard.press('ArrowRight'); // into Mountain Climbers
+		await page.clock.runFor(5_000);
+		await expect(page.getByTestId('remaining')).toHaveText('0:15');
+		await page.reload();
+	});
+
+	test('a reload mid-Session offers it back, and resuming comes back paused at the same Interval', async ({ page }) => {
+		await expect(page.getByRole('heading', { name: 'Resume where you left off?' })).toBeVisible();
+		await expect(page.getByTestId('recovery-position')).toHaveText('Mountain Climbers · 0:15 left');
+
+		await page.getByRole('button', { name: 'Resume' }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mountain Climbers');
+		await expect(page.getByText('Paused · Work', { exact: true })).toBeVisible();
+		await expect(page.getByTestId('remaining')).toHaveText('0:15');
+
+		// Space carries on from there, after the resume Lead-in.
+		await page.keyboard.press('Space');
+		await page.clock.runFor(8_000);
+		await expect(page.getByText('Work', { exact: true })).toBeVisible();
+		await expect(page.getByTestId('remaining')).not.toHaveText('0:15');
+	});
+
+	test('a discarded Session is not offered again', async ({ page }) => {
+		await page.getByRole('button', { name: 'Discard' }).click();
+		await expect(page.getByText('Press Space or tap to start')).toBeVisible();
+
+		await page.reload();
+		await expect(page.getByText('Press Space or tap to start')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Resume where you left off?' })).toBeHidden();
+	});
 });
 
 test('the Session speaks and beeps its Cues, in order', async ({ page }) => {
@@ -73,11 +134,7 @@ test('the Session speaks and beeps its Cues, in order', async ({ page }) => {
 test.describe('Session controls', () => {
 	// Seeded Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20 … 3:50 in all.
 	test.beforeEach(async ({ page }) => {
-		await page.clock.install({ time: new Date('2026-10-01T09:00:00') });
-		await startSeeded(page);
-		await expect(page.getByText('Press Space or tap to start')).toBeVisible();
-		await page.clock.pauseAt(new Date('2026-10-01T09:00:01')); // time moves only when the test says so
-		await page.keyboard.press('Space');
+		await startSeededPaused(page);
 	});
 
 	test('the keyboard drives next, previous and ±30 s', async ({ page }) => {
@@ -178,5 +235,9 @@ test.describe('Session controls', () => {
 		await expect(page.getByTestId('summary-elapsed')).toHaveText('0:25');
 		await expect(page.getByTestId('summary-intervals')).toHaveText('1');
 		await expect(page.getByTestId('summary-work')).toHaveText('0:05');
+
+		// An ended Session is over: nothing to offer back.
+		await page.reload();
+		await expect(page.getByText('Press Space or tap to start')).toBeVisible();
 	});
 });

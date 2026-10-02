@@ -2,66 +2,143 @@
 	import { untrack } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
-	import { ADJUST_MS, createSession, dispatch, intervalList, tick, view, type SessionCommand } from '#lib/engine/session.ts';
+	import {
+		ADJUST_MS,
+		createSession,
+		dispatch,
+		intervalList,
+		isActive,
+		restoreSession,
+		serializeSession,
+		tick,
+		view,
+		type SessionCommand,
+		type SessionSnapshot,
+		type SessionView
+	} from '#lib/engine/session.ts';
 	import { sessionOptions, type Settings } from '#lib/engine/settings.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 	import { createCuePlayer, playCues } from '#lib/platform/cue-player.ts';
+	import { createKeepalive } from '#lib/platform/keepalive.ts';
+	import { holdWakeLock, toggleFullscreen } from '#lib/platform/screen.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import ControlBar from './ControlBar.svelte';
 	import IntervalList from './IntervalList.svelte';
 	import SessionSummary from './SessionSummary.svelte';
 
 	/**
-	 * The Session runs with the effective `settings`: the global defaults overlaid with the Workout's overrides.
+	 * The Session runs with the effective `settings`: the global defaults overlaid with the Workout's overrides, or
+	 * carries on from `restored`, a saved Session, paused.
 	 * `onstart` fires each time the Session leaves idle (its first start, or after a restart).
+	 * `onsave` is handed the active Session to keep, on every change and every few seconds while it runs, and
+	 * `onclear` fires once it is over.
 	 */
-	let { workout, settings, onstart }: { workout: Workout; settings: Settings; onstart?: () => void } = $props();
+	let {
+		workout,
+		settings,
+		restored,
+		onstart,
+		onsave,
+		onclear
+	}: {
+		workout: Workout;
+		settings: Settings;
+		restored?: SessionSnapshot;
+		onstart?: () => void;
+		onsave?: (session: SessionSnapshot) => void;
+		onclear?: () => void;
+	} = $props();
 	/** UI chrome only: how long the control bar lingers. Session timing stays in the engine. */
 	const CONTROLS_HIDE_MS = 3000;
 	/** How often to ask the engine for Cues due; it reports them a little ahead, so the player can time them exactly. */
 	const CUE_TICK_MS = 250;
+	/** How often a running Session is saved, at the least. */
+	const SAVE_EVERY_MS = 5000;
 	const SWIPE_MIN_PX = 60;
 	const TAP_MAX_PX = 12;
 
+	/**
+	 * Wall-clock time, which keeps counting while the device sleeps (`performance.now()` may not), so the engine can
+	 * tell that it slept.
+	 */
+	const clockNow = () => Date.now();
+
 	// The Session engine owns all timing; this component only renders its view and forwards actions.
 	let session = $state.raw(
-		untrack(() => createSession(buildTimeline(workout.items), sessionOptions(workout, settings)))
+		untrack(() =>
+			restored ? restoreSession(restored) : createSession(buildTimeline(workout.items), sessionOptions(workout, settings))
+		)
 	);
-	let now = $state(performance.now());
+	let now = $state(clockNow());
 	const sessionView = $derived(view(session, now));
 	const finished = $derived(sessionView.summary !== null);
+	const active = $derived(isActive(sessionView.status));
+
+	const player = createCuePlayer();
+	player.selectVoice(untrack(() => settings.voiceId));
+	let heardAt = clockNow();
+	function hearCues(at: number) {
+		heardAt = at;
+		const result = tick(session, at);
+		session = result.state;
+		playCues(player, result.cues);
+		saveIfDue(at);
+	}
+	// A timer rather than animation frames, which stop altogether in a background tab.
+	$effect(() => {
+		const timer = setInterval(() => hearCues(clockNow()), CUE_TICK_MS);
+		return () => clearInterval(timer);
+	});
 
 	$effect(() => {
-		let frame = requestAnimationFrame(function tick() {
-			now = performance.now();
-			frame = requestAnimationFrame(tick);
+		let frame = requestAnimationFrame(function draw() {
+			const at = clockNow();
+			// Waking from sleep, the engine must see the gap before the screen shows time that never ran.
+			if (at - heardAt > 2 * CUE_TICK_MS) hearCues(at);
+			now = at;
+			frame = requestAnimationFrame(draw);
 		});
 		return () => cancelAnimationFrame(frame);
 	});
 
-	const player = createCuePlayer();
-	player.selectVoice(untrack(() => settings.voiceId));
-	function hearCues(at: number) {
-		const result = tick(session, at);
-		session = result.state;
-		playCues(player, result.cues);
+	let saved: { at: number; status: SessionView['status'] | null } = { at: -Infinity, status: null };
+	/** Keeps the Session as it stands, or lets it go once it is over. */
+	function save(at: number) {
+		const { status } = view(session, at);
+		saved = { at, status };
+		if (isActive(status)) onsave?.(serializeSession(session, at));
+		else if (status !== 'idle') onclear?.();
 	}
-	// A timer rather than animation frames, which stop altogether in a background tab.
-	$effect(() => {
-		const timer = setInterval(() => hearCues(performance.now()), CUE_TICK_MS);
-		return () => clearInterval(timer);
-	});
+	/** Saves when the status changes on its own (completing, or pausing on waking), and every few seconds while counting. */
+	function saveIfDue(at: number) {
+		const { status } = view(session, at);
+		const counting = isActive(status) && status !== 'paused';
+		if (status !== saved.status || (counting && at - saved.at >= SAVE_EVERY_MS)) save(at);
+	}
 
 	function act(command: SessionCommand) {
-		now = performance.now();
+		now = clockNow();
+		// Woken by this keypress or tap: the engine first sees the gap, and pauses where the device fell asleep.
+		hearCues(now);
 		const next = dispatch(session, { ...command, at: now });
 		if (next === session) return;
 		// Whatever was told ahead of time may no longer apply; the engine reports afresh from here.
 		player.cancelPending();
 		if (session.status === 'idle' && next.status !== 'idle') onstart?.();
 		session = next;
+		save(now);
 		hearCues(now);
+	}
+
+	// While the Session is active: the screen stays awake, and a near-silent hum keeps background timers on time.
+	$effect(() => (active ? holdWakeLock() : undefined));
+	const keepalive = createKeepalive();
+	$effect(() => (active ? keepalive.start() : keepalive.stop()));
+	$effect(() => () => keepalive.dispose());
+	function unlockAudio() {
+		player.unlock();
+		keepalive.unlock();
 	}
 
 	// Ending and restarting both ask first.
@@ -90,7 +167,7 @@
 	};
 
 	function onkeydown(e: KeyboardEvent) {
-		player.unlock();
+		unlockAudio();
 		// An open dialog handles its own keys; browser shortcuts (e.g. ⌘R) stay the browser's.
 		if (confirming || finished || e.metaKey || e.ctrlKey || e.altKey) return;
 		// So does the Interval list, but Space still pauses and resumes there, and J closes it.
@@ -102,6 +179,7 @@
 		else if (e.code === 'Escape') askToEnd();
 		else if (e.code === 'KeyR') askToRestart();
 		else if (e.code === 'KeyJ') toggleList();
+		else if (e.code === 'KeyF') toggleFullscreen();
 	}
 
 	// Touch: tap anywhere to pause or resume, swipe left for next and right for previous.
@@ -116,7 +194,7 @@
 
 	let press: { id: number; x: number; y: number } | null = null;
 	function onpointerdown(e: PointerEvent) {
-		player.unlock();
+		unlockAudio();
 		if (finished) return;
 		revealControls();
 		const onControls = (e.target as Element).closest('[data-controls], dialog');
@@ -153,7 +231,8 @@
 	);
 </script>
 
-<svelte:window {onkeydown} />
+<!-- Saved once more on the way out, so a reload comes back to the very second. -->
+<svelte:window {onkeydown} onpagehide={() => save(clockNow())} />
 
 <!-- Taps and swipes are shortcuts for actions also on the keyboard and the control bar. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->

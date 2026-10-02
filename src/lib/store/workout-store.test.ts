@@ -1,6 +1,8 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
+import { createSession, dispatch, serializeSession } from '../engine/session';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
+import { buildTimeline } from '../engine/timeline';
 import { group, interval, type Item, type Workout } from '../engine/workout';
 import { MIGRATIONS, openWorkoutStore, type Migration, type StoreOptions } from './workout-store';
 
@@ -200,5 +202,52 @@ describe('Workout store', () => {
 		// Already migrated: reopening runs nothing again.
 		const again = await open({ migrations: [...MIGRATIONS, toV2] });
 		expect((await again.list()).map((w) => w.name)).toEqual(['Tabata v2']);
+	});
+});
+
+describe('Saved Session', () => {
+	const HOUR = 3_600_000;
+	const tabata = workout('Tabata', [group(8, [interval('Work', 'work', 20), interval('Rest', 'rest', 10)])]);
+	/** A Session of the Tabata, `atSec` seconds in, as the Session screen saves it. */
+	function saved(atSec: number) {
+		const session = dispatch(createSession(buildTimeline(tabata.items), { leadInMs: 10_000 }), { type: 'start', at: 0 });
+		return { workoutId: tabata.id, workoutName: tabata.name, session: serializeSession(session, atSec * 1000) };
+	}
+
+	function device() {
+		const indexedDB = new IDBFactory();
+		const clock = { now: 1_000_000 };
+		const open = () => openWorkoutStore({ indexedDB, now: () => clock.now, persist: async () => true });
+		return { clock, open };
+	}
+
+	it('keeps the latest save of the active Session after the app reopens, until it is cleared', async () => {
+		const { clock, open } = device();
+		const first = await open();
+		expect(await first.savedSession()).toBeUndefined();
+
+		await first.saveSession(saved(30));
+		await first.saveSession(saved(35));
+		first.close();
+		clock.now += 60_000;
+		const store = await open();
+
+		expect(await store.savedSession()).toEqual({ ...saved(35), savedAt: 1_000_000 });
+		await store.clearSession();
+		expect(await store.savedSession()).toBeUndefined();
+	});
+
+	it('offers a Session saved up to 12 hours ago, and discards an older one', async () => {
+		const { clock, open } = device();
+		const store = await open();
+		await store.saveSession(saved(30));
+
+		clock.now += 12 * HOUR;
+		expect(await store.savedSession()).toMatchObject({ workoutId: tabata.id });
+		clock.now += 1;
+		expect(await store.savedSession()).toBeUndefined();
+		// Discarded for good, not just hidden.
+		clock.now -= 1;
+		expect(await store.savedSession()).toBeUndefined();
 	});
 });

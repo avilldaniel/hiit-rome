@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { buildTimeline } from './timeline';
 import { group, interval } from './workout';
-import { createSession, dispatch, intervalList, view, type IntervalListItem, type SessionAction } from './session';
+import {
+	createSession,
+	dispatch,
+	intervalList,
+	restoreSession,
+	serializeSession,
+	tick,
+	view,
+	type IntervalListItem,
+	type SessionAction,
+	type SessionState
+} from './session';
 
 const T0 = 1_000_000; // arbitrary clock origin; the engine never reads the real clock
 const s = (seconds: number) => T0 + seconds * 1000;
@@ -479,5 +490,108 @@ describe('Resume Lead-in', () => {
 		const resumed = dispatch(pausedAt(5), { type: 'resume', at: s(50) });
 
 		expect(view(resumed, s(50))).toMatchObject({ status: 'lead-in', remainingMs: 5_000 });
+	});
+});
+
+/** Ticks every 250 ms from `fromSec` to `toSec`, as the app does while the device is awake. */
+function ticked(session: SessionState, fromSec: number, toSec: number) {
+	for (let now = s(fromSec); now <= s(toSec); now += 250) session = tick(session, now).state;
+	return session;
+}
+
+describe('Sleep detection', () => {
+	it('auto-pauses at the last tick’s position when the next tick comes more than 10 s later, without counting the gap', () => {
+		const awake = ticked(started(), 0, 75); // Burpees, 15 s left
+		const woke = tick(awake, s(75 + 3600)); // the laptop slept for an hour
+
+		expect(woke.cues).toEqual([]);
+		expect(view(woke.state, s(3675))).toMatchObject({ status: 'paused', current: { name: 'Burpees' }, remainingMs: 15_000 });
+
+		const resumed = dispatch(woke.state, { type: 'resume', at: s(3700) });
+		expect(view(resumed, s(3705)).remainingMs).toBe(10_000);
+	});
+
+	it('keeps running through a tick up to 10 s late, as when the browser throttles a background tab', () => {
+		const late = tick(ticked(started(), 0, 75), s(85));
+
+		expect(view(late.state, s(85))).toMatchObject({ status: 'running', remainingMs: 5_000 });
+	});
+
+	it('counts an action as a sign the device was awake', () => {
+		const paused = dispatch(ticked(started(), 0, 30), { type: 'pause', at: s(30) });
+		const resumed = dispatch(paused, { type: 'resume', at: s(500) });
+
+		expect(view(tick(resumed, s(505)).state, s(505)).status).toBe('running');
+		const asleep = tick(ticked(tick(resumed, s(505)).state, 505, 510), s(600));
+		expect(view(asleep.state, s(600))).toMatchObject({ status: 'paused', current: { name: 'Warm-up' }, remainingMs: 30_000 });
+	});
+
+	it('leaves the time asleep out of the summary', () => {
+		const woke = tick(ticked(started(), 0, 75), s(3675)).state;
+		const ended = dispatch(woke, { type: 'end', at: s(3680) });
+
+		expect(view(ended, s(3680)).summary).toEqual({ elapsedMs: 65_000, intervalsCompleted: 1, workMs: 5_000 });
+	});
+});
+
+describe('Saving and restoring', () => {
+	/** Through plain data, as stored, and back, on a page whose clock starts afresh. */
+	const roundTrip = (session: SessionState, at: number) =>
+		restoreSession(JSON.parse(JSON.stringify(serializeSession(session, at))));
+	const LATER = 42; // the reopened page's clock has nothing to do with the old one
+
+	it('restores a running Session paused at the exact position, its ±30 s adjustments and tally included', () => {
+		const adjusted = dispatch(ticked(started(), 0, 75), { type: 'adjust', deltaMs: 30_000, at: s(75) });
+		const restored = roundTrip(ticked(adjusted, 75, 80), s(80.5));
+
+		expect(view(restored, LATER)).toMatchObject({
+			status: 'paused',
+			current: { name: 'Burpees' },
+			remainingMs: 39_500,
+			totalRemainingMs: 99_500
+		});
+		const resumed = dispatch(restored, { type: 'resume', at: LATER });
+		expect(view(resumed, LATER + 5_000)).toMatchObject({ status: 'running', remainingMs: 34_500 });
+		expect(view(dispatch(resumed, { type: 'end', at: LATER + 5_000 }), LATER + 5_000).summary).toEqual({
+			elapsedMs: 75_500,
+			intervalsCompleted: 1,
+			workMs: 15_500
+		});
+	});
+
+	it('restores a paused Session where it was paused', () => {
+		const paused = dispatch(ticked(started(), 0, 75), { type: 'pause', at: s(75) });
+
+		expect(view(roundTrip(paused, s(300)), LATER)).toMatchObject({ status: 'paused', remainingMs: 15_000 });
+	});
+
+	it('restores a Session saved in its Lead-in paused there, to finish the Lead-in on resume', () => {
+		const restored = roundTrip(ticked(started(), 0, 4), s(4));
+
+		expect(view(restored, LATER)).toMatchObject({ status: 'paused', current: null, remainingMs: 6_000 });
+		expect(view(dispatch(restored, { type: 'resume', at: LATER }), LATER + 1_000)).toMatchObject({
+			status: 'lead-in',
+			remainingMs: 5_000
+		});
+	});
+
+	it('restores the Session’s own Cue settings and resume Lead-in', () => {
+		const session = createSession(timeline, {
+			leadInMs: 0,
+			resumeLeadInMs: 3_000,
+			cueSettings: { ...createSession(timeline, { leadInMs: 0 }).cueSettings, warningSec: 5 }
+		});
+		const restored = roundTrip(ticked(dispatch(session, { type: 'start', at: T0 }), 0, 30), s(30));
+		let resumed = dispatch(restored, { type: 'resume', at: LATER });
+		expect(view(resumed, LATER + 1_000).status).toBe('resume-lead-in');
+
+		// Warm-up carries on 30 s in once the 3 s resume Lead-in ends; its Warning comes 5 s before its end.
+		const warnedAt: number[] = [];
+		for (let now = LATER; now <= LATER + 30_000; now += 250) {
+			const result = tick(resumed, now);
+			resumed = result.state;
+			for (const cue of result.cues) if (cue.type === 'speech') warnedAt.push(now + cue.delayMs - LATER);
+		}
+		expect(warnedAt).toEqual([28_000]);
 	});
 });

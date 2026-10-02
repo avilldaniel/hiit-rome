@@ -1,4 +1,5 @@
 import { effectiveCueSettings } from '../engine/cues';
+import type { SessionSnapshot } from '../engine/session';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
 import { buildTimeline } from '../engine/timeline';
 import type { Workout } from '../engine/workout';
@@ -10,6 +11,18 @@ export interface StoredWorkout extends Workout {
 	/** When a Session of it last started, or null if never. */
 	lastUsedAt: number | null;
 }
+
+/** The active Session, saved as it goes so it can be offered back after a reload or crash. */
+export interface SavedSession {
+	workoutId: string;
+	/** Shown when offering it back. */
+	workoutName: string;
+	session: SessionSnapshot;
+	savedAt: number;
+}
+
+/** A saved Session older than this is discarded rather than offered back. */
+export const SAVED_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 /** One step of the stored data's schema, run inside the upgrade transaction. */
 export type Migration = (tx: IDBTransaction) => void;
@@ -66,6 +79,7 @@ const DB_NAME = 'hiit-rome';
 const WORKOUTS = 'workouts';
 const APP = 'app';
 const SETTINGS_KEY = 'settings';
+const SESSION_KEY = 'session';
 
 /** The outcome of an IndexedDB request, as a promise. */
 const resultOf = <T>(request: IDBRequest<T>): Promise<T> =>
@@ -101,6 +115,7 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 	// Best effort: the browser may say no, and the app works either way.
 	if (firstLaunch) options.persist().catch(() => false);
 	const workouts = (mode: IDBTransactionMode = 'readonly') => db.transaction(WORKOUTS, mode).objectStore(WORKOUTS);
+	const app = (mode: IDBTransactionMode = 'readonly') => db.transaction(APP, mode).objectStore(APP);
 
 	async function existing(store: IDBObjectStore, id: string): Promise<StoredWorkout> {
 		const found = (await resultOf(store.get(id))) as StoredWorkout | undefined;
@@ -153,11 +168,22 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 		setFavorite: (id: string, favorite: boolean) => update(id, () => ({ favorite })),
 		/** The trainer's Settings, with the defaults for any they haven't set (all of them, until they change one). */
 		async getSettings(): Promise<Settings> {
-			const stored = (await resultOf(db.transaction(APP).objectStore(APP).get(SETTINGS_KEY))) as Partial<Settings> | undefined;
+			const stored = (await resultOf(app().get(SETTINGS_KEY))) as Partial<Settings> | undefined;
 			return { ...DEFAULT_SETTINGS, ...stored, cues: effectiveCueSettings(DEFAULT_SETTINGS.cues, stored?.cues) };
 		},
 		saveSettings: async (settings: Settings) =>
-			void (await resultOf(db.transaction(APP, 'readwrite').objectStore(APP).put(settings, SETTINGS_KEY))),
+			void (await resultOf(app('readwrite').put(settings, SETTINGS_KEY))),
+		/** Saves the active Session, replacing the one saved before. */
+		saveSession: async (saved: Omit<SavedSession, 'savedAt'>) =>
+			void (await resultOf(app('readwrite').put({ ...saved, savedAt: options.now() }, SESSION_KEY))),
+		/** The Session left unfinished, if there is one from the last 12 hours; an older one is discarded. */
+		async savedSession(): Promise<SavedSession | undefined> {
+			const store = app('readwrite');
+			const saved = (await resultOf(store.get(SESSION_KEY))) as SavedSession | undefined;
+			if (!saved || options.now() - saved.savedAt <= SAVED_SESSION_MAX_AGE_MS) return saved;
+			await resultOf(store.delete(SESSION_KEY));
+		},
+		clearSession: async () => void (await resultOf(app('readwrite').delete(SESSION_KEY))),
 		close: () => db.close()
 	};
 }

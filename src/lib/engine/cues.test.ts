@@ -44,6 +44,10 @@ function play(session: SessionState, fromSec: number, toSec: number, stepMs = 25
 	return { session, heard };
 }
 
+/** What is heard from `fromSec` to `toSec` of a Session ticked throughout, as the app ticks it while the device is awake. */
+const listen = (session: SessionState, fromSec: number, toSec: number) =>
+	play(session, 0, toSec).heard.filter((h) => h.atSec >= fromSec);
+
 const spoken = (heard: Heard[]) => heard.filter((h) => !['beep', 'final-tone', 'chime'].includes(h.cue));
 
 describe('Cues', () => {
@@ -71,7 +75,7 @@ describe('Cues', () => {
 	});
 
 	it('merges the Warning into the start announcement when the Interval is no longer than the Warning', () => {
-		const { heard } = play(started(), 79, 91);
+		const heard = listen(started(), 79, 91);
 
 		expect(spoken(heard)).toEqual([
 			{ atSec: 80, cue: 'Rest. Next: Burpees.' },
@@ -92,7 +96,7 @@ describe('Cues', () => {
 	});
 
 	it('beeps at 3, 2 and 1 s before an Interval ends, with a distinct tone at 0 as the next one is announced', () => {
-		const { heard } = play(started(), 56, 60);
+		const heard = listen(started(), 56, 60);
 
 		expect(heard).toEqual([
 			{ atSec: 57, cue: 'beep' },
@@ -123,7 +127,7 @@ describe('Cues', () => {
 	});
 
 	it('ends with "Workout complete" and a chime instead of the tone at 0', () => {
-		const { heard } = play(started(), 136, 141);
+		const heard = listen(started(), 136, 141);
 
 		expect(heard).toEqual([
 			{ atSec: 137, cue: 'beep' },
@@ -159,7 +163,7 @@ describe('Cues', () => {
 
 	it('leaves out "Halfway" when the Warning comes first or at the same moment', () => {
 		const halfway = (warningSec: number) =>
-			spoken(play(started(0, { warningSec, halfway: true }), 110, 140).heard).map((h) => h.cue);
+			spoken(listen(started(0, { warningSec, halfway: true }), 110, 140)).map((h) => h.cue);
 
 		expect(halfway(15)).toEqual(['Cool-down', 'Last 15 seconds', 'Workout complete']);
 		expect(halfway(14)).toEqual(['Cool-down', 'Halfway', 'Last 14 seconds', 'Workout complete']);
@@ -198,7 +202,7 @@ describe('Cue settings', () => {
 	});
 
 	it('with completion off, ends on the tone at 0 rather than "Workout complete" and the chime', () => {
-		const { heard } = play(started(0, { completion: false }), 136, 141);
+		const heard = listen(started(0, { completion: false }), 136, 141);
 
 		expect(heard.map((h) => `${h.atSec} ${h.cue}`)).toEqual(['137 beep', '138 beep', '139 beep', '140 final-tone']);
 	});
@@ -225,8 +229,8 @@ describe('Cue settings', () => {
 
 describe('Cues due', () => {
 	it('a late tick still reports what fell due since the previous one, but drops Cues more than 2 s stale', () => {
-		const first = tick(started(), s(45));
-		const late = tick(first.state, s(61.5)); // throttled: 16.5 s since the last tick
+		const first = play(started(), 0, 52).session;
+		const late = tick(first, s(61.5)); // throttled: 9.5 s since the last tick
 
 		// "Next: Burpees" (50 s) and the beeps at 57 and 58 s are long past; the tone at 60 s and the announcement are 1.5 s late.
 		expect(late.cues).toEqual([
@@ -236,7 +240,7 @@ describe('Cues due', () => {
 	});
 
 	it('reports a Cue shortly before its moment, with its delay, and only once', () => {
-		const ahead = tick(tick(started(), s(55)).state, s(55.7));
+		const ahead = tick(play(started(), 0, 55).session, s(55.7));
 		expect(ahead.cues).toEqual([{ type: 'beep', delayMs: 1300 }]);
 
 		expect(tick(ahead.state, s(55.9)).cues).toEqual([]);
@@ -246,7 +250,7 @@ describe('Cues due', () => {
 		const idle = createSession(timeline, { leadInMs: 0 });
 		expect(tick(idle, s(5)).cues).toEqual([]);
 
-		const paused = dispatch(tick(started(), s(56)).state, { type: 'pause', at: s(56.5) });
+		const paused = dispatch(play(started(), 0, 56).session, { type: 'pause', at: s(56.5) });
 		expect(play(paused, 56.5, 70).heard).toEqual([]);
 	});
 });
@@ -256,15 +260,15 @@ describe('Cues around Session controls', () => {
 		const skipped = dispatch(tick(started(10), s(3)).state, { type: 'next', at: s(3.2) });
 		expect(tick(skipped, s(3.2)).cues).toEqual([{ type: 'speech', text: 'Warm-up', delayMs: 0 }]);
 
-		const jumped = dispatch(tick(started(), s(30)).state, { type: 'jump', index: 4, at: s(30.1) });
+		const jumped = dispatch(play(started(), 0, 30).session, { type: 'jump', index: 4, at: s(30.1) });
 		expect(play(jumped, 30.1, 51).heard.map((h) => h.cue)).toEqual(['Cool-down', 'Last 10 seconds']);
 	});
 
 	it('re-announces a restarted Interval, and plays nothing for the stretch a jump skipped', () => {
-		const restarted = dispatch(tick(started(), s(65)).state, { type: 'previous', at: s(65) });
+		const restarted = dispatch(play(started(), 0, 65).session, { type: 'previous', at: s(65) });
 		expect(spoken(play(restarted, 65, 66).heard)).toEqual([{ atSec: 65, cue: 'Burpees' }]);
 
-		const skipped = dispatch(tick(started(), s(30)).state, { type: 'next', at: s(30) });
+		const skipped = dispatch(play(started(), 0, 30).session, { type: 'next', at: s(30) });
 		expect(play(skipped, 30, 31).heard).toEqual([{ atSec: 30, cue: 'Burpees' }]);
 	});
 
@@ -277,8 +281,8 @@ describe('Cues around Session controls', () => {
 	});
 
 	it('hears again, on resume, a Cue reported ahead just before a pause', () => {
-		const ahead = tick(started(), s(56.7)); // the beeps at 57 and 58 s, told ahead
-		const paused = dispatch(ahead.state, { type: 'pause', at: s(56.8) });
+		const ahead = play(started(), 0, 56.7).session; // the beeps at 57 and 58 s, told ahead
+		const paused = dispatch(ahead, { type: 'pause', at: s(56.8) });
 		const resumed = dispatch(paused, { type: 'resume', at: s(100) });
 
 		expect(play(resumed, 100, 100).heard).toEqual([
@@ -289,7 +293,7 @@ describe('Cues around Session controls', () => {
 
 	it('beeps over the resume Lead-in, then carries on with the Interval’s own Cues', () => {
 		const session = dispatch(createSession(timeline, { leadInMs: 0, resumeLeadInMs: 3000 }), { type: 'start', at: T0 });
-		const paused = dispatch(tick(session, s(30)).state, { type: 'pause', at: s(30) });
+		const paused = dispatch(play(session, 0, 30).session, { type: 'pause', at: s(30) });
 		const resumed = dispatch(paused, { type: 'resume', at: s(100) });
 
 		// Warm-up resumes 30 s in at 103 s, so its Warning, 20 s on, comes at 123 s.

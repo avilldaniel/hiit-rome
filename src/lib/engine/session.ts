@@ -28,7 +28,12 @@ export interface SessionState {
 	cueSettings: CueSettings;
 	/** Cues due up to this moment have been reported; an action that moves the clock winds it back. */
 	heardAt: number;
+	/** The last tick or action: the device was awake then. */
+	seenAt: number;
 }
+
+/** A Session as plain data, for saving: where it stands, free of the timestamps of the page that saved it. */
+export type SessionSnapshot = Omit<SessionState, 'status' | 'since' | 'heardAt' | 'seenAt'>;
 
 interface Tally {
 	elapsedMs: number;
@@ -122,7 +127,8 @@ export function createSession(
 		since: 0,
 		done: { elapsedMs: 0, workMs: 0, completed: [] },
 		cueSettings: options.cueSettings ?? DEFAULT_SETTINGS.cues,
-		heardAt: 0
+		heardAt: 0,
+		seenAt: 0
 	};
 }
 
@@ -134,7 +140,7 @@ export function dispatch(state: SessionState, action: SessionAction): SessionSta
 	const next = apply(state, action);
 	// Whatever happened, Cues from here on are heard afresh: one at the moment itself (say, the start of a jumped-to Interval)
 	// plays, and the player drops any it was told about ahead of time.
-	return next === state ? state : { ...next, heardAt: action.at - REHEAR_MS };
+	return next === state ? state : { ...next, heardAt: action.at - REHEAR_MS, seenAt: action.at };
 }
 
 /** The action itself, leaving the Cue cursor to `dispatch`. */
@@ -213,13 +219,18 @@ function apply(state: SessionState, action: SessionAction): SessionState {
 const CUE_LOOKAHEAD_MS = 1500;
 /** A Cue this late is dropped rather than played. */
 const CUE_STALE_MS = 2000;
+/** Ticks this far apart mean the device slept: even a throttled background tab ticks more often. */
+const SLEEP_GAP_MS = 10_000;
 
 /**
  * Reports the Cues due since the previous tick, and those due within the lookahead, each with its delay from `now`.
  * A late (throttled) tick still reports what fell due in between, but drops anything more than 2 s stale.
+ * A tick more than 10 s late means the device slept: the Session pauses where it was last seen, and the gap isn't counted.
  */
 export function tick(state: SessionState, now: number): { state: SessionState; cues: DueCue[] } {
 	if (state.status !== 'running') return { state, cues: [] };
+	// Paused where it was last seen running, so the time asleep isn't counted.
+	if (now - state.seenAt > SLEEP_GAP_MS) return { state: dispatch(state, { type: 'pause', at: state.seenAt }), cues: [] };
 	const horizon = now + CUE_LOOKAHEAD_MS;
 	const cues: DueCue[] = [];
 	const hear = (at: number, cue: Cue) => {
@@ -233,7 +244,21 @@ export function tick(state: SessionState, now: number): { state: SessionState; c
 		if (atMs < state.clockMs || (marksEnd && atMs === state.clockMs)) continue;
 		hear(state.since + (atMs - state.clockMs), cue);
 	}
-	return { state: { ...state, heardAt: horizon }, cues };
+	return { state: { ...state, heardAt: horizon, seenAt: now }, cues };
+}
+
+/** Under way, whether counting or paused: worth saving, and keeping the screen awake for. */
+export const isActive = (status: SessionView['status']) => !['idle', 'completed', 'ended'].includes(status);
+
+/** The Session as it stands at `at`, as plain data for saving. */
+export function serializeSession(state: SessionState, at: number): SessionSnapshot {
+	const { status: _status, since: _since, heardAt: _heardAt, seenAt: _seenAt, ...snapshot } = settle(state, at);
+	return snapshot;
+}
+
+/** A saved Session, back where it was. Always paused: the trainer resumes it when ready. */
+export function restoreSession(snapshot: SessionSnapshot): SessionState {
+	return { ...snapshot, status: 'paused', since: 0, heardAt: 0, seenAt: 0 };
 }
 
 /** A row of the Interval list: an entry, or one Round of a Group holding its own rows in play order. */
