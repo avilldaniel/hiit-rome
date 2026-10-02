@@ -6,7 +6,7 @@ Reference: spec "Session engine" (Countdown is a one-entry Timeline), "Cue rules
 
 **Blocked by:** 02 — Session controls and summary; 04 — Spoken and beep Cues; 08 — Settings and per-Workout overrides
 
-**Status:** resolved (branch v1, commit PENDING)
+**Status:** resolved (branch v1, commit 85692e0)
 
 - [x] The Countdown runs on the Session engine as a one-entry Timeline; no separate engine. Its end behavior (chime ×3, then a TIME state until dismissed) is tested.
 - [x] The Warning ("1 minute remaining") is default on and only applies when the duration is over 1 minute; tested.
