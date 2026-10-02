@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import favicon from '#lib/assets/favicon.svg';
-	import { resumeSaved } from '#lib/session/recovery.ts';
+	import { resumeSaved, sessionPath } from '#lib/session/recovery.ts';
 	import RecoveryPrompt from '#lib/session/RecoveryPrompt.svelte';
 	import { deviceStore } from '#lib/store/device.ts';
 	import type { SavedSession } from '#lib/store/workout-store.ts';
@@ -18,7 +18,7 @@
 	async function resume(saved: SavedSession) {
 		resumeSaved(saved);
 		// The Session screen opens once the prompt is gone, and carries on from the saved Session.
-		await goto(`/session/${saved.workoutId}`);
+		await goto(sessionPath(saved));
 		recovery = null;
 	}
 	async function discard() {

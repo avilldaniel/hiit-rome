@@ -1,6 +1,19 @@
 import type { CueOverrides, CueSettings } from './cues';
 import { effectiveCueSettings } from './cues';
+import type { PaletteToken } from './palette';
 import type { Workout } from './workout';
+
+/** How a Countdown looks and sounds. */
+export interface CountdownSettings {
+	/** The one palette color it is shown in. */
+	color: CountdownColor;
+	/** Say "1 minute remaining" when the Countdown is longer than 1 minute. */
+	warning: boolean;
+}
+
+/** A Countdown may take any palette color but the neutral one, which means "paused". */
+export const COUNTDOWN_COLORS = ['rest', 'work', 'warmup', 'cooldown'] as const satisfies PaletteToken[];
+export type CountdownColor = (typeof COUNTDOWN_COLORS)[number];
 
 /** The trainer's app-wide audio settings, configured once. */
 export interface Settings {
@@ -10,13 +23,15 @@ export interface Settings {
 	cues: CueSettings;
 	/** Play the short Lead-in when resuming from pause. */
 	resumeLeadIn: boolean;
+	countdown: CountdownSettings;
 }
 
 /** Settings on first launch. */
 export const DEFAULT_SETTINGS: Settings = {
 	voiceId: null,
 	cues: { announce: true, warning: true, warningSec: 10, finalBeeps: true, halfway: false, completion: true },
-	resumeLeadIn: true
+	resumeLeadIn: true,
+	countdown: { color: 'rest', warning: true }
 };
 
 /** The Cue settings that are simply on or off, as the trainer sees them. */

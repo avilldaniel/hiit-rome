@@ -1,5 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
+import { createCountdown, DEFAULT_PRESETS_SEC } from '../engine/countdown';
 import { createSession, dispatch, serializeSession } from '../engine/session';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
 import { buildTimeline } from '../engine/timeline';
@@ -130,7 +131,8 @@ describe('Workout store', () => {
 		const changed: Settings = {
 			voiceId: 'com.apple.voice.Daniel',
 			cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5, halfway: true },
-			resumeLeadIn: false
+			resumeLeadIn: false,
+			countdown: { color: 'cooldown', warning: false }
 		};
 		await first.saveSettings(changed);
 		first.close();
@@ -141,7 +143,7 @@ describe('Workout store', () => {
 	it('fills in Settings added since the trainer last saved theirs with the defaults', async () => {
 		const { open } = device();
 		const first = await open();
-		// As an earlier version of the app might have saved them, before Halfway and the resume Lead-in existed.
+		// As an earlier version of the app might have saved them, before Halfway, the resume Lead-in and the Countdown existed.
 		const older = { voiceId: 'com.apple.voice.Daniel', cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5, halfway: undefined } };
 		await first.saveSettings(older as unknown as Settings);
 		first.close();
@@ -149,8 +151,29 @@ describe('Workout store', () => {
 		expect(await (await open()).getSettings()).toEqual({
 			voiceId: 'com.apple.voice.Daniel',
 			cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5 },
-			resumeLeadIn: true
+			resumeLeadIn: true,
+			countdown: DEFAULT_SETTINGS.countdown
 		});
+	});
+
+	it('fills in a Countdown setting added since the trainer last saved theirs with the default', async () => {
+		const { open } = device();
+		const first = await open();
+		await first.saveSettings({ ...DEFAULT_SETTINGS, countdown: { color: 'work' } } as unknown as Settings);
+		first.close();
+
+		expect((await (await open()).getSettings()).countdown).toEqual({ color: 'work', warning: true });
+	});
+
+	it('starts with the default Presets, and keeps the trainer’s changes after the app reopens', async () => {
+		const { open } = device();
+		const first = await open();
+		expect(await first.getPresets()).toEqual(DEFAULT_PRESETS_SEC);
+
+		await first.savePresets([30, 90, 120, 1200, 2700]);
+		first.close();
+
+		expect(await (await open()).getPresets()).toEqual([30, 90, 120, 1200, 2700]);
 	});
 
 	it('adds default Settings on a device that kept its Workouts under the first schema', async () => {
@@ -235,6 +258,17 @@ describe('Saved Session', () => {
 		expect(await store.savedSession()).toEqual({ ...saved(35), savedAt: 1_000_000 });
 		await store.clearSession();
 		expect(await store.savedSession()).toBeUndefined();
+	});
+
+	it('keeps a running Countdown as the active Session, told apart from a Workout’s', async () => {
+		const { open } = device();
+		const first = await open();
+		const running = dispatch(createCountdown(180, DEFAULT_SETTINGS.countdown), { type: 'start', at: 0 });
+		const countdown = { countdown: true as const, workoutName: 'Countdown', session: serializeSession(running, 30_000) };
+		await first.saveSession(countdown);
+		first.close();
+
+		expect(await (await open()).savedSession()).toEqual({ ...countdown, savedAt: 1_000_000 });
 	});
 
 	it('offers a Session saved up to 12 hours ago, and discards an older one', async () => {

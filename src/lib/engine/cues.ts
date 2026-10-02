@@ -21,6 +21,12 @@ export interface CueSettings {
 	completion: boolean;
 }
 
+/** A Countdown's Cues: final-seconds beeps and three chimes at zero, plus the "1 minute remaining" Warning if `warning`. */
+export interface CountdownCues {
+	countdown: true;
+	warning: boolean;
+}
+
 /** A Workout's own Cue settings; any left unset inherit the default. */
 export type CueOverrides = Partial<CueSettings>;
 
@@ -46,8 +52,31 @@ export function countdownBeeps(endMs: number, lengthMs: number): ScheduledCue[] 
 	return [3, 2, 1].filter((sec) => sec * 1000 <= lengthMs).map((sec) => ({ atMs: endMs - sec * 1000, cue: { type: 'beep' } }));
 }
 
+const COUNTDOWN_WARNING_MS = 60_000;
+/**
+ * Three chimes in quick succession: all within the engine's lookahead, so they are handed to the player together at
+ * zero and still ring out if TIME is dismissed at once.
+ */
+const COUNTDOWN_CHIMES = 3;
+const COUNTDOWN_CHIME_GAP_MS = 750;
+
+/** A Countdown's Cues, over its one-entry Timeline as this Session plays it. */
+function countdownCues(timeline: Timeline, leadInMs: number, settings: CountdownCues): ScheduledCue[] {
+	const cues: ScheduledCue[] = [];
+	for (const entry of timeline.entries) {
+		const endMs = leadInMs + entry.startMs + entry.durationMs;
+		if (settings.warning && entry.durationMs > COUNTDOWN_WARNING_MS) {
+			cues.push({ atMs: endMs - COUNTDOWN_WARNING_MS, cue: speech('1 minute remaining') });
+		}
+		cues.push(...countdownBeeps(endMs, entry.durationMs - 1));
+		for (let i = 0; i < COUNTDOWN_CHIMES; i++) cues.push({ atMs: endMs + i * COUNTDOWN_CHIME_GAP_MS, cue: { type: 'chime' } });
+	}
+	return cues;
+}
+
 /** Every Cue of the Session in clock order, for a Timeline as this Session plays it. */
-export function scheduleCues(timeline: Timeline, leadInMs: number, settings: CueSettings): ScheduledCue[] {
+export function scheduleCues(timeline: Timeline, leadInMs: number, settings: CueSettings | CountdownCues): ScheduledCue[] {
+	if ('countdown' in settings) return countdownCues(timeline, leadInMs, settings);
 	const cues: ScheduledCue[] = [];
 	if (leadInMs > 0) {
 		cues.push(...countdownBeeps(leadInMs, leadInMs), { atMs: leadInMs, cue: { type: 'final-tone' }, marksEnd: true });

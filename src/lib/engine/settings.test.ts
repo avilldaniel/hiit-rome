@@ -4,11 +4,12 @@ import { DEFAULT_SETTINGS, sessionOptions, type Settings } from './settings';
 const settings: Settings = {
 	voiceId: null,
 	cues: { announce: true, warning: true, warningSec: 10, finalBeeps: true, halfway: false, completion: true },
-	resumeLeadIn: true
+	resumeLeadIn: true,
+	countdown: { color: 'rest', warning: true }
 };
 
 describe('Settings', () => {
-	it('start with every Cue on but Halfway, the Warning at 10 s, the resume Lead-in on and the device’s own voice', () => {
+	it('start with every Cue on but Halfway, the Warning at 10 s, the resume Lead-in on, the device’s own voice, and a Rest-blue Countdown with its Warning on', () => {
 		expect(DEFAULT_SETTINGS).toEqual(settings);
 	});
 });

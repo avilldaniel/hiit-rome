@@ -1,4 +1,4 @@
-import { countdownBeeps, scheduleCues, type Cue, type CueSettings, type DueCue } from './cues';
+import { countdownBeeps, scheduleCues, type CountdownCues, type Cue, type CueSettings, type DueCue } from './cues';
 import { PALETTE, type ColorPair } from './palette';
 import { DEFAULT_SETTINGS } from './settings';
 import type { RoundPosition, Timeline, TimelineEntry } from './timeline';
@@ -25,7 +25,8 @@ export interface SessionState {
 	since: number;
 	/** What was done before `since`; the stretch since then is added on demand. */
 	done: Tally;
-	cueSettings: CueSettings;
+	/** A Workout's effective Cue settings, or a Countdown's. */
+	cueSettings: CueSettings | CountdownCues;
 	/** Cues due up to this moment have been reported; an action that moves the clock winds it back. */
 	heardAt: number;
 	/** The last tick or action: the device was awake then. */
@@ -87,6 +88,8 @@ export interface SessionView {
 	isFinal: boolean;
 	/** Set once the Session has completed or been ended. */
 	summary: SessionSummary | null;
+	/** A Countdown that reached zero: the screen shows TIME, in its color, until dismissed. */
+	timeUp: boolean;
 }
 
 const UPCOMING_COUNT = 5;
@@ -103,7 +106,7 @@ function kindLabel(entry: TimelineEntry): string | null {
 	return label.toLowerCase() === entry.name.toLowerCase() ? null : label;
 }
 
-const noInterval = { header: [], kindLabel: null, isFinal: false, summary: null };
+const noInterval = { header: [], kindLabel: null, isFinal: false, summary: null, timeUp: false };
 const FINAL_SECONDS = 3;
 /** Like a music player: previous restarts the Interval once this much of it has played. */
 const RESTART_AFTER_MS = 3000;
@@ -115,7 +118,7 @@ function finalSecond(counting: boolean, remainingMs: number): number | null {
 
 export function createSession(
 	timeline: Timeline,
-	options: { leadInMs: number; resumeLeadInMs?: number; cueSettings?: CueSettings }
+	options: { leadInMs: number; resumeLeadInMs?: number; cueSettings?: CueSettings | CountdownCues }
 ): SessionState {
 	return {
 		timeline,
@@ -378,7 +381,11 @@ export function view(state: SessionState, now: number): SessionView {
 
 	const workoutMs = t - state.leadInMs;
 	const current = entries.find((e) => workoutMs < e.startMs + e.durationMs);
-	if (!current) return finishedView('completed', tally(state, now));
+	if (!current) {
+		const completed = finishedView('completed', tally(state, now));
+		if (!('countdown' in state.cueSettings)) return completed;
+		return { ...completed, timeUp: true, colors: entries[entries.length - 1].colors };
+	}
 
 	const intoMs = workoutMs - current.startMs;
 	const inInterval: SessionView = {
@@ -394,7 +401,8 @@ export function view(state: SessionState, now: number): SessionView {
 		header: headerLines(current.path),
 		kindLabel: kindLabel(current),
 		isFinal: current.index === entries.length - 1,
-		summary: null
+		summary: null,
+		timeUp: false
 	};
 
 	// Resuming from pause: the Interval waits, shown on the neutral screen, while the resume Lead-in counts down.

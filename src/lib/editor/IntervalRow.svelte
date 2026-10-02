@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PALETTE, PALETTE_TOKENS, type PaletteToken } from '#lib/engine/palette.ts';
+	import { COLOR_NAME, PALETTE, PALETTE_TOKENS, type PaletteToken } from '#lib/engine/palette.ts';
 	import { KIND_LABEL, type Interval, type Kind } from '#lib/engine/workout.ts';
 	import DragHandle from './DragHandle.svelte';
 	import DurationInput from './DurationInput.svelte';
@@ -8,13 +8,6 @@
 	let { interval, actions }: { interval: Interval; actions: OutlineActions } = $props();
 
 	const KINDS = Object.keys(KIND_LABEL) as Kind[];
-	const COLOR_LABEL: Record<PaletteToken, string> = {
-		work: 'Red',
-		rest: 'Blue',
-		warmup: 'Yellow',
-		cooldown: 'Green',
-		neutral: 'Navy'
-	};
 	// The Kind sets the color unless the trainer picked one; the text color always follows the background.
 	const colors = $derived(PALETTE[interval.color ?? interval.kind]);
 	const label = $derived(interval.name.trim() || KIND_LABEL[interval.kind]);
@@ -64,7 +57,7 @@
 	>
 		<option value="">Kind color</option>
 		{#each PALETTE_TOKENS as token (token)}
-			<option value={token}>{COLOR_LABEL[token]}</option>
+			<option value={token}>{COLOR_NAME[token]}</option>
 		{/each}
 	</select>
 	<button type="button" aria-label="Duplicate {label}" onclick={() => actions.duplicate(interval.id)}>Duplicate</button>

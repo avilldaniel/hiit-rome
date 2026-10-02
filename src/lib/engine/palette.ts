@@ -14,6 +14,15 @@ export interface ColorPair {
 	text: string;
 }
 
+/** Each token's color, by name, as the trainer picks it. */
+export const COLOR_NAME: Record<PaletteToken, string> = {
+	work: 'Red',
+	rest: 'Blue',
+	warmup: 'Yellow',
+	cooldown: 'Green',
+	neutral: 'Navy'
+};
+
 const NAVY = '#073b4c';
 const WHITE = '#ffffff';
 

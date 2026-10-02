@@ -4,6 +4,7 @@
 	let {
 		status,
 		visible,
+		steps = true,
 		onaction,
 		onopenlist,
 		onrestart,
@@ -11,8 +12,10 @@
 	}: {
 		status: SessionView['status'];
 		visible: boolean;
+		/** Previous, next and the Interval list; a Countdown, with only one Interval, has none. */
+		steps?: boolean;
 		onaction: (command: SessionCommand) => void;
-		onopenlist: () => void;
+		onopenlist?: () => void;
 		onrestart: () => void;
 		onend: () => void;
 	} = $props();
@@ -22,12 +25,16 @@
 
 <!-- Every Session action, for touch. The screen ignores pointer events that start here. -->
 <nav class="controls" class:visible aria-label="Session controls" data-controls inert={!visible}>
-	<button onclick={() => onaction({ type: 'previous' })}>Previous</button>
+	{#if steps}
+		<button onclick={() => onaction({ type: 'previous' })}>Previous</button>
+	{/if}
 	<button onclick={() => onaction({ type: 'adjust', deltaMs: -ADJUST_MS })}>−30 s</button>
 	<button class="play" onclick={() => onaction({ type: 'toggle' })}>{playLabel}</button>
 	<button onclick={() => onaction({ type: 'adjust', deltaMs: ADJUST_MS })}>+30 s</button>
-	<button onclick={() => onaction({ type: 'next' })}>Next</button>
-	{#if status !== 'idle'}
+	{#if steps}
+		<button onclick={() => onaction({ type: 'next' })}>Next</button>
+	{/if}
+	{#if steps && status !== 'idle'}
 		<button onclick={onopenlist}>Intervals</button>
 	{/if}
 	{#if status === 'paused'}

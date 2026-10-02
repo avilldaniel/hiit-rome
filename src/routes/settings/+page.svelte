@@ -1,17 +1,20 @@
 <script lang="ts">
 	import type { CueSettings } from '#lib/engine/cues.ts';
-	import { PALETTE } from '#lib/engine/palette.ts';
-	import { CUE_TOGGLES, type Settings } from '#lib/engine/settings.ts';
+	import { COLOR_NAME, PALETTE } from '#lib/engine/palette.ts';
+	import { COUNTDOWN_COLORS, CUE_TOGGLES, type CountdownSettings, type Settings } from '#lib/engine/settings.ts';
+	import DurationInput from '#lib/editor/DurationInput.svelte';
 	import { isValidWarningSec, LIMITS } from '#lib/engine/workout.ts';
 	import { createCuePlayer, type Voice } from '#lib/platform/cue-player.ts';
 	import { deviceStore } from '#lib/store/device.ts';
+	import type { WorkoutStore } from '#lib/store/workout-store.ts';
 
 	let settings = $state.raw<Settings>();
+	let presets = $state.raw<number[]>([]);
 	let failed = $state(false);
 	$effect(() => {
 		deviceStore()
-			.then((store) => store.getSettings())
-			.then((found) => (settings = found))
+			.then((store) => Promise.all([store.getSettings(), store.getPresets()]))
+			.then(([foundSettings, foundPresets]) => ((settings = foundSettings), (presets = foundPresets)))
 			.catch(() => (failed = true));
 	});
 
@@ -22,16 +25,25 @@
 	/** Saves run one after another, in the order the changes were made. */
 	let saving: Promise<void> = Promise.resolve();
 	let saveFailed = $state(false);
-	function change(next: Partial<Settings>) {
-		if (!settings) return;
-		settings = { ...settings, ...next };
-		const snapshot = settings;
-		saving = saving.then(async () => (await deviceStore()).saveSettings(snapshot)).then(
+	function persist(write: (store: WorkoutStore) => Promise<void>) {
+		saving = saving.then(async () => write(await deviceStore())).then(
 			() => void (saveFailed = false),
 			() => void (saveFailed = true)
 		);
 	}
+	function change(next: Partial<Settings>) {
+		if (!settings) return;
+		settings = { ...settings, ...next };
+		const snapshot = settings;
+		persist((store) => store.saveSettings(snapshot));
+	}
 	const changeCues = (next: Partial<CueSettings>) => settings && change({ cues: { ...settings.cues, ...next } });
+	const changeCountdown = (next: Partial<CountdownSettings>) =>
+		settings && change({ countdown: { ...settings.countdown, ...next } });
+	function changePreset(index: number, sec: number) {
+		const snapshot = (presets = presets.with(index, sec));
+		persist((store) => store.savePresets(snapshot));
+	}
 
 	let warningInvalid = $state(false);
 	function changeWarningSec(text: string) {
@@ -128,6 +140,44 @@
 					3 s Lead-in when resuming from pause
 				</label>
 			</section>
+
+			<section aria-labelledby="countdown-heading">
+				<h2 id="countdown-heading">Countdown</h2>
+				<p class="hint">The five Presets offered as one-tap starts.</p>
+				<div class="row">
+					{#each presets as sec, i (i)}
+						<DurationInput label="Preset {i + 1}" seconds={sec} onchange={(next) => changePreset(i, next)} />
+					{/each}
+				</div>
+				<div class="row">
+					<label>
+						Color
+						<select
+							value={settings.countdown.color}
+							onchange={(event) =>
+								changeCountdown({ color: event.currentTarget.value as CountdownSettings['color'] })}
+						>
+							{#each COUNTDOWN_COLORS as token (token)}
+								<option value={token}>{COLOR_NAME[token]}</option>
+							{/each}
+						</select>
+					</label>
+					<span
+						class="swatch"
+						aria-hidden="true"
+						style:background-color={PALETTE[settings.countdown.color].background}
+						style:color={PALETTE[settings.countdown.color].text}>0:00</span
+					>
+				</div>
+				<label>
+					<input
+						type="checkbox"
+						checked={settings.countdown.warning}
+						onchange={(event) => changeCountdown({ warning: event.currentTarget.checked })}
+					/>
+					Say “1 minute remaining” on Countdowns over 1 minute
+				</label>
+			</section>
 		{/if}
 	</main>
 </div>
@@ -191,7 +241,8 @@
 
 	select,
 	button,
-	.seconds {
+	.seconds,
+	.row :global(.duration) {
 		padding: 8px 12px;
 		border: 1px solid rgb(255 255 255 / 0.3);
 		border-radius: 8px;
@@ -200,8 +251,16 @@
 		font: inherit;
 	}
 
-	.seconds {
+	.seconds,
+	.row :global(.duration) {
 		width: 4.5em;
+	}
+
+	.swatch {
+		padding: 4px 12px;
+		border-radius: 8px;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
 	}
 
 	[aria-invalid='true'] {

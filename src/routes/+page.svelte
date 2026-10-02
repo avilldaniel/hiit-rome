@@ -55,9 +55,6 @@
 		const workout = await (await deviceStore()).add(blankWorkout());
 		await goto(`/edit/${workout.id}`);
 	}
-
-	/** Filled in by later tickets. */
-	const COMING_SOON = ['Countdown'];
 </script>
 
 <svelte:head>
@@ -77,9 +74,7 @@
 			<button type="button" onclick={() => create().catch(() => (failed = true))}>New Workout</button>
 			<a class="link" href="/wizard">Wizard</a>
 			<a class="link" href="/library">Library</a>
-			{#each COMING_SOON as label (label)}
-				<button type="button" disabled title="Coming soon">{label}</button>
-			{/each}
+			<a class="link" href="/countdown">Countdown</a>
 			<a class="link" href="/settings">Settings</a>
 		</nav>
 	</header>
@@ -209,11 +204,6 @@
 
 	.link {
 		text-decoration: none;
-	}
-
-	button:disabled {
-		opacity: 0.4;
-		cursor: default;
 	}
 
 	.cards {

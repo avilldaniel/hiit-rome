@@ -1,3 +1,4 @@
+import { DEFAULT_PRESETS_SEC } from '../engine/countdown';
 import { effectiveCueSettings } from '../engine/cues';
 import type { SessionSnapshot } from '../engine/session';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
@@ -12,14 +13,15 @@ export interface StoredWorkout extends Workout {
 	lastUsedAt: number | null;
 }
 
-/** The active Session, saved as it goes so it can be offered back after a reload or crash. */
-export interface SavedSession {
-	workoutId: string;
+/** The active Session, as the screen running it hands it over: a Workout's, or a Countdown. */
+export type ActiveSession = {
 	/** Shown when offering it back. */
 	workoutName: string;
 	session: SessionSnapshot;
-	savedAt: number;
-}
+} & ({ workoutId: string } | { countdown: true });
+
+/** The active Session, saved as it goes so it can be offered back after a reload or crash. */
+export type SavedSession = ActiveSession & { savedAt: number };
 
 /** A saved Session older than this is discarded rather than offered back. */
 export const SAVED_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -80,6 +82,7 @@ const WORKOUTS = 'workouts';
 const APP = 'app';
 const SETTINGS_KEY = 'settings';
 const SESSION_KEY = 'session';
+const PRESETS_KEY = 'presets';
 
 /** The outcome of an IndexedDB request, as a promise. */
 const resultOf = <T>(request: IDBRequest<T>): Promise<T> =>
@@ -169,12 +172,21 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 		/** The trainer's Settings, with the defaults for any they haven't set (all of them, until they change one). */
 		async getSettings(): Promise<Settings> {
 			const stored = (await resultOf(app().get(SETTINGS_KEY))) as Partial<Settings> | undefined;
-			return { ...DEFAULT_SETTINGS, ...stored, cues: effectiveCueSettings(DEFAULT_SETTINGS.cues, stored?.cues) };
+			return {
+				...DEFAULT_SETTINGS,
+				...stored,
+				cues: effectiveCueSettings(DEFAULT_SETTINGS.cues, stored?.cues),
+				countdown: { ...DEFAULT_SETTINGS.countdown, ...stored?.countdown }
+			};
 		},
 		saveSettings: async (settings: Settings) =>
 			void (await resultOf(app('readwrite').put(settings, SETTINGS_KEY))),
+		/** The five Countdown Presets, in seconds: the trainer's, or the defaults until they change one. */
+		getPresets: async (): Promise<number[]> =>
+			((await resultOf(app().get(PRESETS_KEY))) as number[] | undefined) ?? DEFAULT_PRESETS_SEC,
+		savePresets: async (presets: number[]) => void (await resultOf(app('readwrite').put(presets, PRESETS_KEY))),
 		/** Saves the active Session, replacing the one saved before. */
-		saveSession: async (saved: Omit<SavedSession, 'savedAt'>) =>
+		saveSession: async (saved: ActiveSession) =>
 			void (await resultOf(app('readwrite').put({ ...saved, savedAt: options.now() }, SESSION_KEY))),
 		/** The Session left unfinished, if there is one from the last 12 hours; an older one is discarded. */
 		async savedSession(): Promise<SavedSession | undefined> {

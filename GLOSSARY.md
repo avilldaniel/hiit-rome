@@ -53,7 +53,7 @@ A spoken Cue announcing the upcoming Interval, played a set number of seconds be
 _Avoid_: Heads-up, pre-alert, reminder
 
 **Countdown**:
-A standalone single-duration timing tool, independent of any Workout.
+A standalone single-duration timing tool, independent of any Workout. It plays as a Session of a single Interval, so only one Session or Countdown is ever active.
 _Avoid_: Timer, quick timer
 
 **Preset**:
