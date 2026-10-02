@@ -19,9 +19,6 @@ export const DEFAULT_SETTINGS: Settings = {
 	resumeLeadIn: true
 };
 
-/** The Warning can come 1 to 99 s before an Interval ends. */
-export const isValidWarningSec = (sec: number) => Number.isInteger(sec) && sec >= 1 && sec <= 99;
-
 /** The Cue settings that are simply on or off, as the trainer sees them. */
 export const CUE_TOGGLES = [
 	{ key: 'announce', label: 'Announce each Interval' },

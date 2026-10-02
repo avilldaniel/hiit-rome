@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { startBlocker } from '#lib/engine/outline.ts';
 	import type { Settings } from '#lib/engine/settings.ts';
-	import { deviceStore } from '#lib/store/device.ts';
+	import { deviceStore, workoutWithSettings } from '#lib/store/device.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
 	import SessionScreen from '#lib/session/SessionScreen.svelte';
 
@@ -12,12 +12,8 @@
 	$effect(() => {
 		const wanted = id;
 		workout = undefined;
-		deviceStore()
-			.then(async (store) => {
-				const [found, current] = await Promise.all([store.get(wanted), store.getSettings()]);
-				settings = current;
-				return found;
-			})
+		workoutWithSettings(wanted)
+			.then((loaded) => ((settings = loaded.settings), loaded.workout))
 			.catch(() => undefined)
 			.then((found) => wanted === id && (workout = found ?? null));
 	});

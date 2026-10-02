@@ -4,7 +4,7 @@
 	import WorkoutEditor from '#lib/editor/WorkoutEditor.svelte';
 	import type { Settings } from '#lib/engine/settings.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
-	import { deviceStore } from '#lib/store/device.ts';
+	import { deviceStore, workoutWithSettings } from '#lib/store/device.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
 
 	const id = $derived(page.params.id!);
@@ -13,12 +13,8 @@
 	$effect(() => {
 		const wanted = id;
 		workout = undefined;
-		deviceStore()
-			.then(async (store) => {
-				const [found, current] = await Promise.all([store.get(wanted), store.getSettings()]);
-				settings = current;
-				return found;
-			})
+		workoutWithSettings(wanted)
+			.then((loaded) => ((settings = loaded.settings), loaded.workout))
 			.catch(() => undefined)
 			.then((found) => wanted === id && (workout = found ?? null));
 	});

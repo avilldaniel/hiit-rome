@@ -1,3 +1,4 @@
+import { effectiveCueSettings } from '../engine/cues';
 import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
 import { buildTimeline } from '../engine/timeline';
 import type { Workout } from '../engine/workout';
@@ -150,10 +151,10 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 		},
 		markUsed: (id: string) => update(id, () => ({ lastUsedAt: options.now() })),
 		setFavorite: (id: string, favorite: boolean) => update(id, () => ({ favorite })),
-		/** The trainer's Settings, or the defaults until they change any. */
+		/** The trainer's Settings, with the defaults for any they haven't set (all of them, until they change one). */
 		async getSettings(): Promise<Settings> {
-			const stored = await resultOf(db.transaction(APP).objectStore(APP).get(SETTINGS_KEY));
-			return (stored as Settings | undefined) ?? DEFAULT_SETTINGS;
+			const stored = (await resultOf(db.transaction(APP).objectStore(APP).get(SETTINGS_KEY))) as Partial<Settings> | undefined;
+			return { ...DEFAULT_SETTINGS, ...stored, cues: effectiveCueSettings(DEFAULT_SETTINGS.cues, stored?.cues) };
 		},
 		saveSettings: async (settings: Settings) =>
 			void (await resultOf(db.transaction(APP, 'readwrite').objectStore(APP).put(settings, SETTINGS_KEY))),

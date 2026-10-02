@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { CueSettings } from '#lib/engine/cues.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
-	import { CUE_TOGGLES, isValidWarningSec, type Settings } from '#lib/engine/settings.ts';
+	import { CUE_TOGGLES, type Settings } from '#lib/engine/settings.ts';
+	import { isValidWarningSec, LIMITS } from '#lib/engine/workout.ts';
 	import { createCuePlayer, type Voice } from '#lib/platform/cue-player.ts';
 	import { deviceStore } from '#lib/store/device.ts';
 
@@ -102,8 +103,8 @@
 								<input
 									class="seconds"
 									type="number"
-									min="1"
-									max="99"
+									min={LIMITS.minWarningSec}
+									max={LIMITS.maxWarningSec}
 									aria-label="Warning seconds"
 									aria-invalid={warningInvalid}
 									value={settings.cues.warningSec}

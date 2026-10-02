@@ -113,17 +113,14 @@ function createWebCuePlayer(): CuePlayer {
 		oscillator.onended = () => pendingTones.delete(pending);
 	}
 
-	let voice: SpeechSynthesisVoice | null = null;
+	let voiceId: string | null = null;
 	// Announcements queue rather than cut each other off; a pause or skip clears the queue (see cancelPending).
 	function say(text: string) {
 		const utterance = new SpeechSynthesisUtterance(text);
-		utterance.voice = voice;
+		// Looked up each time, as some browsers load their voices only after the page first asks for them.
+		utterance.voice = speechSynthesis.getVoices().find((v) => v.voiceURI === voiceId) ?? null;
 		speechSynthesis.speak(utterance);
 	}
-	let selectedId: string | null = null;
-	const findVoice = () => speechSynthesis.getVoices().find((v) => v.voiceURI === selectedId) ?? null;
-	// Some browsers load their voices only after the page asks for them.
-	speechSynthesis.addEventListener('voiceschanged', () => (voice = findVoice()));
 
 	return {
 		unlock() {
@@ -161,16 +158,16 @@ function createWebCuePlayer(): CuePlayer {
 		},
 		listVoices: () =>
 			new Promise((resolve) => {
-				const list = () =>
+				function list() {
+					speechSynthesis.removeEventListener('voiceschanged', list);
+					clearTimeout(timer);
 					resolve(speechSynthesis.getVoices().map((v) => ({ id: v.voiceURI, name: v.name, lang: v.lang })));
+				}
 				if (speechSynthesis.getVoices().length) return list();
-				speechSynthesis.addEventListener('voiceschanged', list, { once: true });
+				speechSynthesis.addEventListener('voiceschanged', list);
 				// Some devices have no voices at all, and never say so.
-				setTimeout(list, VOICES_WAIT_MS);
+				const timer = setTimeout(list, VOICES_WAIT_MS);
 			}),
-		selectVoice(id) {
-			selectedId = id;
-			voice = findVoice();
-		}
+		selectVoice: (id) => void (voiceId = id)
 	};
 }

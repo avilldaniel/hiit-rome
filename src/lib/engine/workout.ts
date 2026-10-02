@@ -51,7 +51,9 @@ export const LIMITS = {
 	maxDurationSec: 99 * 60 + 59,
 	minRounds: 1,
 	maxRounds: 99,
-	maxLeadInSec: 99
+	maxLeadInSec: 99,
+	minWarningSec: 1,
+	maxWarningSec: 99
 } as const;
 
 export interface Problem {
@@ -63,6 +65,8 @@ const inRange = (n: number, min: number, max: number) => Number.isInteger(n) && 
 export const isValidDuration = (sec: number) => inRange(sec, LIMITS.minDurationSec, LIMITS.maxDurationSec);
 export const isValidRounds = (rounds: number) => inRange(rounds, LIMITS.minRounds, LIMITS.maxRounds);
 export const isValidLeadIn = (sec: number) => inRange(sec, 0, LIMITS.maxLeadInSec);
+/** How long before an Interval ends the Warning can come. */
+export const isValidWarningSec = (sec: number) => inRange(sec, LIMITS.minWarningSec, LIMITS.maxWarningSec);
 
 /** Every Interval or Group whose values fall outside the allowed limits, in document order. */
 export function validateItems(items: Item[]): Problem[] {

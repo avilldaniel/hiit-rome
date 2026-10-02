@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CueOverrides, CueSettings } from '#lib/engine/cues.ts';
-	import { CUE_TOGGLES, isValidWarningSec } from '#lib/engine/settings.ts';
-	import { isValidLeadIn, LIMITS, type Workout } from '#lib/engine/workout.ts';
+	import { CUE_TOGGLES } from '#lib/engine/settings.ts';
+	import { isValidLeadIn, isValidWarningSec, LIMITS, type Workout } from '#lib/engine/workout.ts';
 
 	/** A Workout's Lead-in and Cue overrides; any override left unset follows the `defaults` from Settings. */
 	let {
@@ -76,8 +76,8 @@
 					<label>
 						<input
 							type="number"
-							min="1"
-							max="99"
+							min={LIMITS.minWarningSec}
+							max={LIMITS.maxWarningSec}
 							aria-label="Warning seconds"
 							aria-invalid={invalid.warningSec}
 							placeholder={String(defaults.warningSec)}

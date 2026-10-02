@@ -1,5 +1,6 @@
 import { seedWorkout } from './seed-workouts';
-import { openWorkoutStore, type WorkoutStore } from './workout-store';
+import type { Settings } from '../engine/settings';
+import { openWorkoutStore, type StoredWorkout, type WorkoutStore } from './workout-store';
 
 let opening: Promise<WorkoutStore> | undefined;
 
@@ -11,4 +12,11 @@ export function deviceStore(): Promise<WorkoutStore> {
 		throw error;
 	});
 	return opening;
+}
+
+/** A Workout, if there is one with this id, and the Settings it is edited or played with. */
+export async function workoutWithSettings(id: string): Promise<{ workout: StoredWorkout | undefined; settings: Settings }> {
+	const store = await deviceStore();
+	const [workout, settings] = await Promise.all([store.get(id), store.getSettings()]);
+	return { workout, settings };
 }

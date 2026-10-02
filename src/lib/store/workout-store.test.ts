@@ -136,6 +136,21 @@ describe('Workout store', () => {
 		expect(await (await open()).getSettings()).toEqual(changed);
 	});
 
+	it('fills in Settings added since the trainer last saved theirs with the defaults', async () => {
+		const { open } = device();
+		const first = await open();
+		// As an earlier version of the app might have saved them, before Halfway and the resume Lead-in existed.
+		const older = { voiceId: 'com.apple.voice.Daniel', cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5, halfway: undefined } };
+		await first.saveSettings(older as unknown as Settings);
+		first.close();
+
+		expect(await (await open()).getSettings()).toEqual({
+			voiceId: 'com.apple.voice.Daniel',
+			cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5 },
+			resumeLeadIn: true
+		});
+	});
+
 	it('adds default Settings on a device that kept its Workouts under the first schema', async () => {
 		const { open } = device();
 		const v1 = await open({ migrations: MIGRATIONS.slice(0, 1) });
