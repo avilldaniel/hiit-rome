@@ -1,8 +1,8 @@
 import { group, interval, type Workout } from '../engine/workout';
 
 /** Seeded into My Workouts on first launch, so the list isn't empty. Short, and passes through every Kind color. */
-export const exampleWorkout: Workout = {
-	id: 'example-thursday-tabatas',
+export const seedWorkout: Workout = {
+	id: 'seed-thursday-tabatas',
 	name: 'Thursday Tabatas',
 	leadInSec: 10,
 	items: [

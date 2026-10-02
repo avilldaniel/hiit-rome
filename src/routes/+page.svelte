@@ -10,6 +10,7 @@
 	let search = $state('');
 	let sort = $state<WorkoutSort>('recent');
 	let workouts = $state.raw<StoredWorkout[] | null>(null);
+	let failed = $state(false);
 	/** Bumped after every change, so the list reloads. */
 	let changes = $state(0);
 
@@ -19,19 +20,24 @@
 		let current = true;
 		deviceStore()
 			.then((store) => store.list(query))
-			.then((found) => current && (workouts = found));
+			.then((found) => current && ((workouts = found), (failed = false)))
+			.catch(() => current && (failed = true));
 		return () => (current = false);
 	});
 
+	/** Changes the store, then reloads the list. A change to a Workout already gone (e.g. a double click) just reloads. */
 	async function change(action: (store: WorkoutStore) => Promise<unknown>) {
-		await action(await deviceStore());
-		changes++;
+		try {
+			await action(await deviceStore());
+		} finally {
+			changes++;
+		}
 	}
 
 	let deleted = $state.raw<StoredWorkout | null>(null);
 	let forget: ReturnType<typeof setTimeout> | undefined;
 	async function remove(workout: StoredWorkout) {
-		await change(async (store) => (deleted = await store.remove(workout.id)));
+		await change(async (store) => (deleted = await store.remove(workout.id))).catch(() => {});
 		clearTimeout(forget);
 		forget = setTimeout(() => (deleted = null), UNDO_MS);
 	}
@@ -43,7 +49,8 @@
 	}
 	$effect(() => () => clearTimeout(forget));
 
-	const SOON = ['New Workout', 'Wizard', 'Library', 'Countdown'];
+	/** Filled in by later tickets. */
+	const COMING_SOON = ['New Workout', 'Wizard', 'Library', 'Countdown'];
 </script>
 
 <svelte:head>
@@ -60,7 +67,7 @@
 	<header>
 		<p class="app">hiit-rome</p>
 		<nav aria-label="Create">
-			{#each SOON as label (label)}
+			{#each COMING_SOON as label (label)}
 				<button type="button" disabled title="Coming soon">{label}</button>
 			{/each}
 		</nav>
@@ -82,14 +89,16 @@
 			</div>
 		</div>
 
-		{#if workouts?.length}
+		{#if failed}
+			<p class="empty" role="alert">Your Workouts couldn’t be loaded. Try reloading the page.</p>
+		{:else if workouts?.length}
 			<ul class="cards">
 				{#each workouts as workout (workout.id)}
 					<li>
 						<WorkoutCard
 							{workout}
-							onfavorite={() => change((store) => store.setFavorite(workout.id, !workout.favorite))}
-							onduplicate={() => change((store) => store.duplicate(workout.id))}
+							onfavorite={() => change((store) => store.setFavorite(workout.id, !workout.favorite)).catch(() => {})}
+							onduplicate={() => change((store) => store.duplicate(workout.id)).catch(() => {})}
 							ondelete={() => remove(workout)}
 						/>
 					</li>

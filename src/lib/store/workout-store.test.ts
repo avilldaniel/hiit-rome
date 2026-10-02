@@ -107,16 +107,16 @@ describe('Workout store', () => {
 		});
 	});
 
-	it('on first launch only, seeds the example Workouts and asks for persistent storage', async () => {
+	it('on first launch only, seeds Workouts and asks for persistent storage', async () => {
 		const { open } = device();
-		const example = workout('Example Tabatas');
+		const seeded = workout('Thursday Tabatas');
 		let asked = 0;
 		const persist = async () => (asked++, true);
 
-		const first = await open({ seed: [example], persist });
-		await first.remove(example.id);
+		const first = await open({ seed: [seeded], persist });
+		await first.remove(seeded.id);
 		first.close();
-		const store = await open({ seed: [example], persist });
+		const store = await open({ seed: [seeded], persist });
 
 		expect(asked).toBe(1);
 		expect(await store.list()).toEqual([]);

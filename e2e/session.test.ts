@@ -3,15 +3,15 @@ import { expect, test, type Page } from '@playwright/test';
 const NAVY = 'rgb(7, 59, 76)';
 const WARM_UP_YELLOW = 'rgb(255, 209, 102)';
 
-/** Opens the Session screen for the example Workout seeded on first launch. */
-async function startExample(page: Page) {
+/** Opens the Session screen for the Workout seeded on first launch. */
+async function startSeeded(page: Page) {
 	await page.goto('/');
 	await page.getByRole('link', { name: 'Start Thursday Tabatas' }).click();
 }
 
-test('the example Workout runs from Lead-in to completion on the Session screen', async ({ page }) => {
+test('the seeded Workout runs from Lead-in to completion on the Session screen', async ({ page }) => {
 	await page.clock.install();
-	await startExample(page);
+	await startSeeded(page);
 	const screen = page.getByTestId('session');
 
 	await expect(screen).toHaveCSS('background-color', NAVY);
@@ -44,10 +44,10 @@ test('the Session speaks and beeps its Cues, in order', async ({ page }) => {
 	// Swap the device's Cue player for the recording fake.
 	await page.addInitScript(() => (window.__hiitCueLog = []));
 	await page.clock.install();
-	await startExample(page);
+	await startSeeded(page);
 	const heard = () => page.evaluate(() => window.__hiitCueLog!.map((cue) => (cue.type === 'speech' ? cue.text : cue.type)));
 
-	// Example Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20.
+	// Seeded Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20.
 	await expect(page.getByText('Press Space or tap to start')).toBeVisible();
 	await page.keyboard.press('Space');
 	await page.clock.runFor(31_000);
@@ -71,10 +71,10 @@ test('the Session speaks and beeps its Cues, in order', async ({ page }) => {
 });
 
 test.describe('Session controls', () => {
-	// Example Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20 … 3:50 in all.
+	// Seeded Workout: 10 s Lead-in, Warm-up 0:20, then Mountain Climbers 0:20 … 3:50 in all.
 	test.beforeEach(async ({ page }) => {
 		await page.clock.install({ time: new Date('2026-10-01T09:00:00') });
-		await startExample(page);
+		await startSeeded(page);
 		await expect(page.getByText('Press Space or tap to start')).toBeVisible();
 		await page.clock.pauseAt(new Date('2026-10-01T09:00:01')); // time moves only when the test says so
 		await page.keyboard.press('Space');
