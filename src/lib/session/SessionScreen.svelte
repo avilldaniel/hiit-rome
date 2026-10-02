@@ -29,7 +29,7 @@
 			createSession(buildTimeline(workout.items), {
 				leadInMs: workout.leadInSec * 1000,
 				resumeLeadInMs: RESUME_LEAD_IN_MS,
-				cues: DEFAULT_CUE_SETTINGS
+				cueSettings: DEFAULT_CUE_SETTINGS
 			})
 		)
 	);
@@ -59,9 +59,11 @@
 
 	function act(command: SessionCommand) {
 		now = performance.now();
+		const next = dispatch(session, { ...command, at: now });
+		if (next === session) return;
 		// Whatever was told ahead of time may no longer apply; the engine reports afresh from here.
 		player.cancelPending();
-		session = dispatch(session, { ...command, at: now });
+		session = next;
 		hearCues(now);
 	}
 

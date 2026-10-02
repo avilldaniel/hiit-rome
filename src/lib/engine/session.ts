@@ -1,4 +1,4 @@
-import { BEEP_SECONDS, DEFAULT_CUE_SETTINGS, scheduleCues, type Cue, type CueSettings, type CueSound } from './cues';
+import { countdownBeeps, DEFAULT_CUE_SETTINGS, scheduleCues, type Cue, type CueSettings, type DueCue } from './cues';
 import { PALETTE, type ColorPair } from './palette';
 import type { RoundPosition, Timeline, TimelineEntry } from './timeline';
 import { KIND_LABEL } from './workout';
@@ -24,7 +24,7 @@ export interface SessionState {
 	since: number;
 	/** What was done before `since`; the stretch since then is added on demand. */
 	done: Tally;
-	cues: CueSettings;
+	cueSettings: CueSettings;
 	/** Cues due up to this moment have been reported; an action that moves the clock winds it back. */
 	heardAt: number;
 }
@@ -109,7 +109,7 @@ function finalSecond(counting: boolean, remainingMs: number): number | null {
 
 export function createSession(
 	timeline: Timeline,
-	options: { leadInMs: number; resumeLeadInMs?: number; cues?: CueSettings }
+	options: { leadInMs: number; resumeLeadInMs?: number; cueSettings?: CueSettings }
 ): SessionState {
 	return {
 		timeline,
@@ -120,7 +120,7 @@ export function createSession(
 		clockMs: 0,
 		since: 0,
 		done: { elapsedMs: 0, workMs: 0, completed: [] },
-		cues: options.cues ?? DEFAULT_CUE_SETTINGS,
+		cueSettings: options.cueSettings ?? DEFAULT_CUE_SETTINGS,
 		heardAt: 0
 	};
 }
@@ -128,6 +128,7 @@ export function createSession(
 /** Under half a millisecond: Cue moments are whole milliseconds, so winding back this far re-hears only a Cue at the very moment. */
 const REHEAR_MS = 0.5;
 
+/** Applies an action; returns the same state when it changes nothing. */
 export function dispatch(state: SessionState, action: SessionAction): SessionState {
 	const next = apply(state, action);
 	// Whatever happened, Cues from here on are heard afresh: one at the moment itself (say, the start of a jumped-to Interval)
@@ -135,6 +136,7 @@ export function dispatch(state: SessionState, action: SessionAction): SessionSta
 	return next === state ? state : { ...next, heardAt: action.at - REHEAR_MS };
 }
 
+/** The action itself, leaving the Cue cursor to `dispatch`. */
 function apply(state: SessionState, action: SessionAction): SessionState {
 	// Fold the time run so far into the tally first, so actions can move the clock or reshape the Timeline freely.
 	const settled = settle(state, action.at);
@@ -193,8 +195,8 @@ function apply(state: SessionState, action: SessionAction): SessionState {
 		}
 		case 'restart': {
 			if (state.status !== 'paused') return state;
-			const { leadInMs, resumeLeadInMs, cues } = state;
-			const fresh = createSession(state.timeline, { leadInMs, resumeLeadInMs, cues });
+			const { leadInMs, resumeLeadInMs, cueSettings } = state;
+			const fresh = createSession(state.timeline, { leadInMs, resumeLeadInMs, cueSettings });
 			return apply(fresh, { type: 'start', at: action.at });
 		}
 		case 'end':
@@ -203,8 +205,11 @@ function apply(state: SessionState, action: SessionAction): SessionState {
 	}
 }
 
-/** How far ahead of its moment a Cue is reported, so the player can schedule it precisely; more than the time between ticks. */
-const CUE_LOOKAHEAD_MS = 500;
+/**
+ * How far ahead of its moment a Cue is reported, so the player can schedule it precisely. More than the time between
+ * ticks, even in a background tab, where browsers slow timers to one a second.
+ */
+const CUE_LOOKAHEAD_MS = 1500;
 /** A Cue this late is dropped rather than played. */
 const CUE_STALE_MS = 2000;
 
@@ -212,21 +217,20 @@ const CUE_STALE_MS = 2000;
  * Reports the Cues due since the previous tick, and those due within the lookahead, each with its delay from `now`.
  * A late (throttled) tick still reports what fell due in between, but drops anything more than 2 s stale.
  */
-export function tick(state: SessionState, now: number): { state: SessionState; cues: Cue[] } {
+export function tick(state: SessionState, now: number): { state: SessionState; cues: DueCue[] } {
 	if (state.status !== 'running') return { state, cues: [] };
 	const horizon = now + CUE_LOOKAHEAD_MS;
-	const cues: Cue[] = [];
-	const hear = (at: number, sound: CueSound) => {
-		if (at > state.heardAt && at <= horizon && now - at <= CUE_STALE_MS) cues.push({ ...sound, delayMs: Math.max(0, at - now) });
+	const cues: DueCue[] = [];
+	const hear = (at: number, cue: Cue) => {
+		if (at > state.heardAt && at <= horizon && now - at <= CUE_STALE_MS) cues.push({ ...cue, delayMs: Math.max(0, at - now) });
 	};
-	// A resume Lead-in beeps over its final seconds. Only a resume puts `since` ahead of the last action, so only then are these still to come.
-	for (const sec of BEEP_SECONDS) {
-		if (sec * 1000 <= state.resumeLeadInMs) hear(state.since - sec * 1000, { type: 'beep' });
-	}
-	for (const { atMs, sound, closing } of scheduleCues(adjustedTimeline(state), state.leadInMs, state.cues)) {
+	// A resume Lead-in beeps over its final seconds, which end at `since`. Only a resume puts `since` ahead of the last
+	// action, so only then are these still to come.
+	for (const { atMs, cue } of countdownBeeps(state.since, state.resumeLeadInMs)) hear(atMs, cue);
+	for (const { atMs, cue, marksEnd } of scheduleCues(adjustedTimeline(state), state.leadInMs, state.cueSettings)) {
 		// Only what lies ahead of the clock as it stood at the last action is still to be played.
-		if (atMs < state.clockMs || (closing && atMs === state.clockMs)) continue;
-		hear(state.since + (atMs - state.clockMs), sound);
+		if (atMs < state.clockMs || (marksEnd && atMs === state.clockMs)) continue;
+		hear(state.since + (atMs - state.clockMs), cue);
 	}
 	return { state: { ...state, heardAt: horizon }, cues };
 }

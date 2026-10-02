@@ -52,11 +52,12 @@ test('the Session speaks and beeps its Cues, in order', async ({ page }) => {
 	]);
 
 	// Jump to the final Interval and let it play out.
+	const before = (await heard()).length;
 	await page.keyboard.press('KeyJ');
 	await page.getByRole('dialog', { name: 'Intervals' }).getByRole('button', { name: /Cool-down/ }).click();
 	await page.clock.runFor(21_000);
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Workout complete');
-	expect((await heard()).slice(11)).toEqual([
+	expect((await heard()).slice(before)).toEqual([
 		'Cool-down',
 		'Last 10 seconds',
 		...['beep', 'beep', 'beep', 'chime', 'Workout complete']

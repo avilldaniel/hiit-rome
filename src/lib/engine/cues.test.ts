@@ -14,12 +14,12 @@ const workout = [
 ];
 const timeline = buildTimeline(workout); // Warm-up, Burpees, Rest, Burpees, Cool-down = 140 s
 
-function started(leadInSec = 0, cues?: CueSettings) {
-	return dispatch(createSession(timeline, { leadInMs: leadInSec * 1000, cues }), { type: 'start', at: T0 });
+function started(leadInSec = 0, cueSettings?: CueSettings) {
+	return dispatch(createSession(timeline, { leadInMs: leadInSec * 1000, cueSettings }), { type: 'start', at: T0 });
 }
 
 /** A heard Cue: what played and when, in seconds since T0, as the player would time it. */
-type Heard = { atSec: number; sound: string };
+type Heard = { atSec: number; cue: string };
 
 /** Ticks every `stepMs` from `fromSec` to `toSec`, collecting what the player is told to play. */
 function play(session: SessionState, fromSec: number, toSec: number, stepMs = 250) {
@@ -30,36 +30,36 @@ function play(session: SessionState, fromSec: number, toSec: number, stepMs = 25
 		for (const cue of result.cues) {
 			heard.push({
 				atSec: (now + cue.delayMs - T0) / 1000,
-				sound: cue.type === 'speech' ? cue.text : cue.type
+				cue: cue.type === 'speech' ? cue.text : cue.type
 			});
 		}
 	}
 	return { session, heard };
 }
 
-const spoken = (heard: Heard[]) => heard.filter((h) => !['beep', 'final-tone', 'chime'].includes(h.sound));
+const spoken = (heard: Heard[]) => heard.filter((h) => !['beep', 'final-tone', 'chime'].includes(h.cue));
 
 describe('Cues', () => {
 	it('announces each Interval by name as it starts, an unnamed Rest as "Rest"', () => {
 		const { heard } = play(started(0, { warningSec: 0, halfway: false }), 0, 95);
 
 		expect(spoken(heard)).toEqual([
-			{ atSec: 0, sound: 'Warm-up' },
-			{ atSec: 60, sound: 'Burpees' },
-			{ atSec: 80, sound: 'Rest' },
-			{ atSec: 90, sound: 'Burpees' }
+			{ atSec: 0, cue: 'Warm-up' },
+			{ atSec: 60, cue: 'Burpees' },
+			{ atSec: 80, cue: 'Rest' },
+			{ atSec: 90, cue: 'Burpees' }
 		]);
 	});
 
 	it('warns 10 s before an Interval ends with what is next, and "Last 10 seconds" on the final Interval', () => {
 		const { heard } = play(started(), 0, 140);
 
-		expect(spoken(heard).filter((h) => h.sound.startsWith('Next') || h.sound.startsWith('Last'))).toEqual([
-			{ atSec: 50, sound: 'Next: Burpees' },
-			{ atSec: 70, sound: 'Next: Rest' },
+		expect(spoken(heard).filter((h) => h.cue.startsWith('Next') || h.cue.startsWith('Last'))).toEqual([
+			{ atSec: 50, cue: 'Next: Burpees' },
+			{ atSec: 70, cue: 'Next: Rest' },
 			// None in the 10 s Rest: it merges into the start announcement instead.
-			{ atSec: 100, sound: 'Next: Cool-down' },
-			{ atSec: 130, sound: 'Last 10 seconds' }
+			{ atSec: 100, cue: 'Next: Cool-down' },
+			{ atSec: 130, cue: 'Last 10 seconds' }
 		]);
 	});
 
@@ -67,8 +67,8 @@ describe('Cues', () => {
 		const { heard } = play(started(), 79, 91);
 
 		expect(spoken(heard)).toEqual([
-			{ atSec: 80, sound: 'Rest. Next: Burpees.' },
-			{ atSec: 90, sound: 'Burpees' }
+			{ atSec: 80, cue: 'Rest. Next: Burpees.' },
+			{ atSec: 90, cue: 'Burpees' }
 		]);
 	});
 
@@ -77,10 +77,10 @@ describe('Cues', () => {
 		const session = dispatch(createSession(t, { leadInMs: 0 }), { type: 'start', at: T0 });
 
 		expect(spoken(play(session, 0, 38).heard)).toEqual([
-			{ atSec: 0, sound: 'Plank' },
-			{ atSec: 20, sound: 'Next: Stretch' },
-			{ atSec: 30, sound: 'Stretch' },
-			{ atSec: 38, sound: 'Workout complete' }
+			{ atSec: 0, cue: 'Plank' },
+			{ atSec: 20, cue: 'Next: Stretch' },
+			{ atSec: 30, cue: 'Stretch' },
+			{ atSec: 38, cue: 'Workout complete' }
 		]);
 	});
 
@@ -88,30 +88,30 @@ describe('Cues', () => {
 		const { heard } = play(started(), 56, 60);
 
 		expect(heard).toEqual([
-			{ atSec: 57, sound: 'beep' },
-			{ atSec: 58, sound: 'beep' },
-			{ atSec: 59, sound: 'beep' },
-			{ atSec: 60, sound: 'final-tone' },
-			{ atSec: 60, sound: 'Burpees' }
+			{ atSec: 57, cue: 'beep' },
+			{ atSec: 58, cue: 'beep' },
+			{ atSec: 59, cue: 'beep' },
+			{ atSec: 60, cue: 'final-tone' },
+			{ atSec: 60, cue: 'Burpees' }
 		]);
 	});
 
 	it('beeps only for the seconds an Interval has, never over its start', () => {
 		const t = buildTimeline([interval('Jump', 'work', 3), interval('Hold', 'work', 2)]);
-		const session = dispatch(createSession(t, { leadInMs: 0, cues: { warningSec: 0, halfway: false } }), {
+		const session = dispatch(createSession(t, { leadInMs: 0, cueSettings: { warningSec: 0, halfway: false } }), {
 			type: 'start',
 			at: T0
 		});
 
 		expect(play(session, 0, 5).heard).toEqual([
-			{ atSec: 0, sound: 'Jump' },
-			{ atSec: 1, sound: 'beep' },
-			{ atSec: 2, sound: 'beep' },
-			{ atSec: 3, sound: 'final-tone' },
-			{ atSec: 3, sound: 'Hold' },
-			{ atSec: 4, sound: 'beep' },
-			{ atSec: 5, sound: 'chime' },
-			{ atSec: 5, sound: 'Workout complete' }
+			{ atSec: 0, cue: 'Jump' },
+			{ atSec: 1, cue: 'beep' },
+			{ atSec: 2, cue: 'beep' },
+			{ atSec: 3, cue: 'final-tone' },
+			{ atSec: 3, cue: 'Hold' },
+			{ atSec: 4, cue: 'beep' },
+			{ atSec: 5, cue: 'chime' },
+			{ atSec: 5, cue: 'Workout complete' }
 		]);
 	});
 
@@ -119,11 +119,11 @@ describe('Cues', () => {
 		const { heard } = play(started(), 136, 141);
 
 		expect(heard).toEqual([
-			{ atSec: 137, sound: 'beep' },
-			{ atSec: 138, sound: 'beep' },
-			{ atSec: 139, sound: 'beep' },
-			{ atSec: 140, sound: 'chime' },
-			{ atSec: 140, sound: 'Workout complete' }
+			{ atSec: 137, cue: 'beep' },
+			{ atSec: 138, cue: 'beep' },
+			{ atSec: 139, cue: 'beep' },
+			{ atSec: 140, cue: 'chime' },
+			{ atSec: 140, cue: 'Workout complete' }
 		]);
 	});
 
@@ -131,28 +131,28 @@ describe('Cues', () => {
 		const { heard } = play(started(10), 0, 10);
 
 		expect(heard).toEqual([
-			{ atSec: 7, sound: 'beep' },
-			{ atSec: 8, sound: 'beep' },
-			{ atSec: 9, sound: 'beep' },
-			{ atSec: 10, sound: 'final-tone' },
-			{ atSec: 10, sound: 'Warm-up' }
+			{ atSec: 7, cue: 'beep' },
+			{ atSec: 8, cue: 'beep' },
+			{ atSec: 9, cue: 'beep' },
+			{ atSec: 10, cue: 'final-tone' },
+			{ atSec: 10, cue: 'Warm-up' }
 		]);
 	});
 
 	it('says "Halfway" only when turned on, and only in Intervals of 30 s or more', () => {
-		const halfway = (cues?: CueSettings) =>
-			spoken(play(started(0, cues), 0, 140).heard).filter((h) => h.sound === 'Halfway');
+		const halfway = (cueSettings?: CueSettings) =>
+			spoken(play(started(0, cueSettings), 0, 140).heard).filter((h) => h.cue === 'Halfway');
 
 		expect(halfway()).toEqual([]);
 		expect(halfway({ warningSec: 10, halfway: true })).toEqual([
-			{ atSec: 30, sound: 'Halfway' }, // Warm-up, 60 s
-			{ atSec: 125, sound: 'Halfway' } // Cool-down, 30 s; the 20 s Burpees are too short
+			{ atSec: 30, cue: 'Halfway' }, // Warm-up, 60 s
+			{ atSec: 125, cue: 'Halfway' } // Cool-down, 30 s; the 20 s Burpees are too short
 		]);
 	});
 
 	it('leaves out "Halfway" when the Warning comes first or at the same moment', () => {
 		const halfway = (warningSec: number) =>
-			spoken(play(started(0, { warningSec, halfway: true }), 110, 140).heard).map((h) => h.sound);
+			spoken(play(started(0, { warningSec, halfway: true }), 110, 140).heard).map((h) => h.cue);
 
 		expect(halfway(15)).toEqual(['Cool-down', 'Last 15 seconds', 'Workout complete']);
 		expect(halfway(14)).toEqual(['Cool-down', 'Halfway', 'Last 14 seconds', 'Workout complete']);
@@ -172,10 +172,10 @@ describe('Cues due', () => {
 	});
 
 	it('reports a Cue shortly before its moment, with its delay, and only once', () => {
-		const ahead = tick(tick(started(), s(56)).state, s(56.7));
-		expect(ahead.cues).toEqual([{ type: 'beep', delayMs: 300 }]);
+		const ahead = tick(tick(started(), s(55)).state, s(55.7));
+		expect(ahead.cues).toEqual([{ type: 'beep', delayMs: 1300 }]);
 
-		expect(tick(ahead.state, s(56.9)).cues).toEqual([]);
+		expect(tick(ahead.state, s(55.9)).cues).toEqual([]);
 	});
 
 	it('plays nothing while idle or paused', () => {
@@ -193,15 +193,15 @@ describe('Cues around Session controls', () => {
 		expect(tick(skipped, s(3.2)).cues).toEqual([{ type: 'speech', text: 'Warm-up', delayMs: 0 }]);
 
 		const jumped = dispatch(tick(started(), s(30)).state, { type: 'jump', index: 4, at: s(30.1) });
-		expect(play(jumped, 30.1, 51).heard.map((h) => h.sound)).toEqual(['Cool-down', 'Last 10 seconds']);
+		expect(play(jumped, 30.1, 51).heard.map((h) => h.cue)).toEqual(['Cool-down', 'Last 10 seconds']);
 	});
 
 	it('re-announces a restarted Interval, and plays nothing for the stretch a jump skipped', () => {
 		const restarted = dispatch(tick(started(), s(65)).state, { type: 'previous', at: s(65) });
-		expect(spoken(play(restarted, 65, 66).heard)).toEqual([{ atSec: 65, sound: 'Burpees' }]);
+		expect(spoken(play(restarted, 65, 66).heard)).toEqual([{ atSec: 65, cue: 'Burpees' }]);
 
 		const skipped = dispatch(tick(started(), s(30)).state, { type: 'next', at: s(30) });
-		expect(play(skipped, 30, 31).heard).toEqual([{ atSec: 30, sound: 'Burpees' }]);
+		expect(play(skipped, 30, 31).heard).toEqual([{ atSec: 30, cue: 'Burpees' }]);
 	});
 
 	it('announces an Interval jumped to while paused once the Session resumes', () => {
@@ -209,15 +209,18 @@ describe('Cues around Session controls', () => {
 		const jumped = dispatch(paused, { type: 'jump', index: 1, at: s(35) });
 		const resumed = dispatch(jumped, { type: 'resume', at: s(40) });
 
-		expect(spoken(play(resumed, 40, 41).heard)).toEqual([{ atSec: 40, sound: 'Burpees' }]);
+		expect(spoken(play(resumed, 40, 41).heard)).toEqual([{ atSec: 40, cue: 'Burpees' }]);
 	});
 
 	it('hears again, on resume, a Cue reported ahead just before a pause', () => {
-		const ahead = tick(started(), s(56.7)); // the beep at 57 s, 0.3 s ahead
+		const ahead = tick(started(), s(56.7)); // the beeps at 57 and 58 s, told ahead
 		const paused = dispatch(ahead.state, { type: 'pause', at: s(56.8) });
 		const resumed = dispatch(paused, { type: 'resume', at: s(100) });
 
-		expect(play(resumed, 100, 100.5).heard).toEqual([{ atSec: 100.2, sound: 'beep' }]);
+		expect(play(resumed, 100, 100).heard).toEqual([
+			{ atSec: 100.2, cue: 'beep' },
+			{ atSec: 101.2, cue: 'beep' }
+		]);
 	});
 
 	it('beeps over the resume Lead-in, then carries on with the Interval’s own Cues', () => {
@@ -227,10 +230,10 @@ describe('Cues around Session controls', () => {
 
 		// Warm-up resumes 30 s in at 103 s, so its Warning, 20 s on, comes at 123 s.
 		expect(play(resumed, 100, 124).heard).toEqual([
-			{ atSec: 100, sound: 'beep' },
-			{ atSec: 101, sound: 'beep' },
-			{ atSec: 102, sound: 'beep' },
-			{ atSec: 123, sound: 'Next: Burpees' }
+			{ atSec: 100, cue: 'beep' },
+			{ atSec: 101, cue: 'beep' },
+			{ atSec: 102, cue: 'beep' },
+			{ atSec: 123, cue: 'Next: Burpees' }
 		]);
 	});
 
@@ -238,7 +241,7 @@ describe('Cues around Session controls', () => {
 		const warned = play(started(), 0, 51).session; // "Next: Burpees" at 50 s
 		const longer = dispatch(warned, { type: 'adjust', deltaMs: 30_000, at: s(51) });
 
-		expect(play(longer, 51, 90).heard.map((h) => `${h.atSec} ${h.sound}`)).toEqual([
+		expect(play(longer, 51, 90).heard.map((h) => `${h.atSec} ${h.cue}`)).toEqual([
 			'80 Next: Burpees',
 			'87 beep',
 			'88 beep',

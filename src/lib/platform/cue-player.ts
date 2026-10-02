@@ -1,4 +1,4 @@
-import type { Cue, CueSound } from '#lib/engine/cues.ts';
+import type { Cue, DueCue } from '#lib/engine/cues.ts';
 
 /**
  * Plays Cues on the device: speech through the Web Speech API, beeps, tones and chimes through Web Audio.
@@ -11,11 +11,11 @@ export interface CuePlayer {
 	beep(delayMs: number): void;
 	finalTone(delayMs: number): void;
 	chime(delayMs: number): void;
-	/** Drops Cues told ahead of time that haven't started yet, e.g. when the Session pauses or jumps. */
+	/** Drops Cues told ahead of time that haven't started yet, and stops speech, e.g. when the Session pauses or jumps. */
 	cancelPending(): void;
 }
 
-export function playCues(player: CuePlayer, cues: Cue[]) {
+export function playCues(player: CuePlayer, cues: DueCue[]) {
 	for (const cue of cues) {
 		if (cue.type === 'speech') player.speak(cue.text, cue.delayMs);
 		else if (cue.type === 'beep') player.beep(cue.delayMs);
@@ -25,11 +25,11 @@ export function playCues(player: CuePlayer, cues: Cue[]) {
 }
 
 /** A Cue as the recording fake heard it, and when it was due to play. */
-export type RecordedCue = CueSound & { at: number };
+export type RecordedCue = Cue & { at: number };
 
 /** A fake that records what it is asked to play, into `log`, instead of making a sound. */
 export function createRecordingCuePlayer(log: RecordedCue[] = [], now = () => performance.now()) {
-	const record = (sound: CueSound, delayMs: number) => log.push({ ...sound, at: now() + delayMs });
+	const record = (cue: Cue, delayMs: number) => log.push({ ...cue, at: now() + delayMs });
 	const player: CuePlayer = {
 		unlock() {},
 		speak: (text, delayMs) => record({ type: 'speech', text }, delayMs),
@@ -90,15 +90,16 @@ function createWebCuePlayer(): CuePlayer {
 		oscillator.onended = () => pendingTones.delete(pending);
 	}
 
-	function say(text: string) {
-		// A newer announcement replaces one still being spoken, so fast skipping never builds a backlog.
-		speechSynthesis.cancel();
-		speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-	}
+	// Announcements queue rather than cut each other off; a pause or skip clears the queue (see cancelPending).
+	const say = (text: string) => speechSynthesis.speak(new SpeechSynthesisUtterance(text));
 
 	return {
 		unlock() {
-			audio ??= new AudioContext();
+			if (!audio) {
+				audio = new AudioContext();
+				// Some browsers (Safari) also allow speech only once it has been used inside a user gesture.
+				say('');
+			}
 			if (audio.state === 'suspended') void audio.resume();
 		},
 		speak(text, delayMs) {
@@ -117,6 +118,8 @@ function createWebCuePlayer(): CuePlayer {
 		cancelPending() {
 			for (const timer of pendingSpeech) clearTimeout(timer);
 			pendingSpeech.clear();
+			// What is being said, or queued, belongs to where the Session was.
+			speechSynthesis.cancel();
 			for (const pending of pendingTones) {
 				if (audio && pending.startsAt > audio.currentTime) {
 					pending.oscillator.stop();
