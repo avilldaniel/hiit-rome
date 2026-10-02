@@ -1,19 +1,7 @@
 import type { CueOverrides } from '../engine/cues';
-import { MAX_GROUP_DEPTH } from '../engine/outline';
-import { PALETTE_TOKENS, type PaletteToken } from '../engine/palette';
-import {
-	group,
-	interval,
-	UNTITLED,
-	isValidDuration,
-	isValidLeadIn,
-	isValidRounds,
-	isValidWarningSec,
-	KIND_LABEL,
-	type Item,
-	type Kind,
-	type Workout
-} from '../engine/workout';
+import type { PaletteToken } from '../engine/palette';
+import type { Item, Kind, Workout } from '../engine/workout';
+import { parseWorkout } from './parse';
 
 /**
  * The share-link format: bump it whenever the payload changes shape, and keep reading the old
@@ -82,73 +70,8 @@ export async function readShareLink(link: string): Promise<ShareLinkResult> {
 	} catch {
 		return { error: DAMAGED };
 	}
-	const workout = parseWorkout(data);
+	const workout = parseWorkout(data, 'fresh');
 	return workout ? { workout } : { error: DAMAGED };
-}
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-	typeof value === 'object' && value !== null && !Array.isArray(value);
-const isOptional = <T>(value: unknown, check: (v: unknown) => v is T): value is T | undefined =>
-	value === undefined || check(value);
-const isString = (value: unknown): value is string => typeof value === 'string';
-const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
-const isNumber = (value: unknown): value is number => typeof value === 'number';
-const isKind = (value: unknown): value is Kind => isString(value) && Object.hasOwn(KIND_LABEL, value);
-const isToken = (value: unknown): value is PaletteToken => (PALETTE_TOKENS as readonly unknown[]).includes(value);
-
-/** A Workout built from untrusted data, with fresh ids, or null if anything in it is out of shape or out of range. */
-function parseWorkout(data: unknown): Workout | null {
-	if (!isObject(data) || !isString(data.name) || !isNumber(data.leadInSec) || !isValidLeadIn(data.leadInSec)) return null;
-	const cueOverrides = parseCueOverrides(data.cueOverrides);
-	const items = parseItems(data.items, 0);
-	if (cueOverrides === null || !items) return null;
-	// Blank, as the editor never leaves one.
-	const name = data.name.trim() ? data.name : UNTITLED;
-	return { id: crypto.randomUUID(), name, leadInSec: data.leadInSec, cueOverrides, items };
-}
-
-function parseCueOverrides(data: unknown): CueOverrides | undefined | null {
-	if (data === undefined) return undefined;
-	if (!isObject(data)) return null;
-	const overrides: CueOverrides = {};
-	for (const flag of ['announce', 'warning', 'finalBeeps', 'halfway', 'completion'] as const) {
-		const value = data[flag];
-		if (!isOptional(value, isBoolean)) return null;
-		if (value !== undefined) overrides[flag] = value;
-	}
-	const { warningSec } = data;
-	if (warningSec !== undefined) {
-		if (!isNumber(warningSec) || !isValidWarningSec(warningSec)) return null;
-		overrides.warningSec = warningSec;
-	}
-	return overrides;
-}
-
-/** `depth` is how many Groups these items sit inside. */
-function parseItems(data: unknown, depth: number): Item[] | null {
-	if (!Array.isArray(data)) return null;
-	const items: Item[] = [];
-	for (const item of data) {
-		const parsed = parseItem(item, depth);
-		if (!parsed) return null;
-		items.push(parsed);
-	}
-	return items;
-}
-
-function parseItem(data: unknown, depth: number): Item | null {
-	if (!isObject(data) || !isOptional(data.name, isString)) return null;
-	if (data.type === 'interval') {
-		const { name, kind, durationSec, color } = data;
-		if (!isString(name) || !isKind(kind) || !isNumber(durationSec) || !isValidDuration(durationSec)) return null;
-		if (!isOptional(color, isToken)) return null;
-		return interval(name, kind, durationSec, color ? { color } : {});
-	}
-	if (data.type !== 'group' || depth >= MAX_GROUP_DEPTH) return null;
-	const { name, rounds, skipLastRest } = data;
-	if (!isNumber(rounds) || !isValidRounds(rounds) || !isBoolean(skipLastRest)) return null;
-	const items = parseItems(data.items, depth + 1);
-	return items && group(rounds, items, { name, skipLastRest });
 }
 
 /** Runs `bytes` through a compression stream, giving up past `limit` bytes of output. */

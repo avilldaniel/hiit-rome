@@ -83,6 +83,7 @@ const APP = 'app';
 const SETTINGS_KEY = 'settings';
 const SESSION_KEY = 'session';
 const PRESETS_KEY = 'presets';
+const LAST_BACKUP_KEY = 'lastBackup';
 
 /** The outcome of an IndexedDB request, as a promise. */
 const resultOf = <T>(request: IDBRequest<T>): Promise<T> =>
@@ -93,6 +94,21 @@ const resultOf = <T>(request: IDBRequest<T>): Promise<T> =>
 
 /** What a Workout is made of, without its id: the part an edit replaces and a copy takes. */
 const content = ({ name, leadInSec, cueOverrides, items }: Workout) => ({ name, leadInSec, cueOverrides, items });
+
+/** When a transaction has committed, as a promise; it rejects if the transaction fails or is aborted. */
+const completionOf = (tx: IDBTransaction): Promise<void> =>
+	new Promise<void>((resolve, reject) => {
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () => reject(tx.error);
+	});
+
+/** What an import changes: Workouts to add as they are, and Settings and Presets to replace, if given. */
+export interface ImportChange {
+	workouts: StoredWorkout[];
+	settings?: Settings;
+	presets?: number[];
+}
 
 const newRecord = (workout: Workout, now: number): StoredWorkout => ({
 	...workout,
@@ -157,6 +173,25 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 			return current;
 		},
 		restore: async (workout: StoredWorkout) => void (await resultOf(workouts('readwrite').add(workout))),
+		/**
+		 * Imports what `plan` makes of the Workouts on the device, in one transaction: all of it or, if anything
+		 * fails (such as an id already taken), none of it.
+		 */
+		async applyImport(plan: (existing: StoredWorkout[]) => ImportChange): Promise<void> {
+			const tx = db.transaction([WORKOUTS, APP], 'readwrite');
+			const done = completionOf(tx);
+			const existing = (await resultOf(tx.objectStore(WORKOUTS).getAll())) as StoredWorkout[];
+			try {
+				const { workouts: records, settings, presets } = plan(existing);
+				for (const record of records) tx.objectStore(WORKOUTS).add(record);
+				if (settings) tx.objectStore(APP).put(settings, SETTINGS_KEY);
+				if (presets) tx.objectStore(APP).put(presets, PRESETS_KEY);
+			} catch (error) {
+				tx.abort();
+				throw error;
+			}
+			await done;
+		},
 		get,
 		async list({ search = '', sort = 'recent' }: ListQuery = {}): Promise<StoredWorkout[]> {
 			const all = (await resultOf(workouts().getAll())) as StoredWorkout[];
@@ -185,6 +220,15 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 		getPresets: async (): Promise<number[]> =>
 			((await resultOf(app().get(PRESETS_KEY))) as number[] | undefined) ?? DEFAULT_PRESETS_SEC,
 		savePresets: async (presets: number[]) => void (await resultOf(app('readwrite').put(presets, PRESETS_KEY))),
+		/** When the trainer last exported a backup, or null if never. */
+		lastBackupAt: async (): Promise<number | null> =>
+			((await resultOf(app().get(LAST_BACKUP_KEY))) as number | undefined) ?? null,
+		/** Notes that a backup was just exported, returning when. */
+		async recordBackup(): Promise<number> {
+			const at = options.now();
+			await resultOf(app('readwrite').put(at, LAST_BACKUP_KEY));
+			return at;
+		},
 		/** Saves the active Session, replacing the one saved before. */
 		saveSession: async (saved: ActiveSession) =>
 			void (await resultOf(app('readwrite').put({ ...saved, savedAt: options.now() }, SESSION_KEY))),

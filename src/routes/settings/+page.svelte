@@ -6,6 +6,7 @@
 	import { isValidWarningSec, LIMITS } from '#lib/engine/workout.ts';
 	import { createCuePlayer, type Voice } from '#lib/platform/cue-player.ts';
 	import { deviceStore } from '#lib/store/device.ts';
+	import BackupSection from '#lib/transfer/BackupSection.svelte';
 	import type { WorkoutStore } from '#lib/store/workout-store.ts';
 
 	let settings = $state.raw<Settings>();
@@ -178,6 +179,8 @@
 					Say “1 minute remaining” on Countdowns over 1 minute
 				</label>
 			</section>
+
+			<BackupSection onreplaced={(next, nextPresets) => ((settings = next), (presets = nextPresets))} />
 		{/if}
 	</main>
 </div>
