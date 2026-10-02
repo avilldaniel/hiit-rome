@@ -1,4 +1,4 @@
-// The service worker that makes the app work offline (ticket 15). It precaches the app shell and every built and
+// The service worker that makes the app work offline. It precaches the app shell and every built and
 // static file on install, then answers from that cache, so the app opens and runs a Workout with no network.
 // A new version installs alongside and waits: the page asks the trainer to reload, never mid-Session.
 import { dev, version } from '$app/env';
@@ -13,10 +13,13 @@ const PRECACHE = [SHELL, ...[...immutable, ...assets].map(({ path }) => new URL(
 
 self.addEventListener('install', (event) => {
 	if (dev) return;
-	event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
+	// Past the HTTP cache, so a stale shell from before a deploy never lands beside the new version's files.
+	const fresh = PRECACHE.map((url) => new Request(url, { cache: 'reload' }));
+	event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(fresh)));
 });
 
 self.addEventListener('activate', (event) => {
+	// Other windows still on the old version are offered a reload as this one takes them over.
 	event.waitUntil(
 		caches
 			.keys()

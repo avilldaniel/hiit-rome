@@ -21,6 +21,7 @@ export interface UpdateHost {
 		/** Null until a service worker controls the page, i.e. on the very first visit. */
 		readonly controller: unknown;
 		addEventListener(type: 'controllerchange', listener: () => void): void;
+		removeEventListener(type: 'controllerchange', listener: () => void): void;
 	};
 	reload(): void;
 }
@@ -32,22 +33,32 @@ const CHECK_EVERY_MS = 60 * 60_000;
 
 /**
  * Watches for a new version of the app, installed and waiting behind the running one. Each time one is ready,
- * `onAvailable` gets a `reload` that switches to it and reloads the page; the caller decides when to offer it.
- * Returns a function that stops the hourly check for new versions.
+ * `onAvailable` gets an `apply` that switches to it and reloads the page; the caller decides when to offer it.
+ * Returns a function that stops watching.
  */
-export function watchForUpdate(onAvailable: (reload: () => void) => void, host: UpdateHost = browser()): () => void {
+export function watchForUpdate(onAvailable: (apply: () => void) => void, host: UpdateHost = browser()): () => void {
 	const container = host.serviceWorker;
 	if (!container) return () => {};
 
-	let reloading = false;
-	container.addEventListener('controllerchange', () => {
-		if (reloading) host.reload();
-	});
+	let applying = false;
+	const controlled = container.controller !== null;
+	const onControllerChange = () => {
+		if (applying) host.reload();
+		// Another window switched to the new version, which now serves this one too: offer to catch up. Without a
+		// controller before, this is the first install taking over, not an update.
+		else if (controlled) onAvailable(host.reload);
+	};
+	container.addEventListener('controllerchange', onControllerChange);
 
 	const offer = (worker: WorkerLike) =>
 		onAvailable(() => {
-			reloading = true;
+			applying = true;
 			worker.postMessage({ type: 'skip-waiting' });
+		});
+	const offerOnceInstalled = (worker: WorkerLike) =>
+		worker.addEventListener('statechange', () => {
+			// With no controller this is the first install, not an update: nothing to switch from.
+			if (!stopped && worker.state === 'installed' && container.controller) offer(worker);
 		});
 
 	let stopped = false;
@@ -58,17 +69,15 @@ export function watchForUpdate(onAvailable: (reload: () => void) => void, host: 
 		timer = setInterval(() => void registration.update().catch(() => {}), CHECK_EVERY_MS);
 
 		if (registration.waiting) offer(registration.waiting);
+		if (registration.installing) offerOnceInstalled(registration.installing);
 		registration.addEventListener('updatefound', () => {
-			const worker = registration.installing;
-			worker?.addEventListener('statechange', () => {
-				// With no controller this is the first install, not an update: nothing to switch from.
-				if (worker.state === 'installed' && container.controller) offer(worker);
-			});
+			if (registration.installing) offerOnceInstalled(registration.installing);
 		});
 	});
 
 	return () => {
 		stopped = true;
 		clearInterval(timer);
+		container.removeEventListener('controllerchange', onControllerChange);
 	};
 }

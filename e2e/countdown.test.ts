@@ -149,8 +149,10 @@ test('the Presets and the Countdown color are edited in Settings, and kept', asy
 	const preset = page.getByRole('button', { name: 'Start a 2:00 Countdown' });
 	await expect(preset).toHaveCSS('background-color', COOL_DOWN_GREEN);
 
-	// Kept: a reload reads them back from the device.
-	await page.reload();
+	// Kept: opened afresh, both screens read them back from the device.
+	await page.goto('/settings');
+	await expect(page.getByRole('textbox', { name: 'Preset 2' })).toHaveValue('2:00');
+	await page.goto('/countdown');
 	await expect(preset).toHaveCSS('background-color', COOL_DOWN_GREEN);
 	await preset.click();
 	await expect(page.getByTestId('countdown')).toHaveCSS('background-color', COOL_DOWN_GREEN);

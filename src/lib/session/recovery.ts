@@ -5,6 +5,9 @@ import type { ActiveSession, SavedSession } from '#lib/store/workout-store.ts';
 export const sessionPath = (active: ActiveSession) =>
 	'countdown' in active ? '/countdown' : `/session/${active.workoutId}`;
 
+/** Whether `pathname` is a screen a Session plays on, where nothing may interrupt it. */
+export const isSessionScreen = (pathname: string) => pathname === '/countdown' || pathname.startsWith('/session/');
+
 /** The saved Session the trainer chose to resume, on its way from the recovery prompt to the screen it plays on. */
 let resuming: SavedSession | null = null;
 

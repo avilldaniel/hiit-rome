@@ -25,13 +25,17 @@ type FakeWorker = ReturnType<typeof fakeWorker>;
  * A browser stand-in: a page that is (or is not yet) controlled by a service worker, its registration, and the
  * events the browser fires as a new version is found, installs and takes over.
  */
-function fakeBrowser({ controlled = true, waiting }: { controlled?: boolean; waiting?: FakeWorker } = {}) {
+function fakeBrowser({
+	controlled = true,
+	waiting,
+	installing
+}: { controlled?: boolean; waiting?: FakeWorker; installing?: FakeWorker } = {}) {
 	const updateFound = new Set<Listener>();
 	const controllerChange = new Set<Listener>();
 	let checks = 0;
 	const registration = {
 		update: async () => void checks++,
-		installing: null as FakeWorker | null,
+		installing: installing ?? null,
 		waiting: waiting ?? null,
 		addEventListener: (_type: 'updatefound', listener: Listener) => void updateFound.add(listener)
 	};
@@ -42,7 +46,8 @@ function fakeBrowser({ controlled = true, waiting }: { controlled?: boolean; wai
 			get controller() {
 				return controlled ? {} : null;
 			},
-			addEventListener: (_type: 'controllerchange', listener: Listener) => void controllerChange.add(listener)
+			addEventListener: (_type: 'controllerchange', listener: Listener) => void controllerChange.add(listener),
+			removeEventListener: (_type: 'controllerchange', listener: Listener) => void controllerChange.delete(listener)
 		},
 		reload: () => void reloads++
 	};
@@ -59,7 +64,7 @@ function fakeBrowser({ controlled = true, waiting }: { controlled?: boolean; wai
 			for (const listener of updateFound) listener();
 			return worker;
 		},
-		/** A service worker takes control of the page. */
+		/** A service worker takes control of the page, as a new version does once any window accepts it. */
 		changeController() {
 			controlled = true;
 			for (const listener of controllerChange) listener();
@@ -74,7 +79,7 @@ describe('App update', () => {
 	it('offers a version that finished installing while the app was open, and reloads into it once accepted', async () => {
 		const browser = fakeBrowser();
 		const offers: (() => void)[] = [];
-		watchForUpdate((reload) => offers.push(reload), browser.host);
+		watchForUpdate((apply) => offers.push(apply), browser.host);
 		await browser.settle();
 
 		const worker = browser.findNewVersion();
@@ -93,7 +98,7 @@ describe('App update', () => {
 		const waiting = fakeWorker('installed');
 		const browser = fakeBrowser({ waiting });
 		const offers: (() => void)[] = [];
-		watchForUpdate((reload) => offers.push(reload), browser.host);
+		watchForUpdate((apply) => offers.push(apply), browser.host);
 		await browser.settle();
 
 		expect(offers).toHaveLength(1);
@@ -104,7 +109,7 @@ describe('App update', () => {
 	it('offers nothing on the first visit, when the app is installing for offline use, and does not reload as it takes over', async () => {
 		const browser = fakeBrowser({ controlled: false });
 		const offers: (() => void)[] = [];
-		watchForUpdate((reload) => offers.push(reload), browser.host);
+		watchForUpdate((apply) => offers.push(apply), browser.host);
 		await browser.settle();
 
 		browser.findNewVersion().become('installed');
@@ -114,10 +119,35 @@ describe('App update', () => {
 		expect(browser.reloads()).toBe(0);
 	});
 
+	it('offers a version that was already installing when the app started watching', async () => {
+		const installing = fakeWorker();
+		const browser = fakeBrowser({ installing });
+		const offers: (() => void)[] = [];
+		watchForUpdate((apply) => offers.push(apply), browser.host);
+		await browser.settle();
+
+		installing.become('installed');
+		expect(offers).toHaveLength(1);
+	});
+
+	it('offers a reload when another window switched to the new version, leaving this one behind', async () => {
+		const browser = fakeBrowser();
+		const offers: (() => void)[] = [];
+		watchForUpdate((apply) => offers.push(apply), browser.host);
+		await browser.settle();
+
+		browser.changeController();
+		expect(offers).toHaveLength(1);
+		expect(browser.reloads()).toBe(0);
+		offers[0]();
+		expect(browser.reloads()).toBe(1);
+	});
+
 	it('looks for a new version every hour while open, as an app left running all day never navigates', async () => {
 		vi.useFakeTimers();
 		const browser = fakeBrowser();
-		const stop = watchForUpdate(() => {}, browser.host);
+		const offers: (() => void)[] = [];
+		const stop = watchForUpdate((apply) => offers.push(apply), browser.host);
 		await vi.advanceTimersByTimeAsync(0);
 
 		await vi.advanceTimersByTimeAsync(60 * 60_000 - 1);
@@ -130,6 +160,8 @@ describe('App update', () => {
 		stop();
 		await vi.advanceTimersByTimeAsync(60 * 60_000);
 		expect(browser.checks()).toBe(2);
+		browser.changeController();
+		expect(offers).toHaveLength(0);
 	});
 
 	it('does without on a browser that has no service workers', () => {
