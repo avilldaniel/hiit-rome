@@ -37,7 +37,7 @@
 			{workout.favorite ? '★' : '☆'} Favorite
 		</button>
 		<button type="button" onclick={onduplicate}>Duplicate</button>
-		<button type="button" disabled title="Coming soon">Edit</button>
+		<a href="/edit/{workout.id}" aria-label="Edit {workout.name}">Edit</a>
 		<button type="button" onclick={ondelete}>Delete</button>
 	</div>
 </article>
@@ -89,7 +89,7 @@
 		padding: 16px;
 	}
 
-	.start,
+	a,
 	button {
 		padding: 8px 14px;
 		border: 1px solid rgb(255 255 255 / 0.3);

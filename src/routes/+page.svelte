@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { PALETTE } from '#lib/engine/palette.ts';
+	import { blankWorkout } from '#lib/engine/workout.ts';
 	import WorkoutCard from '#lib/home/WorkoutCard.svelte';
 	import { deviceStore } from '#lib/store/device.ts';
 	import type { StoredWorkout, WorkoutSort, WorkoutStore } from '#lib/store/workout-store.ts';
@@ -49,8 +51,13 @@
 	}
 	$effect(() => () => clearTimeout(forget));
 
+	async function create() {
+		const workout = await (await deviceStore()).add(blankWorkout());
+		await goto(`/edit/${workout.id}`);
+	}
+
 	/** Filled in by later tickets. */
-	const COMING_SOON = ['New Workout', 'Wizard', 'Library', 'Countdown'];
+	const COMING_SOON = ['Wizard', 'Library', 'Countdown'];
 </script>
 
 <svelte:head>
@@ -67,6 +74,7 @@
 	<header>
 		<p class="app">hiit-rome</p>
 		<nav aria-label="Create">
+			<button type="button" onclick={() => create().catch(() => (failed = true))}>New Workout</button>
 			{#each COMING_SOON as label (label)}
 				<button type="button" disabled title="Coming soon">{label}</button>
 			{/each}
@@ -191,8 +199,13 @@
 		color: initial;
 	}
 
+	button {
+		cursor: pointer;
+	}
+
 	button:disabled {
 		opacity: 0.4;
+		cursor: default;
 	}
 
 	.cards {

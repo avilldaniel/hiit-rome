@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { startBlocker } from '#lib/engine/outline.ts';
+	import WorkoutEditor from '#lib/editor/WorkoutEditor.svelte';
+	import type { Workout } from '#lib/engine/workout.ts';
 	import { deviceStore } from '#lib/store/device.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
-	import SessionScreen from '#lib/session/SessionScreen.svelte';
 
 	const id = $derived(page.params.id!);
 	let workout = $state.raw<StoredWorkout | null | undefined>();
@@ -15,23 +16,16 @@
 			.catch(() => undefined)
 			.then((found) => wanted === id && (workout = found ?? null));
 	});
-	// Bookkeeping only: a Workout deleted meanwhile (in another tab) has nothing to update.
-	const markUsed = () => void deviceStore().then((store) => store.markUsed(id)).catch(() => {});
+	const save = async (changed: Workout) => (await deviceStore()).save(changed);
 </script>
 
 <svelte:head>
-	<title>{workout?.name ?? 'Session'} · hiit-rome</title>
+	<title>Edit {workout?.name ?? 'Workout'} · hiit-rome</title>
 </svelte:head>
 
-{#if workout && startBlocker(workout.items)}
-	<main class="missing">
-		<h1>{workout.name} can’t start yet</h1>
-		<p>{startBlocker(workout.items)}</p>
-		<a href="/edit/{workout.id}">Edit {workout.name}</a>
-	</main>
-{:else if workout}
+{#if workout}
 	{#key workout.id}
-		<SessionScreen {workout} onstart={markUsed} />
+		<WorkoutEditor {workout} onsave={save} onstart={() => goto(`/session/${workout!.id}`)} />
 	{/key}
 {:else if workout === null}
 	<main class="missing">

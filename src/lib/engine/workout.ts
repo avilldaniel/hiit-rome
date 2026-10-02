@@ -99,3 +99,8 @@ export function group(
 		skipLastRest: options.skipLastRest ?? true
 	};
 }
+
+/** A Workout with nothing in it yet, as the editor starts one. */
+export function blankWorkout(): Workout {
+	return { id: newId(), name: 'New Workout', leadInSec: 10, items: [] };
+}
