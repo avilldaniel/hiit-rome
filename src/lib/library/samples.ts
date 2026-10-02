@@ -1,4 +1,4 @@
-import { copyItem, group, interval, type Item, type Workout } from '../engine/workout';
+import { copyWorkout, group, interval, type Item, type Workout } from '../engine/workout';
 
 /**
  * The Library: built-in, read-only Samples shipped with the app. A Sample can be started as it is,
@@ -264,5 +264,5 @@ export const findSample = (id: string): Sample | undefined => SAMPLES.find((s) =
 
 /** A new Workout of the trainer's own, copied from `sample`, with fresh ids throughout. */
 export function copySample({ workout }: Sample): Workout {
-	return { ...workout, id: crypto.randomUUID(), items: workout.items.map(copyItem) };
+	return copyWorkout(workout);
 }

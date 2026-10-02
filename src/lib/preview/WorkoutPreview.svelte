@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
+	import { startBlocker } from '#lib/engine/outline.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
@@ -23,6 +24,7 @@
 	} = $props();
 
 	const timeline = $derived(buildTimeline(workout.items));
+	const blocker = $derived(startBlocker(workout.items));
 
 	/** The trainer's own copy, once added; the Workout previewed stays as it is. */
 	let added = $state.raw<StoredWorkout | null>(null);
@@ -51,9 +53,14 @@
 </div>
 
 <div class="actions">
-	<a class="start" href="/session/{workout.id}" onclick={onstart}>Start</a>
+	{#if !blocker}
+		<a class="start" href="/session/{workout.id}" onclick={onstart}>Start</a>
+	{/if}
 	<button type="button" onclick={add}>Add to My Workouts</button>
 </div>
+{#if blocker}
+	<p class="status">{blocker}</p>
+{/if}
 {#if added}
 	<p class="status" role="status">
 		Added “{added.name}” to My Workouts. <a href="/edit/{added.id}">Edit your copy</a>

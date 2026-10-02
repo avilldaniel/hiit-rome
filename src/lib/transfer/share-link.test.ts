@@ -21,7 +21,7 @@ const fourTabatas: Workout = {
 				}),
 				interval('Between', 'rest', 60)
 			],
-			{ name: 'Block', skipLastRest: false }
+			{ name: 'Tabatas', skipLastRest: false }
 		),
 		interval('Cool down', 'cooldown', 180)
 	]
@@ -66,6 +66,12 @@ describe('Share link', () => {
 		expect(Object.keys((read as { workout: Workout }).workout).sort()).toEqual(['cueOverrides', 'id', 'items', 'leadInSec', 'name']);
 	});
 
+	it('names a Workout shared with a blank name as the editor would', async () => {
+		const read = await readShareLink(await linkTo({ name: '  ', leadInSec: 0, items: [] }));
+
+		expect(read).toMatchObject({ workout: { name: 'Untitled Workout', items: [] } });
+	});
+
 	describe('refuses, with a reason for the trainer,', () => {
 		const damaged = { error: expect.stringMatching(/damaged/) };
 
@@ -73,6 +79,12 @@ describe('Share link', () => {
 			const link = (await shareLink(fourTabatas, ORIGIN)).replace('#1.', '#2.');
 
 			expect(await readShareLink(link)).toEqual({ error: expect.stringMatching(/newer version/) });
+		});
+
+		it('a link in a format this app never made', async () => {
+			const link = (await shareLink(fourTabatas, ORIGIN)).replace('#1.', '#0.');
+
+			expect(await readShareLink(link)).toEqual(damaged);
 		});
 
 		it('a link with its fragment cut short, garbled or missing', async () => {

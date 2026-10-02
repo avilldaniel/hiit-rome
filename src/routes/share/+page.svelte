@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import type { Workout } from '#lib/engine/workout.ts';
+	import { copyWorkout, type Workout } from '#lib/engine/workout.ts';
 	import PreviewPage from '#lib/preview/PreviewPage.svelte';
 	import WorkoutPreview from '#lib/preview/WorkoutPreview.svelte';
 	import { deviceStore } from '#lib/store/device.ts';
-	import { readShareLink, type ReadShareLink } from '#lib/transfer/share-link.ts';
+	import { readShareLink, type ShareLinkResult } from '#lib/transfer/share-link.ts';
 	import { startShared } from '#lib/transfer/shared.ts';
 
 	/** The link's Workout, once read from the fragment (which never reached a server). */
-	let read = $state.raw<ReadShareLink>();
+	let read = $state.raw<ShareLinkResult>();
 	$effect(() => {
 		const hash = page.url.hash;
 		read = undefined;
@@ -16,8 +16,8 @@
 			.catch(() => ({ error: 'This link couldn’t be opened.' }))
 			.then((result) => hash === page.url.hash && (read = result));
 	});
-	// Each copy gets its own id, so adding it twice keeps two.
-	const add = (workout: Workout) => async () => (await deviceStore()).add({ ...workout, id: crypto.randomUUID() });
+	// Each copy gets its own ids, so adding it twice keeps two.
+	const add = (workout: Workout) => async () => (await deviceStore()).add(copyWorkout(workout));
 </script>
 
 <svelte:head>

@@ -121,6 +121,11 @@ export function copyItem(item: Item): Item {
 		: { ...item, id: newId() };
 }
 
+/** A deep copy of `workout` with fresh ids throughout, as a new Workout of its own. */
+export function copyWorkout(workout: Workout): Workout {
+	return { ...workout, id: newId(), items: workout.items.map(copyItem) };
+}
+
 /** The name a Workout gets until it's given one. */
 export const UNTITLED = 'Untitled Workout';
 

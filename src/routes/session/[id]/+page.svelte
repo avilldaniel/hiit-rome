@@ -61,11 +61,14 @@
 	const markUsed = () => {
 		if (!findSample(id) && !findShared(id)) void deviceStore().then((store) => store.markUsed(id)).catch(() => {});
 	};
-	// Saved as it goes, to be offered back after a reload or crash; at worst, the trainer starts over.
-	const save = (session: SessionSnapshot) =>
+	// Saved as it goes, to be offered back after a reload or crash; at worst, the trainer starts over. A shared
+	// Workout started from its preview is gone after a reload, so there would be nothing to offer back.
+	const save = (session: SessionSnapshot) => {
+		if (findShared(id)) return;
 		void deviceStore()
 			.then((store) => store.saveSession({ workoutId: id, workoutName: workout!.name, session }))
 			.catch(() => {});
+	};
 	const clear = () => void deviceStore().then((store) => store.clearSession()).catch(() => {});
 </script>
 

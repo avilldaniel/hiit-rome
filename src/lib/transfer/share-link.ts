@@ -4,6 +4,7 @@ import { PALETTE_TOKENS, type PaletteToken } from '../engine/palette';
 import {
 	group,
 	interval,
+	UNTITLED,
 	isValidDuration,
 	isValidLeadIn,
 	isValidRounds,
@@ -38,7 +39,7 @@ interface SharedWorkout {
 }
 
 /** The Workout a share link carries, with fresh ids; or why it can't be read, in words for the trainer. */
-export type ReadShareLink = { workout: Workout } | { error: string };
+export type ShareLinkResult = { workout: Workout } | { error: string };
 
 const toShared = (item: Item): SharedItem =>
 	item.type === 'interval'
@@ -59,7 +60,7 @@ export async function shareLink(workout: Workout, origin: string): Promise<strin
 		cueOverrides: workout.cueOverrides,
 		items: workout.items.map(toShared)
 	};
-	const bytes = await transform(new TextEncoder().encode(JSON.stringify(shared)), new CompressionStream('deflate'));
+	const bytes = await pipeBytes(new TextEncoder().encode(JSON.stringify(shared)), new CompressionStream('deflate'));
 	return `${new URL(SHARE_PATH, origin)}#${VERSION}.${toBase64Url(bytes)}`;
 }
 
@@ -67,7 +68,7 @@ const DAMAGED = 'This link is damaged or incomplete. Ask for it to be shared aga
 const NEWER = 'This link was made by a newer version of hiit-rome. Reload the app to update it, then open the link again.';
 
 /** The Workout in a share link (or just its fragment), checked against the Workout model. */
-export async function readShareLink(link: string): Promise<ReadShareLink> {
+export async function readShareLink(link: string): Promise<ShareLinkResult> {
 	const fragment = link.slice(link.indexOf('#') + 1);
 	const match = /^(\d+)\.([A-Za-z0-9_-]+)$/.exec(fragment);
 	if (!match) return { error: DAMAGED };
@@ -76,7 +77,7 @@ export async function readShareLink(link: string): Promise<ReadShareLink> {
 	if (version !== VERSION) return { error: DAMAGED };
 	let data: unknown;
 	try {
-		const bytes = await transform(fromBase64Url(match[2]), new DecompressionStream('deflate'), MAX_PAYLOAD_BYTES);
+		const bytes = await pipeBytes(fromBase64Url(match[2]), new DecompressionStream('deflate'), MAX_PAYLOAD_BYTES);
 		data = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
 	} catch {
 		return { error: DAMAGED };
@@ -101,17 +102,26 @@ function parseWorkout(data: unknown): Workout | null {
 	const cueOverrides = parseCueOverrides(data.cueOverrides);
 	const items = parseItems(data.items, 0);
 	if (cueOverrides === null || !items) return null;
-	return { id: crypto.randomUUID(), name: data.name, leadInSec: data.leadInSec, cueOverrides, items };
+	// Blank, as the editor never leaves one.
+	const name = data.name.trim() ? data.name : UNTITLED;
+	return { id: crypto.randomUUID(), name, leadInSec: data.leadInSec, cueOverrides, items };
 }
 
 function parseCueOverrides(data: unknown): CueOverrides | undefined | null {
 	if (data === undefined) return undefined;
 	if (!isObject(data)) return null;
-	const { announce, warning, warningSec, finalBeeps, halfway, completion } = data;
-	const flags = [announce, warning, finalBeeps, halfway, completion];
-	if (!flags.every((flag) => isOptional(flag, isBoolean))) return null;
-	if (!isOptional(warningSec, isNumber) || (warningSec !== undefined && !isValidWarningSec(warningSec))) return null;
-	return { announce, warning, warningSec, finalBeeps, halfway, completion } as CueOverrides;
+	const overrides: CueOverrides = {};
+	for (const flag of ['announce', 'warning', 'finalBeeps', 'halfway', 'completion'] as const) {
+		const value = data[flag];
+		if (!isOptional(value, isBoolean)) return null;
+		if (value !== undefined) overrides[flag] = value;
+	}
+	const { warningSec } = data;
+	if (warningSec !== undefined) {
+		if (!isNumber(warningSec) || !isValidWarningSec(warningSec)) return null;
+		overrides.warningSec = warningSec;
+	}
+	return overrides;
 }
 
 /** `depth` is how many Groups these items sit inside. */
@@ -142,7 +152,7 @@ function parseItem(data: unknown, depth: number): Item | null {
 }
 
 /** Runs `bytes` through a compression stream, giving up past `limit` bytes of output. */
-async function transform(bytes: Uint8Array, stream: TransformStream<BufferSource, Uint8Array>, limit = Infinity) {
+async function pipeBytes(bytes: Uint8Array, stream: TransformStream<BufferSource, Uint8Array>, limit = Infinity) {
 	const chunks: Uint8Array[] = [];
 	let length = 0;
 	const reader = new Blob([bytes as BlobPart]).stream().pipeThrough(stream).getReader();
