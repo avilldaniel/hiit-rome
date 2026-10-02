@@ -22,6 +22,7 @@
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { CueSettings } from '#lib/engine/cues.ts';
 	import { group, interval, UNTITLED, type Item, type Workout } from '#lib/engine/workout.ts';
+	import ShareButton from '#lib/transfer/ShareButton.svelte';
 	import OutlineItems from './OutlineItems.svelte';
 	import WorkoutSettings from './WorkoutSettings.svelte';
 	import type { DropTarget, OutlineActions } from './outline-actions.ts';
@@ -181,6 +182,7 @@
 			onchange={(event) => !event.currentTarget.value.trim() && change({ name: UNTITLED })}
 		/>
 		<p class="total">Total <span data-testid="total">{formatClock(totalMs)}</span></p>
+		<ShareButton {workout} />
 		<button
 			type="button"
 			class="start"

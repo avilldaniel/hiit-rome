@@ -11,6 +11,7 @@
 	import SessionScreen from '#lib/session/SessionScreen.svelte';
 	import { deviceStore, workoutWithSettings } from '#lib/store/device.ts';
 	import type { SavedSession } from '#lib/store/workout-store.ts';
+	import { findShared } from '#lib/transfer/shared.ts';
 
 	const id = $derived(page.params.id!);
 	let workout = $state.raw<Workout | null | undefined>();
@@ -27,7 +28,11 @@
 		// Best effort: if it can't be checked, this one just starts.
 		const underWay = resuming ? undefined : deviceStore().then((store) => store.savedSession()).catch(() => undefined);
 		Promise.all([workoutWithSettings(wanted), underWay])
-			.then(([loaded, saved]) => ((settings = loaded.settings), (current = saved), loaded.workout ?? findSample(wanted)?.workout))
+			.then(([loaded, saved]) => {
+				settings = loaded.settings;
+				current = saved;
+				return loaded.workout ?? findSample(wanted)?.workout ?? findShared(wanted);
+			})
 			.catch(() => undefined)
 			.then((found) => {
 				if (wanted !== id) return;
@@ -51,10 +56,10 @@
 		void goto(sessionPath(saved));
 	}
 	const blocker = $derived(workout && startBlocker(workout.items));
-	// Bookkeeping only: a Workout deleted meanwhile (in another tab) has nothing to update, and a Sample,
-	// played straight from the Library, is never marked.
+	// Bookkeeping only: a Workout deleted meanwhile (in another tab) has nothing to update, and a Sample or a
+	// shared Workout, played straight from its preview, is never marked.
 	const markUsed = () => {
-		if (!findSample(id)) void deviceStore().then((store) => store.markUsed(id)).catch(() => {});
+		if (!findSample(id) && !findShared(id)) void deviceStore().then((store) => store.markUsed(id)).catch(() => {});
 	};
 	// Saved as it goes, to be offered back after a reload or crash; at worst, the trainer starts over.
 	const save = (session: SessionSnapshot) =>

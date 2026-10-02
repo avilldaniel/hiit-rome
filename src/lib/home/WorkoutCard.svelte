@@ -2,6 +2,7 @@
 	import { formatClock } from '#lib/engine/format.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
+	import ShareButton from '#lib/transfer/ShareButton.svelte';
 	import TimelineStrip from './TimelineStrip.svelte';
 
 	let {
@@ -35,6 +36,7 @@
 		<button type="button" onclick={onduplicate}>Duplicate</button>
 		<a href="/edit/{workout.id}" aria-label="Edit {workout.name}">Edit</a>
 		<button type="button" onclick={ondelete}>Delete</button>
+		<ShareButton {workout} />
 	</div>
 </article>
 
