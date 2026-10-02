@@ -55,18 +55,20 @@ export interface Problem {
 }
 
 const inRange = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
+export const isValidDuration = (sec: number) => inRange(sec, LIMITS.minDurationSec, LIMITS.maxDurationSec);
+export const isValidRounds = (rounds: number) => inRange(rounds, LIMITS.minRounds, LIMITS.maxRounds);
 
 /** Every Interval or Group whose values fall outside the allowed limits, in document order. */
 export function validateItems(items: Item[]): Problem[] {
 	const problems: Problem[] = [];
 	for (const item of items) {
 		if (item.type === 'interval') {
-			if (!inRange(item.durationSec, LIMITS.minDurationSec, LIMITS.maxDurationSec)) {
+			if (!isValidDuration(item.durationSec)) {
 				problems.push({ itemId: item.id, message: 'Duration must be whole seconds between 0:01 and 99:59' });
 			}
 			continue;
 		}
-		if (!inRange(item.rounds, LIMITS.minRounds, LIMITS.maxRounds)) {
+		if (!isValidRounds(item.rounds)) {
 			problems.push({ itemId: item.id, message: 'Rounds must be a whole number between 1 and 99' });
 		}
 		problems.push(...validateItems(item.items));
@@ -100,7 +102,10 @@ export function group(
 	};
 }
 
+/** The name a Workout gets until it's given one. */
+export const UNTITLED = 'Untitled Workout';
+
 /** A Workout with nothing in it yet, as the editor starts one. */
 export function blankWorkout(): Workout {
-	return { id: newId(), name: 'New Workout', leadInSec: 10, items: [] };
+	return { id: newId(), name: UNTITLED, leadInSec: 10, items: [] };
 }

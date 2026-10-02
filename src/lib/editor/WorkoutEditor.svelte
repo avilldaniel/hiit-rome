@@ -14,7 +14,7 @@
 	} from '#lib/engine/outline.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
-	import { group, interval, type Item, type Workout } from '#lib/engine/workout.ts';
+	import { group, interval, UNTITLED, type Item, type Workout } from '#lib/engine/workout.ts';
 	import OutlineItems from './OutlineItems.svelte';
 	import type { OutlineActions } from './outline-actions.ts';
 
@@ -98,10 +98,10 @@
 			class="title"
 			type="text"
 			aria-label="Workout name"
-			placeholder="Untitled Workout"
+			placeholder={UNTITLED}
 			value={workout.name}
 			oninput={(event) => change({ name: event.currentTarget.value })}
-			onchange={(event) => !event.currentTarget.value.trim() && change({ name: 'Untitled Workout' })}
+			onchange={(event) => !event.currentTarget.value.trim() && change({ name: UNTITLED })}
 		/>
 		<p class="total">Total <span data-testid="total">{formatClock(totalMs)}</span></p>
 		<button

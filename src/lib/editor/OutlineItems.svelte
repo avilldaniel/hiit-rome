@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { LIMITS, type Item } from '#lib/engine/workout.ts';
+	import { MAX_GROUP_DEPTH } from '#lib/engine/outline.ts';
+	import { isValidRounds, LIMITS, type Item } from '#lib/engine/workout.ts';
 	import IntervalRow from './IntervalRow.svelte';
 	import OutlineItems from './OutlineItems.svelte';
 	import type { OutlineActions } from './outline-actions.ts';
@@ -7,11 +8,11 @@
 	/** One level of the outline: the root sequence, or the inside of a Group. Groups render their own level inside. */
 	let { items, parentId, actions }: { items: Item[]; parentId: string | null; actions: OutlineActions } = $props();
 
-	function setRounds(id: string, input: HTMLInputElement) {
+	/** Stores valid Rounds; anything else snaps back to the stored value. */
+	function setRounds(id: string, stored: number, input: HTMLInputElement) {
 		const rounds = Number(input.value);
-		const valid = Number.isInteger(rounds) && rounds >= LIMITS.minRounds && rounds <= LIMITS.maxRounds;
-		input.setAttribute('aria-invalid', String(!valid));
-		if (valid) actions.update(id, { rounds });
+		if (isValidRounds(rounds)) actions.update(id, { rounds });
+		else input.value = String(stored);
 	}
 </script>
 
@@ -50,7 +51,7 @@
 								min={LIMITS.minRounds}
 								max={LIMITS.maxRounds}
 								value={item.rounds}
-								onchange={(event) => setRounds(item.id, event.currentTarget)}
+								onchange={(event) => setRounds(item.id, item.rounds, event.currentTarget)}
 							/>
 							Rounds
 						</label>
@@ -65,7 +66,7 @@
 						<button type="button" aria-label="Delete {label}" onclick={() => actions.remove(item.id)}>Delete</button>
 					</div>
 					{#if empty}
-						<p class="flag" role="note">Empty Group: add an Interval, or it will be skipped.</p>
+						<p class="flag" role="note">Empty Group: it plays nothing, so it will be skipped. Add an Interval (a final Rest is dropped when Skip last rest is on).</p>
 					{/if}
 					{#if !collapsed}
 						<OutlineItems items={item.items} parentId={item.id} {actions} />
@@ -79,7 +80,7 @@
 		<button
 			type="button"
 			disabled={!actions.canHoldGroup(parentId)}
-			title={actions.canHoldGroup(parentId) ? undefined : 'Groups nest at most 2 levels deep'}
+			title={actions.canHoldGroup(parentId) ? undefined : `Groups nest at most ${MAX_GROUP_DEPTH} levels deep`}
 			onclick={() => actions.addGroup(parentId)}>+ Add Group</button
 		>
 	</li>

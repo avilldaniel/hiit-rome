@@ -89,21 +89,20 @@ export function restoreItem(items: Item[], { item, parentId, index }: Removed): 
 	return withChildren(items, parentId, (children) => children.toSpliced(index, 0, item));
 }
 
-/** Every Group with no Interval anywhere inside it: it adds nothing to the Timeline, so the editor flags it. */
+/** Every Group that adds nothing to the Timeline (no Intervals, or only Rests that Skip last rest drops), so the editor can flag it. */
 export function emptyGroupIds(items: Item[]): Set<string> {
+	const played = new Set(buildTimeline(items).entries.flatMap((entry) => entry.path.map((at) => at.groupId)));
 	const empty = new Set<string>();
-	const hasInterval = (item: Item): boolean => {
-		if (item.type === 'interval') return true;
-		// Visit every child, not just up to the first Interval, so nested empty Groups are found too.
-		const found = item.items.map(hasInterval).includes(true);
-		if (!found) empty.add(item.id);
-		return found;
+	const visit = (item: Item) => {
+		if (item.type !== 'group') return;
+		if (!played.has(item.id)) empty.add(item.id);
+		item.items.forEach(visit);
 	};
-	items.forEach(hasInterval);
+	items.forEach(visit);
 	return empty;
 }
 
 /** Why a Session of these items can't start, or null if it can. */
 export function startBlocker(items: Item[]): string | null {
-	return buildTimeline(items).entries.length === 0 ? 'Add an Interval before starting.' : null;
+	return buildTimeline(items).entries.length === 0 ? 'Nothing to play yet: add an Interval before starting.' : null;
 }

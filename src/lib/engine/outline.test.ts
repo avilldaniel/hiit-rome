@@ -106,18 +106,23 @@ describe('emptyGroupIds', () => {
 	it('flags every Group with no Interval inside it, at any depth', () => {
 		const bare = group(2, []);
 		const holdsOnlyEmpty = group(3, [bare]);
-		const full = group(2, [interval('Squats', 'work', 20), group(4, [])]);
-		const items = [holdsOnlyEmpty, full];
+		const nestedBare = group(4, []);
+		const full = group(2, [interval('Squats', 'work', 20), nestedBare]);
 
-		expect([...emptyGroupIds(items)].sort()).toEqual(
-			[bare.id, holdsOnlyEmpty.id, (full.items[1] as { id: string }).id].sort()
-		);
+		expect([...emptyGroupIds([holdsOnlyEmpty, full])].sort()).toEqual([bare.id, holdsOnlyEmpty.id, nestedBare.id].sort());
+	});
+
+	it('flags a Group whose only Interval is a Rest dropped by Skip last rest', () => {
+		const onlyRest = group(1, [interval('Rest', 'rest', 30)]);
+		const restKept = group(1, [interval('Rest', 'rest', 30)], { skipLastRest: false });
+
+		expect([...emptyGroupIds([onlyRest, restKept])]).toEqual([onlyRest.id]);
 	});
 });
 
 describe('startBlocker', () => {
 	it('blocks a Workout that would play no Intervals', () => {
-		const nothingPlays = 'Add an Interval before starting.';
+		const nothingPlays = 'Nothing to play yet: add an Interval before starting.';
 
 		expect(startBlocker([])).toBe(nothingPlays);
 		expect(startBlocker([group(3, [group(2, [])])])).toBe(nothingPlays);

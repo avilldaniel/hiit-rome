@@ -15,6 +15,7 @@
 			.catch(() => undefined)
 			.then((found) => wanted === id && (workout = found ?? null));
 	});
+	const blocker = $derived(workout && startBlocker(workout.items));
 	// Bookkeeping only: a Workout deleted meanwhile (in another tab) has nothing to update.
 	const markUsed = () => void deviceStore().then((store) => store.markUsed(id)).catch(() => {});
 </script>
@@ -23,10 +24,10 @@
 	<title>{workout?.name ?? 'Session'} · hiit-rome</title>
 </svelte:head>
 
-{#if workout && startBlocker(workout.items)}
+{#if workout && blocker}
 	<main class="missing">
 		<h1>{workout.name} can’t start yet</h1>
-		<p>{startBlocker(workout.items)}</p>
+		<p>{blocker}</p>
 		<a href="/edit/{workout.id}">Edit {workout.name}</a>
 	</main>
 {:else if workout}

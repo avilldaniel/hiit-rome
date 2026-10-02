@@ -7,7 +7,7 @@ test('a new Workout is built in the editor, totals live, and starts', async ({ p
 
 	// Starting with nothing in it is refused.
 	await page.getByRole('button', { name: 'Start' }).click();
-	await expect(page.getByRole('alert')).toHaveText('Add an Interval before starting.');
+	await expect(page.getByRole('alert')).toHaveText('Nothing to play yet: add an Interval before starting.');
 
 	// An Interval at the root, typed as plain seconds.
 	await page.getByRole('button', { name: '+ Add Interval' }).click();
