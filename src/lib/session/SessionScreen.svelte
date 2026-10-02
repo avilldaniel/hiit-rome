@@ -12,7 +12,8 @@
 	import IntervalList from './IntervalList.svelte';
 	import SessionSummary from './SessionSummary.svelte';
 
-	let { workout }: { workout: Workout } = $props();
+	/** `onstart` fires each time the Session leaves idle (its first start, or after a restart). */
+	let { workout, onstart }: { workout: Workout; onstart?: () => void } = $props();
 
 	/** On by default; hard-coded until Settings (ticket 08). */
 	const RESUME_LEAD_IN_MS = 3000;
@@ -63,6 +64,7 @@
 		if (next === session) return;
 		// Whatever was told ahead of time may no longer apply; the engine reports afresh from here.
 		player.cancelPending();
+		if (session.status === 'idle' && next.status !== 'idle') onstart?.();
 		session = next;
 		hearCues(now);
 	}

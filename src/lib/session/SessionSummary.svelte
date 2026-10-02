@@ -22,9 +22,17 @@
 			<dd data-testid="summary-work">{formatDuration(summary.workMs)}</dd>
 		</div>
 	</dl>
+	<a class="home" href="/">Back to My Workouts</a>
 </section>
 
 <style>
+	.home {
+		align-self: flex-start;
+		color: inherit;
+		font-size: clamp(14px, 3vh, 36px);
+		font-weight: 700;
+	}
+
 	.summary {
 		grid-column: 1 / -1;
 		display: flex;

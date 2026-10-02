@@ -1,8 +1,8 @@
-import { group, interval, type Workout } from './engine/workout';
+import { group, interval, type Workout } from '../engine/workout';
 
-/** Built-in demo until Workouts are stored (ticket 05). Short, and passes through every Kind color. */
-export const demoWorkout: Workout = {
-	id: 'demo',
+/** Seeded into My Workouts on first launch, so the list isn't empty. Short, and passes through every Kind color. */
+export const exampleWorkout: Workout = {
+	id: 'example-thursday-tabatas',
 	name: 'Thursday Tabatas',
 	leadInSec: 10,
 	items: [
