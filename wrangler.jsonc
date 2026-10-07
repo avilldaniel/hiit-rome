@@ -1,0 +1,11 @@
+// Cloudflare Workers deploy (`npx wrangler deploy`): builds the static SPA and serves it as assets, with every
+// unknown path falling back to the client-rendered shell (ADR 0002).
+{
+	"name": "hiit-rome",
+	"compatibility_date": "2026-10-01",
+	"build": { "command": "npm run build" },
+	"assets": {
+		"directory": "./build",
+		"not_found_handling": "single-page-application"
+	}
+}
