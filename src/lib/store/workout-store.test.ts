@@ -203,6 +203,14 @@ describe('Workout store', () => {
 		expect(await store.list()).toEqual([]);
 	});
 
+	it('lists seeded Workouts newest first, taking the last one seeded as the newest', async () => {
+		const { open } = device();
+		// Seeding happens all at once, at one moment.
+		const store = await open({ seed: ['Week 1', 'Week 2', 'Week 3'].map((name) => workout(name)), now: () => 5_000 });
+
+		expect((await store.list()).map((w) => w.name)).toEqual(['Week 3', 'Week 2', 'Week 1']);
+	});
+
 	it('migrates Workouts saved under an older schema when the app opens', async () => {
 		const { open } = device();
 		const v1 = await open();

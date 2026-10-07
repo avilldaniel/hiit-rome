@@ -126,7 +126,11 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 		for (const migrate of options.migrations.slice(oldVersion)) migrate(tx);
 		if (oldVersion > 0) return;
 		firstLaunch = true;
-		for (const workout of options.seed) tx.objectStore(WORKOUTS).add(newRecord(workout, options.now()));
+		// One moment for all of them, a millisecond apart, so they list in seed order with the last one newest.
+		const now = options.now();
+		options.seed.forEach((workout, i) =>
+			tx.objectStore(WORKOUTS).add(newRecord(workout, now - (options.seed.length - 1 - i)))
+		);
 	};
 	const db = await resultOf(request);
 	// A newer version of the app opened in another tab: step aside so its migrations can run.

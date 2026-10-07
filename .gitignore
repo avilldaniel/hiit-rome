@@ -7,3 +7,8 @@ playwright-report/
 .env*
 .svelte-kit/
 vite.config.ts.timestamp-*
+# A trainer's Seconds Pro export, as sent: convert it with scripts/seconds-pro-to-backup.mjs.
+seconds-pro-export/
+
+# Temporary page screengrabs
+mockups/
