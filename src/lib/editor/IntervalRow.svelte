@@ -72,7 +72,7 @@
 		gap: 8px;
 		padding: 8px 12px;
 		border-radius: 8px;
-		/* Keeps a Navy-colored Interval visible against the Navy page. */
+		/* Keeps a Black Interval visible against the ink page. */
 		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3);
 	}
 

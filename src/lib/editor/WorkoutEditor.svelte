@@ -231,7 +231,6 @@
 <style>
 	.editor {
 		min-height: 100vh;
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	}
 
 	header {
@@ -270,8 +269,8 @@
 		margin: 0 32px 16px;
 		padding: 12px 16px;
 		border-radius: 8px;
-		background: #ffd166;
-		color: #073b4c;
+		background: #f7b928;
+		color: var(--text);
 		font-weight: 600;
 	}
 
@@ -291,7 +290,7 @@
 	}
 
 	.problem {
-		color: #ffd166;
+		color: #f7b928;
 	}
 
 	.refusal {
@@ -302,8 +301,8 @@
 		margin: 0;
 		padding: 12px 20px;
 		border-radius: 12px;
-		background: #ef476f;
-		color: #fff;
+		background: #f0476a;
+		color: var(--text);
 		font-weight: 700;
 		box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
 		pointer-events: none;
@@ -351,7 +350,7 @@
 		padding: 12px 16px 12px 20px;
 		border-radius: 12px;
 		background: #fff;
-		color: #073b4c;
+		color: var(--text);
 		font-weight: 600;
 		box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
 	}

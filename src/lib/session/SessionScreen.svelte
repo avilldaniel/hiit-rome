@@ -223,7 +223,6 @@
 		/* Shared with the Interval list, which opens over the rail. */
 		--rail-width: 31vw;
 		grid-template-columns: 1fr var(--rail-width);
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 		transition:
 			background-color 0.2s,
 			color 0.2s;

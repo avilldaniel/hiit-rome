@@ -158,7 +158,6 @@
 		justify-content: center;
 		gap: 2vh;
 		padding: 4vh 6vw;
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 		transition:
 			background-color 0.2s,
 			color 0.2s;

@@ -87,7 +87,6 @@
 <style>
 	.wizard {
 		min-height: 100vh;
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	}
 
 	header {
@@ -181,8 +180,8 @@
 		margin: 0;
 		padding: 12px 16px;
 		border-radius: 8px;
-		background: #ffd166;
-		color: #073b4c;
+		background: #f7b928;
+		color: var(--text);
 		font-weight: 600;
 	}
 

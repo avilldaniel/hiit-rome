@@ -24,7 +24,6 @@
 <style>
 	.preview {
 		min-height: 100vh;
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	}
 
 	header {

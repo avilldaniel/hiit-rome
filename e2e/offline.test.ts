@@ -1,8 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-const WARM_UP_YELLOW = 'rgb(255, 209, 102)';
+const WARM_UP_YELLOW = 'rgb(247, 185, 40)';
 
-test('once loaded, the app opens and runs a Workout with the network gone', async ({ page, context }) => {
+test('once loaded, the app opens and runs a Workout with the network gone', async ({ page, context, baseURL }) => {
+	// Fonts and everything else are bundled: no request leaves the app's own origin.
+	const elsewhere: string[] = [];
+	page.on('request', (request) => {
+		if (new URL(request.url()).origin !== new URL(baseURL!).origin) elsewhere.push(request.url());
+	});
 	await page.clock.install({ time: new Date('2026-10-01T09:00:00') });
 	await page.goto('/');
 	await expect(page.getByRole('heading', { name: 'My Workouts', level: 1 })).toBeVisible();
@@ -24,15 +29,16 @@ test('once loaded, the app opens and runs a Workout with the network gone', asyn
 	await page.clock.runFor(10_016);
 	await expect(page.getByTestId('session')).toHaveCSS('background-color', WARM_UP_YELLOW);
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Warm-up');
+	expect(elsewhere).toEqual([]);
 });
 
-test('the app can be installed: it links a manifest with a name, icons, navy theme and full-screen display', async ({ page, request }) => {
+test('the app can be installed: it links a manifest with a name, icons, ink theme and full-screen display', async ({ page, request }) => {
 	await page.goto('/');
 	const href = await page.locator('link[rel="manifest"]').getAttribute('href');
 	const manifest = await (await request.get(new URL(href!, page.url()).href)).json();
 
-	expect(manifest).toMatchObject({ name: 'hiit-rome', theme_color: '#073b4c', display: 'fullscreen' });
-	await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#073b4c');
+	expect(manifest).toMatchObject({ name: 'hiit-rome', theme_color: '#11161d', background_color: '#11161d', display: 'fullscreen' });
+	await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#11161d');
 	for (const icon of manifest.icons) {
 		const response = await request.get(new URL(icon.src, page.url()).href);
 		expect(response.ok(), icon.src).toBe(true);

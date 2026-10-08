@@ -2,7 +2,7 @@
 	import { formatClock } from '#lib/engine/format.ts';
 	import { PALETTE } from '#lib/engine/palette.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
-	import TimelineStrip from '#lib/home/TimelineStrip.svelte';
+	import Strip from '#lib/ui/Strip.svelte';
 	import { LEVEL_LABEL, LEVELS, SAMPLES } from '#lib/library/samples.ts';
 
 	// The Timeline is the source of truth for the total duration and the Interval sequence.
@@ -34,7 +34,7 @@
 					{#each samples as { sample, timeline } (sample.workout.id)}
 						<li>
 							<a class="card" href="/library/{sample.workout.id}">
-								<TimelineStrip {timeline} />
+								<Strip {timeline} />
 								<span class="body">
 									<span class="title">
 										<span class="name">{sample.workout.name}</span>
@@ -55,7 +55,6 @@
 <style>
 	.library {
 		min-height: 100vh;
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	}
 
 	header {

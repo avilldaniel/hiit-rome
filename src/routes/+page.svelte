@@ -126,7 +126,6 @@
 <style>
 	.home {
 		min-height: 100vh;
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	}
 
 	header {
@@ -231,7 +230,7 @@
 		padding: 12px 16px 12px 20px;
 		border-radius: 12px;
 		background: #fff;
-		color: #073b4c;
+		color: var(--text);
 		font-weight: 600;
 		box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
 	}

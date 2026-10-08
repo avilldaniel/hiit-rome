@@ -99,6 +99,5 @@
 <style>
 	.missing {
 		padding: 10vh 6vw;
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	}
 </style>

@@ -36,7 +36,6 @@
 		padding: 4vh 6vw;
 		background: var(--neutral-bg);
 		color: var(--neutral-text);
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 		font-size: clamp(18px, 4vh, 44px);
 		font-weight: 700;
 		text-align: center;

@@ -36,7 +36,7 @@ describe('Session', () => {
 		expect(v.remainingMs).toBe(7000);
 		expect(v.current).toBeNull();
 		expect(v.upcoming[0].name).toBe('Warm-up');
-		expect(v.colors.background).toBe('#073b4c');
+		expect(v.colors.background).toBe('#11161d');
 	});
 
 	it('runs the Intervals in order once the Lead-in ends', () => {
@@ -48,7 +48,7 @@ describe('Session', () => {
 			current: { name: 'Burpees' },
 			remainingMs: 15_000,
 			totalRemainingMs: 75_000,
-			colors: { background: '#ef476f' }
+			colors: { background: '#f0476a' }
 		});
 		expect(view(session, s(75)).progress).toBeCloseTo(0.25);
 	});
@@ -60,7 +60,7 @@ describe('Session', () => {
 			status: 'paused',
 			current: { name: 'Burpees' },
 			remainingMs: 15_000,
-			colors: { background: '#073b4c' }
+			colors: { background: '#11161d' }
 		});
 
 		const resumed = dispatch(paused, { type: 'resume', at: s(500) });
@@ -71,7 +71,7 @@ describe('Session', () => {
 		const v = view(started(), s(10 + 140));
 
 		expect(v).toMatchObject({ status: 'completed', current: null, upcoming: [], totalRemainingMs: 0 });
-		expect(v.colors.background).toBe('#073b4c');
+		expect(v.colors.background).toBe('#11161d');
 	});
 
 	it('reports elapsed time in the current Interval', () => {
@@ -474,7 +474,7 @@ describe('Resume Lead-in', () => {
 			remainingMs: 2_000,
 			finalSecond: 2,
 			totalRemainingMs: 75_000,
-			colors: { background: '#073b4c' }
+			colors: { background: '#11161d' }
 		});
 		expect(view(resumed, s(103))).toMatchObject({ status: 'running', remainingMs: 15_000 });
 		expect(view(resumed, s(108)).remainingMs).toBe(10_000);

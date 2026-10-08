@@ -3,7 +3,7 @@
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
 	import ShareButton from '#lib/transfer/ShareButton.svelte';
-	import TimelineStrip from './TimelineStrip.svelte';
+	import Strip from '#lib/ui/Strip.svelte';
 
 	let {
 		workout,
@@ -23,7 +23,7 @@
 </script>
 
 <article class="card" aria-labelledby={headingId}>
-	<TimelineStrip {timeline} />
+	<Strip {timeline} />
 	<div class="body">
 		<h2 id={headingId}>{workout.name}</h2>
 		<p class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</p>

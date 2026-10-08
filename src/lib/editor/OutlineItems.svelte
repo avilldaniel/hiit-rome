@@ -135,7 +135,7 @@
 
 	.group.empty {
 		border-style: dashed;
-		border-color: #ffd166;
+		border-color: #f7b928;
 	}
 
 	.group > :global(.items) {
@@ -174,7 +174,7 @@
 
 	.flag {
 		margin: 0 0 8px 28px;
-		color: #ffd166;
+		color: #f7b928;
 		font-weight: 600;
 	}
 
@@ -189,7 +189,7 @@
 	}
 
 	.drop-refused {
-		box-shadow: 0 -5px 0 #ef476f;
+		box-shadow: 0 -5px 0 #f0476a;
 	}
 
 	.add button {

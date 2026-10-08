@@ -20,18 +20,18 @@ export const COLOR_NAME: Record<PaletteToken, string> = {
 	rest: 'Blue',
 	warmup: 'Yellow',
 	cooldown: 'Green',
-	neutral: 'Navy'
+	neutral: 'Black'
 };
 
-const NAVY = '#073b4c';
+const INK = '#11161d';
 const WHITE = '#ffffff';
 
 export const PALETTE: Record<PaletteToken, ColorPair> = {
-	work: { background: '#ef476f', text: WHITE },
-	rest: { background: '#118ab2', text: WHITE },
-	warmup: { background: '#ffd166', text: NAVY },
-	cooldown: { background: '#06d6a0', text: NAVY },
-	neutral: { background: NAVY, text: WHITE }
+	work: { background: '#f0476a', text: INK },
+	rest: { background: '#3b9fd6', text: INK },
+	warmup: { background: '#f7b928', text: INK },
+	cooldown: { background: '#1fc79a', text: INK },
+	neutral: { background: INK, text: WHITE }
 };
 
 function relativeLuminance(hex: string): number {

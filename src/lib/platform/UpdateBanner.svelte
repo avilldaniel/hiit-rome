@@ -24,7 +24,6 @@
 		border-radius: 1vh;
 		background: var(--neutral-bg);
 		color: var(--neutral-text);
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 		font-size: clamp(14px, 2.2vh, 28px);
 		font-weight: 700;
 	}

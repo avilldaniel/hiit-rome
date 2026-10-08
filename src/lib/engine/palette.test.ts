@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, PALETTE, PALETTE_TOKENS } from './palette';
+import { COLOR_NAME, contrastRatio, PALETTE, PALETTE_TOKENS } from './palette';
 
 describe('contrastRatio', () => {
 	it('matches known WCAG values', () => {
@@ -15,5 +15,13 @@ describe('palette', () => {
 			const { background, text } = PALETTE[token];
 			expect(contrastRatio(background, text), token).toBeGreaterThanOrEqual(3);
 		}
+	});
+
+	it('puts ink text on every Kind color, and white on the ink neutral', () => {
+		for (const token of PALETTE_TOKENS.filter((t) => t !== 'neutral')) {
+			expect(PALETTE[token].text, token).toBe('#11161d');
+		}
+		expect(PALETTE.neutral).toEqual({ background: '#11161d', text: '#ffffff' });
+		expect(COLOR_NAME.neutral).toBe('Black');
 	});
 });

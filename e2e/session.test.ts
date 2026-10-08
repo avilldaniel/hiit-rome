@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const NAVY = 'rgb(7, 59, 76)';
-const WARM_UP_YELLOW = 'rgb(255, 209, 102)';
+const INK = 'rgb(17, 22, 29)';
+const WARM_UP_YELLOW = 'rgb(247, 185, 40)';
 
 /** Opens the Session screen for the Workout seeded on first launch. */
 async function startSeeded(page: Page) {
@@ -23,12 +23,12 @@ test('the seeded Workout runs from Lead-in to completion on the Session screen',
 	await startSeeded(page);
 	const screen = page.getByTestId('session');
 
-	await expect(screen).toHaveCSS('background-color', NAVY);
+	await expect(screen).toHaveCSS('background-color', INK);
 	await page.keyboard.press('Space');
 
 	// Lead-in: neutral screen, the rail already shows what's first.
 	await page.clock.runFor(3_000);
-	await expect(screen).toHaveCSS('background-color', NAVY);
+	await expect(screen).toHaveCSS('background-color', INK);
 	await expect(page.getByRole('list', { name: 'Up next' })).toContainText('Warm-up');
 
 	// After the 10 s Lead-in the first Interval fills the screen with its color.
@@ -38,7 +38,7 @@ test('the seeded Workout runs from Lead-in to completion on the Session screen',
 
 	// Space pauses: the screen goes neutral and the clock stops.
 	await page.keyboard.press('Space');
-	await expect(screen).toHaveCSS('background-color', NAVY);
+	await expect(screen).toHaveCSS('background-color', INK);
 	const frozen = await page.getByTestId('remaining').textContent();
 	await page.clock.runFor(5_000);
 	await expect(page.getByTestId('remaining')).toHaveText(frozen!);

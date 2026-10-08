@@ -14,7 +14,10 @@
 <style>
 	.strip {
 		display: flex;
-		height: 12px;
+		gap: 2px;
+		height: 8px;
+		border-radius: 99px;
+		overflow: hidden;
 	}
 
 	.strip span {
