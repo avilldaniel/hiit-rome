@@ -3,6 +3,8 @@
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
 	import ShareButton from '#lib/transfer/ShareButton.svelte';
+	import Button from '#lib/ui/Button.svelte';
+	import Card from '#lib/ui/Card.svelte';
 	import Strip from '#lib/ui/Strip.svelte';
 
 	let {
@@ -20,88 +22,138 @@
 	// The Timeline is the source of truth for the total duration and the Interval sequence.
 	const timeline = $derived(buildTimeline(workout.items));
 	const headingId = $derived(`workout-${workout.id}`);
+	const intervalCount = $derived(timeline.entries.length);
 </script>
 
-<article class="card" aria-labelledby={headingId}>
+<Card as="article" class="workout" aria-labelledby={headingId}>
 	<Strip {timeline} />
 	<div class="body">
-		<h2 id={headingId}>{workout.name}</h2>
-		<p class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</p>
+		<div class="top">
+			<div class="title">
+				<h2 id={headingId}>{workout.name}</h2>
+				<p class="meta">{intervalCount} {intervalCount === 1 ? 'Interval' : 'Intervals'}</p>
+			</div>
+			<p class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</p>
+		</div>
+		<div class="actions">
+			<Button variant="primary" icon="play" class="start" href="/session/{workout.id}" aria-label="Start {workout.name}">
+				Start
+			</Button>
+			<Button variant="ghost" icon="star" class="favorite" aria-pressed={workout.favorite} onclick={onfavorite}>Favorite</Button>
+			<div class="secondary">
+				<Button variant="ghost" icon="edit" href="/edit/{workout.id}" aria-label="Edit {workout.name}" title="Edit" />
+				<Button
+					variant="ghost"
+					icon="copy"
+					aria-label="Duplicate {workout.name}"
+					title="Duplicate"
+					onclick={onduplicate}
+				/>
+				<ShareButton {workout} icon />
+				<Button
+					variant="danger"
+					class="delete"
+					icon="trash"
+					aria-label="Delete {workout.name}"
+					title="Delete"
+					onclick={ondelete}
+				/>
+			</div>
+		</div>
 	</div>
-	<div class="actions">
-		<a class="start" href="/session/{workout.id}" aria-label="Start {workout.name}">Start</a>
-		<button type="button" aria-pressed={workout.favorite} onclick={onfavorite}>
-			{workout.favorite ? '★' : '☆'} Favorite
-		</button>
-		<button type="button" onclick={onduplicate}>Duplicate</button>
-		<a href="/edit/{workout.id}" aria-label="Edit {workout.name}">Edit</a>
-		<button type="button" onclick={ondelete}>Delete</button>
-		<ShareButton {workout} />
-	</div>
-</article>
+</Card>
 
 <style>
-	.card {
-		display: flex;
-		flex-direction: column;
-		border-radius: 12px;
-		background: rgb(255 255 255 / 0.08);
-		overflow: hidden;
+	/* A Card whose strip and body each carry their own inset; `article` outranks the Card's own padding. */
+	:global(article.card.workout) {
+		grid-template-rows: auto 1fr;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0;
+		padding: 0;
+	}
+
+	:global(.workout) > :global(.strip) {
+		margin: var(--s5) var(--s5) 0;
 	}
 
 	.body {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		align-content: start;
+		gap: var(--s4);
+		padding: var(--s5);
+	}
+
+	.top {
 		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		gap: 16px;
-		padding: 16px 16px 0;
+		align-items: flex-start;
+		gap: var(--s3);
+	}
+
+	.title {
+		min-width: 0;
 	}
 
 	h2 {
 		margin: 0;
-		font-size: 22px;
+		font-size: 28px;
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.1;
+		/* Up to two lines, so a long name is mostly shown without making its card taller than the rest. */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
 		overflow-wrap: anywhere;
 	}
 
-	.duration {
-		margin: 0;
-		font-size: 20px;
-		font-weight: 700;
+	.meta {
+		margin: var(--s1) 0 0;
+		color: var(--muted);
+		font-size: 15px;
 		font-variant-numeric: tabular-nums;
+	}
+
+	.duration {
+		margin: 0 0 0 auto;
+		font: 800 34px/1 var(--font-display);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
-		padding: 16px;
+		align-items: center;
+		gap: var(--s2);
 	}
 
-	a,
-	button {
-		padding: 8px 14px;
-		border: 1px solid rgb(255 255 255 / 0.3);
-		border-radius: 8px;
-		background: none;
-		color: inherit;
-		font: inherit;
-		font-weight: 600;
-		text-decoration: none;
-		cursor: pointer;
+	.actions :global(.start) {
+		padding: 0 var(--s5);
 	}
 
-	.start {
+	/* Trimmed, with the icons' 44 px targets touching, so every action fits on one line in a third of the screen. */
+	.actions :global(.favorite) {
+		padding: 0 var(--s3);
+	}
+
+	.secondary {
+		display: flex;
+		margin-left: auto;
+	}
+
+	/* An icon-only danger button: ghost until hovered, like its neighbours. */
+	.secondary :global(.delete) {
 		border-color: transparent;
-		background: var(--start-bg);
-		color: var(--start-text);
+		background: transparent;
 	}
 
-	button[aria-pressed='true'] {
-		border-color: currentColor;
-	}
-
-	button:disabled {
-		opacity: 0.4;
-		cursor: default;
+	@media (hover: hover) {
+		.secondary :global(.delete:not(:disabled):hover) {
+			border-color: transparent;
+			background: color-mix(in srgb, var(--text) 7%, transparent);
+		}
 	}
 </style>

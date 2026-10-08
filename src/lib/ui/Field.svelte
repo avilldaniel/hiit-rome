@@ -1,12 +1,18 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	// The control goes in `children`: the label wraps it, so it names the control without an id.
-	let { label, children }: { label: string; children: Snippet } = $props();
+	// The control goes in `children`: the label wraps it, so it names the control without an id. `inline` puts the
+	// label beside the control; `hideLabel` keeps it for screen readers only, for a control whose purpose shows.
+	let {
+		label,
+		inline = false,
+		hideLabel = false,
+		children
+	}: { label: string; inline?: boolean; hideLabel?: boolean; children: Snippet } = $props();
 </script>
 
-<label class="field">
-	<span class="label">{label}</span>
+<label class={['field', inline && 'inline']}>
+	<span class={['label', hideLabel && 'hidden']}>{label}</span>
 	{@render children()}
 </label>
 
@@ -16,10 +22,26 @@
 		gap: var(--s1);
 	}
 
+	.inline {
+		display: flex;
+		align-items: center;
+		gap: var(--s2);
+	}
+
 	.label {
 		font-size: 14px;
 		font-weight: 600;
 		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 
 	.field :global(:is(input:not([type='checkbox'], [type='radio']), select)) {
@@ -47,6 +69,11 @@
 		background-size: 5px 5px;
 		background-repeat: no-repeat;
 		cursor: pointer;
+	}
+
+	.field :global(input::placeholder) {
+		color: var(--muted);
+		font-style: italic;
 	}
 
 	@media (hover: hover) {
