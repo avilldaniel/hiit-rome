@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '#lib/ui/Icon.svelte';
 	import type { OutlineActions } from './outline-actions.ts';
 
 	/** Grip that drags the outline row `id` (its whole list item) to a new place. */
@@ -21,14 +22,14 @@
 	aria-label="Drag {label}"
 	title="Drag to move"
 	ondragstart={start}
-	ondragend={() => actions.endDrag()}>⠿</span
+	ondragend={() => actions.endDrag()}><Icon name="grip" /></span
 >
 
 <style>
 	.handle {
-		padding: 0 4px;
-		font-size: 20px;
-		line-height: 1;
+		display: flex;
+		justify-content: center;
+		color: var(--muted);
 		cursor: grab;
 		user-select: none;
 	}

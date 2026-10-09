@@ -60,6 +60,8 @@
 	--r-lg: 20px;
 	--r-xl: 32px;
 	--shadow: 0 1px 2px rgb(17 22 29 / 0.06), 0 4px 16px rgb(17 22 29 / 0.06);
+	/* For what floats over the page, such as a toast or a sticky bar */
+	--shadow-raised: var(--shadow), 0 8px 24px rgb(17 22 29 / 0.12);
 
 	/* Spacing, a 4-pt scale */
 	--s1: 4px;
@@ -102,6 +104,60 @@ h1,
 h2,
 h3 {
 	font-family: var(--font-display);
+}
+
+/* Bare form controls, for screens that lay them out without a Field: a text or number input, and a select. */
+.input,
+.select {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 44px;
+	padding: 0 var(--s3);
+	border: 1px solid var(--line);
+	border-radius: var(--r-sm);
+	background-color: var(--surface);
+	color: var(--text);
+	font: 500 17px/1 var(--font-body);
+	font-variant-numeric: tabular-nums;
+}
+
+.select {
+	appearance: none;
+	padding-right: 36px;
+	background-image:
+		linear-gradient(45deg, transparent 50%, currentColor 50%),
+		linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position:
+		calc(100% - 18px) 50%,
+		calc(100% - 13px) 50%;
+	background-size: 5px 5px;
+	background-repeat: no-repeat;
+	cursor: pointer;
+}
+
+.input::placeholder {
+	color: var(--muted);
+	font-style: italic;
+}
+
+@media (hover: hover) {
+	.input:hover,
+	.select:hover {
+		border-color: var(--line-strong);
+	}
+}
+
+.input[aria-invalid='true'] {
+	border-color: var(--danger);
+	box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+.checkbox {
+	width: 20px;
+	height: 20px;
+	margin: 0;
+	accent-color: var(--primary);
+	cursor: pointer;
 }
 
 /* Animations are left to each screen: the Session and Countdown keep a gentler flash as a Cue. */

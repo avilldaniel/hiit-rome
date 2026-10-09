@@ -71,3 +71,27 @@ export function buildTimeline(items: Item[]): Timeline {
 
 	return { entries, totalMs: startMs };
 }
+
+/** One mark on a Timeline's time axis: where it falls, and how much of the Timeline it labels up to the next. */
+export interface AxisTick {
+	atMs: number;
+	spanMs: number;
+}
+
+/** Steps for a Workout under a minute, and for longer ones, in seconds. */
+const SHORT_STEPS = [10, 15, 30];
+const LONG_STEPS = [60, 120, 300, 600, 900, 1800, 3600];
+const MAX_TICKS = 12;
+
+/** Evenly spaced marks along a Timeline of `totalMs`, at the finest round step that keeps them few enough to read. */
+export function timelineAxis(totalMs: number): AxisTick[] {
+	if (totalMs <= 0) return [];
+	const steps = totalMs < 60_000 ? SHORT_STEPS : LONG_STEPS;
+	const stepMs = 1000 * (steps.find((s) => Math.ceil(totalMs / (s * 1000)) <= MAX_TICKS) ?? steps.at(-1)!);
+	const ticks: AxisTick[] = [];
+	for (let atMs = 0; atMs < totalMs; atMs += stepMs) ticks.push({ atMs, spanMs: Math.min(stepMs, totalMs - atMs) });
+	// A last tick under half a step is too narrow for its label, so the one before runs to the end instead.
+	const last = ticks.at(-1)!;
+	if (ticks.length > 1 && last.spanMs < stepMs / 2) ticks.at(-2)!.spanMs += ticks.pop()!.spanMs;
+	return ticks;
+}

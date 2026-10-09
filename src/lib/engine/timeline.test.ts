@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { group, interval } from './workout';
-import { buildTimeline } from './timeline';
+import { buildTimeline, timelineAxis } from './timeline';
 
 const names = (t: ReturnType<typeof buildTimeline>) => t.entries.map((e) => e.name);
 
@@ -62,5 +62,34 @@ describe('buildTimeline', () => {
 		const t = buildTimeline([group(3, []), interval('Work', 'work', 20)]);
 
 		expect(names(t)).toEqual(['Work']);
+	});
+});
+
+describe('timelineAxis', () => {
+	const at = (ticks: ReturnType<typeof timelineAxis>) => ticks.map((t) => t.atMs / 1000);
+
+	it('marks each minute of a short Workout, the last tick spanning only what is left', () => {
+		const ticks = timelineAxis(230_000);
+
+		expect(at(ticks)).toEqual([0, 60, 120, 180]);
+		expect(ticks.map((t) => t.spanMs / 1000)).toEqual([60, 60, 60, 50]);
+	});
+
+	it('widens the step so a long Workout keeps a dozen ticks at most', () => {
+		expect(at(timelineAxis(15 * 60_000))).toEqual([0, 120, 240, 360, 480, 600, 720, 840]);
+		expect(timelineAxis(36.5 * 60_000).every((t) => t.atMs % 300_000 === 0)).toBe(true);
+		expect(timelineAxis(36.5 * 60_000).length).toBeLessThanOrEqual(12);
+	});
+
+	it('folds a last tick shorter than half a step into the one before, so its label has room', () => {
+		const ticks = timelineAxis(61_000);
+
+		expect(at(ticks)).toEqual([0]);
+		expect(ticks[0].spanMs).toBe(61_000);
+	});
+
+	it('uses seconds under a minute, and has no ticks for an empty Workout', () => {
+		expect(at(timelineAxis(40_000))).toEqual([0, 10, 20, 30]);
+		expect(timelineAxis(0)).toEqual([]);
 	});
 });

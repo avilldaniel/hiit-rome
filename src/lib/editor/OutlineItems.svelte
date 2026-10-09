@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { MAX_GROUP_DEPTH } from '#lib/engine/outline.ts';
 	import { isValidRounds, LIMITS, type Item } from '#lib/engine/workout.ts';
+	import { PALETTE } from '#lib/engine/palette.ts';
+	import Button from '#lib/ui/Button.svelte';
 	import DragHandle from './DragHandle.svelte';
 	import IntervalRow from './IntervalRow.svelte';
 	import OutlineItems from './OutlineItems.svelte';
@@ -49,28 +51,27 @@
 				{@const label = item.name?.trim() ? `Group ${item.name.trim()}` : 'Unnamed Group'}
 				{@const collapsed = actions.isCollapsed(item.id)}
 				{@const empty = actions.isEmpty(item.id)}
-				<section class="group" class:empty aria-label={label}>
+				<section class="group" class:empty aria-label={label} style:--flag={PALETTE.warmup.background}>
 					<div class="group-header" {...dropZone(item.id)}>
 						<DragHandle id={item.id} {label} {actions} />
-						<button
-							type="button"
-							class="toggle"
+						<Button
+							variant="ghost"
+							icon={collapsed ? 'chevron' : 'down'}
 							aria-expanded={!collapsed}
 							aria-label="{collapsed ? 'Expand' : 'Collapse'} {label}"
-							onclick={() => actions.toggleCollapsed(item.id)}>{collapsed ? '▸' : '▾'}</button
-						>
+							onclick={() => actions.toggleCollapsed(item.id)}
+						/>
 						<input
-							class="name"
+							class="input name"
 							type="text"
 							aria-label="Group name"
 							placeholder="Unnamed Group"
 							value={item.name ?? ''}
 							oninput={(event) => actions.update(item.id, { name: event.currentTarget.value || undefined })}
 						/>
-						<label>
-							×
+						<label class="rounds">
+							<span class="x">×</span>
 							<input
-								class="rounds"
 								type="number"
 								aria-label="Rounds"
 								min={LIMITS.minRounds}
@@ -80,16 +81,19 @@
 							/>
 							Rounds
 						</label>
-						<label>
+						<label class="skip">
 							<input
+								class="checkbox"
 								type="checkbox"
 								checked={item.skipLastRest}
 								onchange={(event) => actions.update(item.id, { skipLastRest: event.currentTarget.checked })}
 							/>
 							Skip last rest
 						</label>
-						<button type="button" aria-label="Duplicate {label}" onclick={() => actions.duplicate(item.id)}>Duplicate</button>
-						<button type="button" aria-label="Delete {label}" onclick={() => actions.remove(item.id)}>Delete</button>
+						<span class="actions">
+							<Button variant="ghost" icon="copy" aria-label="Duplicate {label}" title="Duplicate" onclick={() => actions.duplicate(item.id)} />
+							<Button variant="ghost" icon="trash" class="danger" aria-label="Delete {label}" title="Delete" onclick={() => actions.remove(item.id)} />
+						</span>
 					</div>
 					{#if empty}
 						<p class="flag" role="note">Empty Group: it plays nothing, so it will be skipped. Add an Interval (a final Rest is dropped when Skip last rest is on).</p>
@@ -107,12 +111,14 @@
 		class:drop-refused={actions.dropState({ parentId, beforeId: null }) === 'refused'}
 		{...dropZone(null)}
 	>
-		<button type="button" onclick={() => actions.addInterval(parentId)}>+ Add Interval</button>
-		<button
-			type="button"
+		<Button variant="ghost" icon="plus" aria-label="+ Add Interval" onclick={() => actions.addInterval(parentId)}>Add Interval</Button>
+		<Button
+			variant="ghost"
+			icon="plus"
+			aria-label="+ Add Group"
 			disabled={!actions.canHoldGroup(parentId)}
 			title={actions.canHoldGroup(parentId) ? undefined : `Groups nest at most ${MAX_GROUP_DEPTH} levels deep`}
-			onclick={() => actions.addGroup(parentId)}>+ Add Group</button
+			onclick={() => actions.addGroup(parentId)}>Add Group</Button
 		>
 	</li>
 </ul>
@@ -121,78 +127,133 @@
 	.items {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: var(--s2);
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
 	.group {
-		padding: 8px 8px 12px;
-		border: 1px solid rgb(255 255 255 / 0.3);
-		border-radius: 10px;
+		display: grid;
+		gap: var(--s2);
+		padding: var(--s3);
+		border: 1px solid var(--line);
+		border-radius: var(--r-lg);
+		background: color-mix(in oklab, var(--surface) 50%, var(--ground));
+	}
+
+	.group .group {
+		background: color-mix(in oklab, var(--surface) 80%, var(--ground));
 	}
 
 	.group.empty {
-		border-style: dashed;
-		border-color: #f7b928;
+		border: 2px dashed var(--flag);
 	}
 
 	.group > :global(.items) {
-		margin-left: 28px;
+		padding-left: var(--s7);
 	}
 
 	.group-header {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: 24px 44px minmax(0, 1fr) auto auto auto;
 		align-items: center;
-		gap: 8px;
-		margin-bottom: 8px;
+		gap: var(--s3);
+		padding-left: var(--s2);
 	}
 
-	.group-header .name {
-		flex: 1 1 10em;
-		min-width: 0;
-		font-weight: 700;
+	.name {
+		border-color: transparent;
+		background-color: transparent;
+		font: 800 22px var(--font-display);
+		letter-spacing: -0.01em;
 	}
 
-	.toggle {
-		width: 2em;
-		padding-inline: 0;
-	}
-
+	/* The Rounds field sits in an ink pill: "× [n] Rounds". */
 	.rounds {
-		width: 4em;
-	}
-
-	label {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: var(--s2);
+		min-height: 44px;
+		padding: 0 var(--s3) 0 var(--s4);
+		border-radius: 99px;
+		background: var(--primary);
+		color: var(--on-primary);
+		font-weight: 600;
 		white-space: nowrap;
 	}
 
+	.rounds .x {
+		font: 800 22px var(--font-display);
+	}
+
+	.rounds input {
+		box-sizing: border-box;
+		width: 68px;
+		min-height: 36px;
+		padding: 0;
+		border: 0;
+		border-radius: 99px;
+		background: color-mix(in srgb, var(--on-primary) 14%, transparent);
+		color: inherit;
+		font: 800 22px var(--font-display);
+		text-align: center;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.rounds input:focus-visible {
+		outline-color: var(--on-primary);
+	}
+
+	.skip {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--s2);
+		min-height: 44px;
+		color: var(--muted);
+		font-weight: 500;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.actions {
+		display: flex;
+		gap: var(--s1);
+	}
+
 	.flag {
-		margin: 0 0 8px 28px;
-		color: #f7b928;
+		margin: 0 0 0 var(--s7);
+		padding: var(--s2) var(--s3);
+		border-radius: var(--r-sm);
+		background: color-mix(in oklab, var(--flag) 22%, var(--surface));
+		font-size: 16px;
 		font-weight: 600;
 	}
 
 	.add {
 		display: flex;
-		gap: 8px;
+		gap: var(--s2);
 	}
 
 	/* A line above the spot where the dragged item would land. */
 	.drop-allowed {
-		box-shadow: 0 -5px 0 #fff;
+		box-shadow: 0 -5px 0 var(--focus);
 	}
 
 	.drop-refused {
-		box-shadow: 0 -5px 0 #f0476a;
+		box-shadow: 0 -5px 0 var(--danger);
 	}
 
-	.add button {
-		border-style: dashed;
+	/* Narrower screens let the Group header wrap under its name. */
+	@media (max-width: 1100px) {
+		.group-header {
+			display: flex;
+			flex-wrap: wrap;
+		}
+
+		.name {
+			flex: 1 1 12em;
+			width: auto;
+		}
 	}
 </style>

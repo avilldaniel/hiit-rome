@@ -18,12 +18,14 @@
 		wrapBlocker,
 		wrapInGroup
 	} from '#lib/engine/outline.ts';
-	import { PALETTE } from '#lib/engine/palette.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { CueSettings } from '#lib/engine/cues.ts';
 	import { group, interval, UNTITLED, type Item, type Workout } from '#lib/engine/workout.ts';
 	import ShareButton from '#lib/transfer/ShareButton.svelte';
+	import Button from '#lib/ui/Button.svelte';
+	import Icon from '#lib/ui/Icon.svelte';
 	import OutlineItems from './OutlineItems.svelte';
+	import TimelinePanel from './TimelinePanel.svelte';
 	import WorkoutSettings from './WorkoutSettings.svelte';
 	import type { DropTarget, OutlineActions } from './outline-actions.ts';
 
@@ -48,7 +50,7 @@
 
 	let workout = $state.raw(untrack(() => initial));
 	// The Timeline is the source of truth for the total, so skipped rests are already accounted for.
-	const totalMs = $derived(buildTimeline(workout.items).totalMs);
+	const timeline = $derived(buildTimeline(workout.items));
 	const empty = $derived(emptyGroupIds(workout.items));
 
 	/** Saves run one after another, in the order the changes were made. */
@@ -169,11 +171,11 @@
 	}
 </script>
 
-<div class="editor" style:background-color={PALETTE.neutral.background} style:color={PALETTE.neutral.text}>
+<div class="editor">
 	<header>
-		<a class="back" href="/">← My Workouts</a>
+		<a class="back" href="/" aria-label="← My Workouts"><Icon name="left" />My Workouts</a>
 		<input
-			class="title"
+			class="input title"
 			type="text"
 			aria-label="Workout name"
 			placeholder={UNTITLED}
@@ -181,40 +183,38 @@
 			oninput={(event) => change({ name: event.currentTarget.value })}
 			onchange={(event) => !event.currentTarget.value.trim() && change({ name: UNTITLED })}
 		/>
-		<p class="total">Total <span data-testid="total">{formatClock(totalMs)}</span></p>
+		<p class="total"><span class="label">Total</span> <span data-testid="total">{formatClock(timeline.totalMs)}</span></p>
 		<ShareButton {workout} />
-		<button
-			type="button"
-			class="start"
-			style:background-color={PALETTE.work.background}
-			style:color={PALETTE.work.text}
-			onclick={start}>Start</button
-		>
+		<Button variant="primary" icon="play" onclick={start}>Start</Button>
 	</header>
 
-	{#if blocked}
-		<p class="message" role="alert">{blocked}</p>
-	{/if}
-	{#if saveFailed}
-		<p class="message" role="alert">Your changes couldn’t be saved. Try reloading the page.</p>
-	{/if}
+	<div class="column">
+		{#if blocked}
+			<p class="message" role="alert">{blocked}</p>
+		{/if}
+		{#if saveFailed}
+			<p class="message" role="alert">Your changes couldn’t be saved. Try reloading the page.</p>
+		{/if}
 
-	<WorkoutSettings {workout} defaults={cueDefaults} onchange={change} />
+		<TimelinePanel {timeline} />
 
-	{#if selection.length}
-		<div class="selection" role="toolbar" aria-label="Selected Intervals">
-			<span>{selection.length} selected</span>
-			<button type="button" disabled={wrapProblem !== null} onclick={wrap}>Wrap in Group</button>
-			<button type="button" onclick={() => selected.clear()}>Clear</button>
-			{#if wrapProblem}
-				<span class="problem">{wrapProblem}</span>
-			{/if}
-		</div>
-	{/if}
+		<WorkoutSettings {workout} defaults={cueDefaults} onchange={change} />
 
-	<main>
-		<OutlineItems items={workout.items} parentId={null} {actions} />
-	</main>
+		{#if selection.length}
+			<div class="selection" role="toolbar" aria-label="Selected Intervals">
+				<span>{selection.length} selected</span>
+				<Button variant="primary" disabled={wrapProblem !== null} onclick={wrap}>Wrap in Group</Button>
+				<Button variant="ghost" onclick={() => selected.clear()}>Clear</Button>
+				{#if wrapProblem}
+					<span class="problem">{wrapProblem}</span>
+				{/if}
+			</div>
+		{/if}
+
+		<main>
+			<OutlineItems items={workout.items} parentId={null} {actions} />
+		</main>
+	</div>
 
 	{#if drag?.blocker}
 		<p class="refusal" role="status">Can’t drop here: {drag.blocker}</p>
@@ -223,7 +223,7 @@
 	{#if undoable}
 		<div class="toast" role="status">
 			{undoable.message}
-			<button type="button" onclick={undo}>Undo</button>
+			<Button onclick={undo}>Undo</Button>
 		</div>
 	{/if}
 </div>
@@ -237,121 +237,128 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 16px;
-		padding: 24px 32px;
+		gap: var(--s4);
+		padding: var(--s5) var(--s8);
+		border-bottom: 1px solid var(--line);
+		background: var(--surface);
 	}
 
 	.back {
-		color: inherit;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--s2);
+		min-height: 44px;
+		color: var(--text);
 		font-weight: 600;
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	@media (hover: hover) {
+		.back:hover {
+			text-decoration: underline;
+			text-underline-offset: 4px;
+		}
 	}
 
 	.title {
 		flex: 1 1 16em;
+		width: auto;
 		min-width: 0;
-		font-size: 28px;
-		font-weight: 800;
+		min-height: 56px;
+		border-color: transparent;
+		background-color: transparent;
+		font: 800 30px var(--font-display);
+		letter-spacing: -0.02em;
 	}
 
 	.total {
-		margin: 0;
-		font-size: 22px;
-		font-weight: 700;
+		display: grid;
+		margin: 0 var(--s3) 0 0;
+		text-align: right;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.start {
-		border-color: transparent;
-		font-weight: 800;
+	.total .label {
+		color: var(--muted);
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.total [data-testid='total'] {
+		font: 800 36px/1 var(--font-display);
+	}
+
+	.column {
+		display: grid;
+		gap: var(--s4);
+		max-width: 1600px;
+		margin: 0 auto;
+		padding: var(--s5) var(--s8) var(--s9);
 	}
 
 	.message {
-		margin: 0 32px 16px;
-		padding: 12px 16px;
-		border-radius: 8px;
-		background: #f7b928;
-		color: var(--text);
+		margin: 0;
+		padding: var(--s3) var(--s4);
+		border-left: 4px solid var(--danger);
+		border-radius: var(--r-sm);
+		background: color-mix(in oklab, var(--danger) 10%, var(--surface));
 		font-weight: 600;
 	}
 
 	.selection {
 		position: sticky;
-		top: 0;
+		top: var(--s2);
 		z-index: 1;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 12px;
-		margin: 0 0 16px;
-		padding: 12px 32px;
-		background: inherit;
+		gap: var(--s3);
+		padding: var(--s2) var(--s2) var(--s2) var(--s5);
+		border-radius: var(--r);
+		background: var(--surface);
 		font-weight: 600;
-		box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+		box-shadow: var(--shadow-raised);
 	}
 
 	.problem {
-		color: #f7b928;
+		color: var(--danger);
 	}
 
 	.refusal {
 		position: fixed;
-		top: 24px;
+		top: var(--s5);
 		left: 50%;
 		transform: translateX(-50%);
 		margin: 0;
-		padding: 12px 20px;
-		border-radius: 12px;
-		background: #f0476a;
-		color: var(--text);
+		padding: var(--s3) var(--s5);
+		border-radius: var(--r);
+		background: var(--danger);
+		color: var(--on-primary);
 		font-weight: 700;
-		box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+		box-shadow: var(--shadow-raised);
 		pointer-events: none;
-	}
-
-	main {
-		max-width: 1100px;
-		padding: 0 32px 96px;
-	}
-
-	.editor :global(:is(input, select, button)) {
-		padding: 6px 10px;
-		border: 1px solid currentColor;
-		border-radius: 8px;
-		background: rgb(255 255 255 / 0.12);
-		color: inherit;
-		font: inherit;
-	}
-
-	.editor :global(button) {
-		cursor: pointer;
-	}
-
-	.editor :global(button:disabled) {
-		opacity: 0.4;
-		cursor: default;
-	}
-
-	.editor :global(option) {
-		color: initial;
-	}
-
-	.editor :global(input[type='checkbox']) {
-		padding: 0;
 	}
 
 	.toast {
 		position: fixed;
-		bottom: 24px;
+		bottom: var(--s5);
 		left: 50%;
 		transform: translateX(-50%);
 		display: flex;
 		align-items: center;
-		gap: 16px;
-		padding: 12px 16px 12px 20px;
-		border-radius: 12px;
-		background: #fff;
-		color: var(--text);
+		gap: var(--s4);
+		padding: var(--s2) var(--s2) var(--s2) var(--s5);
+		border-radius: var(--r);
+		background: var(--surface);
 		font-weight: 600;
-		box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+		box-shadow: var(--shadow-raised);
+	}
+
+	@media (max-width: 1100px) {
+		header,
+		.column {
+			padding-inline: var(--s5);
+		}
 	}
 </style>

@@ -308,7 +308,7 @@
 		border-radius: var(--r);
 		background: var(--surface);
 		font-weight: 600;
-		box-shadow: var(--shadow), 0 8px 24px rgb(17 22 29 / 0.12);
+		box-shadow: var(--shadow-raised);
 	}
 
 	/* Below laptop width the sidebar sits on top. */

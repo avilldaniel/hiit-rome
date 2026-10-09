@@ -100,6 +100,8 @@ test('the outline is restructured by duplicating, wrapping and dragging, each un
 	await page.getByRole('button', { name: '+ Add Group' }).last().click();
 	const added = page.getByRole('region', { name: 'Unnamed Group' }).last();
 	const target = added.getByRole('button', { name: '+ Add Interval' });
+	// The taller Studio rows put the target below the fold; scroll first, as a drag can't start mid-scroll.
+	await target.scrollIntoViewIfNeeded();
 	await tabata.getByRole('img', { name: 'Drag Group Tabata' }).hover();
 	await page.mouse.down();
 	await target.hover();

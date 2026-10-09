@@ -43,7 +43,7 @@
 		<span class="notice above" role="status">{notice ?? ''}</span>
 	</span>
 {:else}
-	<button type="button" aria-label="Share {workout.name}" disabled={!link} onclick={share}>Share</button>
+	<Button icon="share" aria-label="Share {workout.name}" disabled={!link} onclick={share}>Share</Button>
 	<span class="notice" role="status">{notice ?? ''}</span>
 {/if}
 

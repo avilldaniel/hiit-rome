@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CueOverrides, CueSettings } from '#lib/engine/cues.ts';
 	import { CUE_TOGGLES } from '#lib/engine/settings.ts';
+	import Icon from '#lib/ui/Icon.svelte';
 	import { isValidLeadIn, isValidWarningSec, LIMITS, type Workout } from '#lib/engine/workout.ts';
 
 	/** A Workout's Lead-in and Cue overrides; any override left unset follows the `defaults` from Settings. */
@@ -38,28 +39,31 @@
 </script>
 
 <details class="workout-settings">
-	<summary>Workout settings</summary>
+	<summary><Icon name="chevron" />Workout settings</summary>
 	<div class="fields" role="group" aria-label="Workout settings">
-		<label>
-			Lead-in
-			<input
-				type="number"
-				min="0"
-				max={LIMITS.maxLeadInSec}
-				aria-label="Lead-in seconds"
-				aria-invalid={invalid.leadIn}
-				value={workout.leadInSec}
-				oninput={(event) => changeLeadIn(event.currentTarget.value)}
-			/>
-			s
+		<label class="field">
+			<span class="label">Lead-in</span>
+			<span class="inline">
+				<input
+					class="input number"
+					type="number"
+					min="0"
+					max={LIMITS.maxLeadInSec}
+					aria-label="Lead-in seconds"
+					aria-invalid={invalid.leadIn}
+					value={workout.leadInSec}
+					oninput={(event) => changeLeadIn(event.currentTarget.value)}
+				/>
+				s
+			</span>
 		</label>
 
-		<p class="hint">Cues set to Default follow Settings.</p>
 		{#each CUE_TOGGLES as toggle (toggle.key)}
-			<div class="row">
-				<label>
+			<div class="field">
+				<label class="field">
 					<span class="label">{toggle.label}</span>
 					<select
+						class="select"
 						aria-label={toggle.label}
 						value={overrides[toggle.key] === undefined ? '' : overrides[toggle.key] ? 'on' : 'off'}
 						onchange={(event) => {
@@ -73,8 +77,9 @@
 					</select>
 				</label>
 				{#if toggle.key === 'warning'}
-					<label>
+					<label class="inline">
 						<input
+							class="input number"
 							type="number"
 							min={LIMITS.minWarningSec}
 							max={LIMITS.maxWarningSec}
@@ -89,55 +94,81 @@
 				{/if}
 			</div>
 		{/each}
+
+		<p class="hint">Cues set to Default follow Settings.</p>
 	</div>
 </details>
 
 <style>
 	.workout-settings {
-		margin: 0 32px 16px;
-		max-width: 1036px;
+		border-radius: var(--r-lg);
+		background: var(--surface);
+		box-shadow: var(--shadow);
 	}
 
 	summary {
-		font-weight: 700;
+		display: flex;
+		align-items: center;
+		gap: var(--s2);
+		min-height: 52px;
+		padding: 0 var(--s5);
+		font-weight: 600;
+		list-style: none;
 		cursor: pointer;
 	}
 
+	summary::-webkit-details-marker {
+		display: none;
+	}
+
+	summary :global(.icon) {
+		transition: transform var(--dur) var(--ease-out);
+	}
+
+	[open] > summary :global(.icon) {
+		transform: rotate(90deg);
+	}
+
 	.fields {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding: 12px 0 0 20px;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		align-items: start;
+		gap: var(--s3) var(--s5);
+		padding: 0 var(--s5) var(--s5);
 	}
 
-	.row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 16px;
-	}
-
-	label {
-		display: flex;
-		align-items: center;
-		gap: 8px;
+	.field {
+		display: grid;
+		gap: var(--s1);
 	}
 
 	.label {
-		min-width: 12em;
+		color: var(--muted);
+		font-size: 14px;
+		font-weight: 600;
 	}
 
-	input[type='number'] {
-		width: 4.5em;
+	.inline {
+		display: flex;
+		align-items: center;
+		gap: var(--s2);
+		white-space: nowrap;
 	}
 
-	[aria-invalid='true'] {
-		outline: 3px solid #fff;
-		outline-offset: 1px;
+	.number {
+		width: 96px;
 	}
 
 	.hint {
-		margin: 8px 0 0;
-		opacity: 0.8;
+		grid-column: 1 / -1;
+		margin: 0;
+		color: var(--muted);
+		font-size: 16px;
+	}
+
+	@media (max-width: 1100px) {
+		.fields {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 </style>
