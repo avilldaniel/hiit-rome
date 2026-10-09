@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { isValidRounds, LIMITS } from '#lib/engine/workout.ts';
+	import Field from '#lib/ui/Field.svelte';
 
-	/** One whole-number row of a Wizard's form (Rounds, or Tabatas); reports each valid number as it's typed. */
+	/** One whole-number field of a Wizard's form (Rounds, or Tabatas); reports each valid number as it's typed. */
 	let { label, value, onchange }: { label: string; value: number; onchange: (value: number) => void } = $props();
 
 	let invalid = $state(false);
@@ -14,10 +15,8 @@
 	}
 </script>
 
-<label>
-	<span>{label}</span>
+<Field {label} size="large">
 	<input
-		class="count"
 		type="number"
 		min={LIMITS.minRounds}
 		max={LIMITS.maxRounds}
@@ -25,16 +24,4 @@
 		{value}
 		oninput={(event) => input(event.currentTarget)}
 	/>
-</label>
-
-<style>
-	.count {
-		width: 5.5em;
-		font-variant-numeric: tabular-nums;
-	}
-
-	[aria-invalid='true'] {
-		outline: 3px solid #fff;
-		outline-offset: 1px;
-	}
-</style>
+</Field>

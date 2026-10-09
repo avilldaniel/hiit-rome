@@ -3,6 +3,7 @@
 	import BookendFields from './BookendFields.svelte';
 	import CountField from './CountField.svelte';
 	import ExercisesField from './ExercisesField.svelte';
+	import FieldGroup from './FieldGroup.svelte';
 	import WizardForm from './WizardForm.svelte';
 	import type { WizardProps } from './registry.ts';
 
@@ -14,7 +15,11 @@
 </script>
 
 <WizardForm {title} {workout} {onfinish} hint="Each exercise gets a minute. Set Warm-up or Cool-down to 0:00 to leave it out.">
-	<ExercisesField exercises={params.exercises} onchange={(exercises) => set({ exercises })} />
-	<CountField label="Rounds" value={params.rounds} onchange={(rounds) => set({ rounds })} />
+	<FieldGroup legend="Each Round">
+		<ExercisesField exercises={params.exercises} onchange={(exercises) => set({ exercises })} />
+	</FieldGroup>
+	<FieldGroup legend="Repeats">
+		<CountField label="Rounds" value={params.rounds} onchange={(rounds) => set({ rounds })} />
+	</FieldGroup>
 	<BookendFields {params} onchange={set} />
 </WizardForm>

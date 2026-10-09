@@ -3,6 +3,7 @@
 	import BookendFields from './BookendFields.svelte';
 	import CountField from './CountField.svelte';
 	import DurationField from './DurationField.svelte';
+	import FieldGroup from './FieldGroup.svelte';
 	import WizardForm from './WizardForm.svelte';
 	import type { WizardProps } from './registry.ts';
 
@@ -14,17 +15,21 @@
 </script>
 
 <WizardForm {title} {workout} {onfinish}>
-	<DurationField label="Work" seconds={params.workSec} onchange={(workSec) => set({ workSec })} />
-	<DurationField label="Rest" optional seconds={params.restSec} onchange={(restSec) => set({ restSec })} />
-	<CountField label="Rounds" value={params.rounds} onchange={(rounds) => set({ rounds })} />
-	<CountField label="Tabatas" value={params.tabatas} onchange={(tabatas) => set({ tabatas })} />
-	{#if params.tabatas > 1}
-		<DurationField
-			label="Rest between Tabatas"
-			optional
-			seconds={params.betweenSec}
-			onchange={(betweenSec) => set({ betweenSec })}
-		/>
-	{/if}
+	<FieldGroup legend="Each Round">
+		<DurationField label="Work" seconds={params.workSec} onchange={(workSec) => set({ workSec })} />
+		<DurationField label="Rest" optional seconds={params.restSec} onchange={(restSec) => set({ restSec })} />
+	</FieldGroup>
+	<FieldGroup legend="Repeats">
+		<CountField label="Rounds" value={params.rounds} onchange={(rounds) => set({ rounds })} />
+		<CountField label="Tabatas" value={params.tabatas} onchange={(tabatas) => set({ tabatas })} />
+		{#if params.tabatas > 1}
+			<DurationField
+				label="Rest between Tabatas"
+				optional
+				seconds={params.betweenSec}
+				onchange={(betweenSec) => set({ betweenSec })}
+			/>
+		{/if}
+	</FieldGroup>
 	<BookendFields {params} onchange={set} />
 </WizardForm>

@@ -1,24 +1,29 @@
 <script lang="ts">
-	import { PALETTE } from '#lib/engine/palette.ts';
+	import { buildTimeline } from '#lib/engine/timeline.ts';
+	import BackLink from '#lib/ui/BackLink.svelte';
+	import Strip from '#lib/ui/Strip.svelte';
 	import { WIZARDS } from '#lib/wizards/registry.ts';
+
+	const cards = WIZARDS.map((wizard) => ({ wizard, timeline: buildTimeline(wizard.defaultWorkout.items) }));
 </script>
 
 <svelte:head>
 	<title>Wizards · hiit-rome</title>
 </svelte:head>
 
-<div class="wizards" style:background-color={PALETTE.neutral.background} style:color={PALETTE.neutral.text}>
+<div class="wizards">
 	<header>
-		<a class="back" href="/">← My Workouts</a>
+		<BackLink href="/" label="My Workouts" />
 		<h1>Wizards</h1>
 	</header>
 
 	<main>
 		<p class="intro">Fill in a short form and get a Workout of your own, ready to start or fine-tune.</p>
 		<ul class="cards">
-			{#each WIZARDS as wizard (wizard.style)}
+			{#each cards as { wizard, timeline } (wizard.style)}
 				<li>
 					<a class="card" href="/wizard/{wizard.style}">
+						<span class="strip"><Strip {timeline} /></span>
 						<h2>{wizard.title}</h2>
 						<p>{wizard.blurb}</p>
 					</a>
@@ -30,69 +35,118 @@
 
 <style>
 	.wizards {
-		min-height: 100vh;
+		display: grid;
+		gap: var(--s2);
+		padding: var(--s7) var(--s8) var(--s9);
 	}
 
 	header {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 24px;
-		padding: 24px 32px;
-	}
-
-	.back {
-		color: inherit;
-		font-weight: 600;
+		display: grid;
+		gap: var(--s2);
 	}
 
 	h1 {
 		margin: 0;
-		font-size: 36px;
+		font-size: var(--fs-title);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
 	}
 
 	main {
-		padding: 0 32px 96px;
+		display: grid;
+		gap: var(--s6);
 	}
 
 	.intro {
-		margin: 0 0 24px;
-		font-size: 20px;
-		opacity: 0.8;
+		max-width: 68ch;
+		margin: 0;
+		color: var(--muted);
+		font-size: var(--fs-lead);
 	}
 
 	.cards {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		gap: 20px;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--s5);
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
 	.card {
-		display: block;
-		height: 100%;
+		display: grid;
+		align-content: start;
+		gap: var(--s4);
 		box-sizing: border-box;
-		padding: 24px;
-		border-radius: 12px;
-		background: rgb(255 255 255 / 0.08);
+		height: 100%;
+		min-height: 320px;
+		padding: var(--s6);
+		border: 1px solid transparent;
+		border-radius: var(--r-xl);
+		background: var(--surface);
+		box-shadow: var(--shadow);
 		color: inherit;
 		text-decoration: none;
+		transition:
+			transform var(--dur) var(--ease-out),
+			border-color var(--dur) var(--ease-out);
 	}
 
-	.card:hover,
-	.card:focus-visible {
-		background: rgb(255 255 255 / 0.16);
+	@media (hover: hover) {
+		.card:hover {
+			border-color: var(--text);
+			transform: translateY(-2px);
+		}
+	}
+
+	.strip {
+		display: grid;
+		margin-bottom: var(--s4);
+	}
+
+	.strip :global(.strip) {
+		height: 12px;
 	}
 
 	h2 {
-		margin: 0 0 8px;
-		font-size: 28px;
+		margin: 0;
+		font-size: 48px;
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
 	}
 
 	.card p {
 		margin: 0;
-		opacity: 0.8;
+		color: var(--muted);
+		font-size: var(--fs-lead);
+		line-height: 1.5;
+	}
+
+	@media (max-width: 1100px) {
+		.cards {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.card {
+			min-height: 0;
+		}
+	}
+
+	@media (max-width: 1000px) {
+		.wizards {
+			padding: var(--s5) var(--s4) var(--s7);
+		}
+
+		h1 {
+			font-size: 48px;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.cards {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 </style>

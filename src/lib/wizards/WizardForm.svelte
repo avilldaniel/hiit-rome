@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
-	import { PALETTE } from '#lib/engine/palette.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
+	import BackLink from '#lib/ui/BackLink.svelte';
+	import Button from '#lib/ui/Button.svelte';
+	import Field from '#lib/ui/Field.svelte';
+	import Strip from '#lib/ui/Strip.svelte';
 	import type { Finish, OnFinish } from './registry.ts';
 
 	/**
-	 * The frame every Wizard's form sits in: its fields (`children`, one <label> each), the Workout
+	 * The frame every Wizard's form sits in: its fields (`children`, in fieldsets), the Workout
 	 * they make so far with its live total, and the two ways to finish. The name follows the Wizard's
 	 * proposal until the trainer types their own.
 	 */
@@ -20,7 +23,7 @@
 	}: { title: string; workout: Workout; onfinish: OnFinish; hint?: string; children: Snippet } = $props();
 
 	// The Timeline is the source of truth for the total, so skipped rests are already accounted for.
-	const totalMs = $derived(buildTimeline(workout.items).totalMs);
+	const timeline = $derived(buildTimeline(workout.items));
 	let typedName = $state<string | null>(null);
 	const name = $derived(typedName ?? workout.name);
 
@@ -41,9 +44,9 @@
 	}
 </script>
 
-<div class="wizard" style:background-color={PALETTE.neutral.background} style:color={PALETTE.neutral.text}>
+<div class="wizard">
 	<header>
-		<a class="back" href="/wizard">← Wizards</a>
+		<BackLink href="/wizard" label="Wizards" />
 		<h1>{title}</h1>
 	</header>
 
@@ -55,8 +58,7 @@
 		</div>
 
 		<section class="finish" aria-label="Your Workout">
-			<label class="name">
-				Name
+			<Field label="Name" size="large">
 				<input
 					type="text"
 					aria-label="Workout name"
@@ -64,21 +66,15 @@
 					oninput={(event) => (typedName = event.currentTarget.value)}
 					onchange={(event) => !event.currentTarget.value.trim() && (typedName = null)}
 				/>
-			</label>
-			<p class="total">Total <span data-testid="total">{formatClock(totalMs)}</span></p>
+			</Field>
+			<p class="total"><span class="label">Total</span> <span data-testid="total">{formatClock(timeline.totalMs)}</span></p>
+			<span class="strip"><Strip {timeline} /></span>
 			{#if failed}
 				<p class="message" role="alert">Your Workout couldn’t be saved. Try again.</p>
 			{/if}
 			<div class="actions">
-				<button
-					type="button"
-					class="start"
-					style:background-color={PALETTE.work.background}
-					style:color={PALETTE.work.text}
-					disabled={busy}
-					onclick={() => finish('start')}>Start now</button
-				>
-				<button type="button" disabled={busy} onclick={() => finish('edit')}>Save & edit</button>
+				<Button variant="primary" size="large" icon="play" disabled={busy} onclick={() => finish('start')}>Start now</Button>
+				<Button size="large" icon="edit" disabled={busy} onclick={() => finish('edit')}>Save & edit</Button>
 			</div>
 		</section>
 	</form>
@@ -86,120 +82,114 @@
 
 <style>
 	.wizard {
-		min-height: 100vh;
+		display: grid;
+		gap: var(--s6);
+		padding: var(--s7) var(--s8) var(--s9);
 	}
 
 	header {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 24px;
-		padding: 24px 32px;
-	}
-
-	.back {
-		color: inherit;
-		font-weight: 600;
+		display: grid;
+		gap: var(--s2);
 	}
 
 	h1 {
 		margin: 0;
-		font-size: 36px;
+		font-size: var(--fs-title);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
 	}
 
+	/* The summary column gives way on a smaller screen, so the fields keep room for two to a row. */
 	form {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-start;
-		gap: 48px;
-		max-width: 1100px;
-		padding: 0 32px 96px;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) clamp(400px, 36vw, 680px);
+		align-items: start;
+		gap: var(--s7);
+	}
+
+	.fields,
+	.finish {
+		display: grid;
+		align-content: start;
+		padding: var(--s7);
+		background: var(--surface);
+		box-shadow: var(--shadow);
 	}
 
 	.fields {
-		display: grid;
-		flex: 1 1 24em;
-		grid-template-columns: max-content 1fr;
-		align-items: center;
-		gap: 16px 24px;
-	}
-
-	/* Each field is a <label> holding its name and input, laid out as one row of the grid. */
-	.fields :global(label) {
-		display: contents;
-	}
-
-	.hint {
-		grid-column: 1 / -1;
-		margin: 8px 0 0;
-		opacity: 0.8;
+		gap: var(--s6);
+		border-radius: var(--r-lg);
 	}
 
 	.finish {
-		display: flex;
-		flex: 1 1 20em;
-		flex-direction: column;
-		gap: 16px;
-		padding: 24px;
-		border-radius: 12px;
-		background: rgb(255 255 255 / 0.08);
+		gap: var(--s5);
+		border-radius: var(--r-xl);
 	}
 
-	.name {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		font-weight: 600;
+	.hint {
+		max-width: 68ch;
+		margin: 0;
+		color: var(--muted);
+		font-size: 16px;
 	}
 
 	.total {
+		display: grid;
+		gap: 2px;
 		margin: 0;
-		font-size: 22px;
-		font-weight: 700;
 	}
 
-	.total span {
-		display: block;
-		font-size: 64px;
-		font-weight: 800;
+	.total .label {
+		color: var(--muted);
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	/* Huge on a TV, but it gives way on a short screen so the actions stay in view. */
+	.total [data-testid='total'] {
+		font: 800 clamp(80px, 14.8vh, 160px) / 0.95 var(--font-display);
 		font-variant-numeric: tabular-nums;
+		letter-spacing: -0.04em;
+		white-space: nowrap;
+	}
+
+	.strip {
+		display: grid;
+	}
+
+	.strip :global(.strip) {
+		height: 16px;
 	}
 
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	.start {
-		border-color: transparent;
-		font-weight: 800;
+		gap: var(--s3);
 	}
 
 	.message {
 		margin: 0;
-		padding: 12px 16px;
-		border-radius: 8px;
-		background: #f7b928;
-		color: var(--text);
+		color: var(--danger);
 		font-weight: 600;
 	}
 
-	.wizard :global(:is(input, textarea, button)) {
-		padding: 8px 12px;
-		border: 1px solid currentColor;
-		border-radius: 8px;
-		background: rgb(255 255 255 / 0.12);
-		color: inherit;
-		font: inherit;
-	}
+	@media (max-width: 1000px) {
+		.wizard {
+			padding: var(--s5) var(--s4) var(--s7);
+		}
 
-	.wizard :global(button) {
-		cursor: pointer;
-	}
+		h1 {
+			font-size: 48px;
+		}
 
-	.wizard :global(button:disabled) {
-		opacity: 0.4;
-		cursor: default;
+		form {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.fields,
+		.finish {
+			padding: var(--s5);
+		}
 	}
 </style>

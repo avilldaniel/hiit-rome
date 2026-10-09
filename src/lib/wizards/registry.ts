@@ -1,7 +1,18 @@
 import type { Component } from 'svelte';
+import {
+	CIRCUIT_DEFAULTS,
+	circuit,
+	EMOM_DEFAULTS,
+	emom,
+	HIIT_DEFAULTS,
+	hiit,
+	TABATA_DEFAULTS,
+	tabata
+} from '../engine/wizards';
 import type { Workout } from '../engine/workout';
 import CircuitForm from './CircuitForm.svelte';
 import EmomForm from './EmomForm.svelte';
+import { PLACEHOLDER_EXERCISES } from './ExercisesField.svelte';
 import HiitForm from './HiitForm.svelte';
 import TabataForm from './TabataForm.svelte';
 
@@ -21,28 +32,39 @@ export interface Wizard {
 	style: string;
 	title: string;
 	blurb: string;
+	/** What the Wizard makes as it opens (with the placeholder exercises filled in), drawn as its card's strip. */
+	defaultWorkout: Workout;
 	form: Component<WizardProps>;
 }
 
 /** Every Wizard, in the order the picker offers them. */
 export const WIZARDS: Wizard[] = [
-	{ style: 'hiit', title: 'HIIT', blurb: 'Work and Rest, repeated for a number of Rounds.', form: HiitForm },
+	{
+		style: 'hiit',
+		title: 'HIIT',
+		blurb: 'Work and Rest, repeated for a number of Rounds.',
+		defaultWorkout: hiit(HIIT_DEFAULTS),
+		form: HiitForm
+	},
 	{
 		style: 'tabata',
 		title: 'Tabata',
 		blurb: '20 s on, 10 s off, 8 Rounds: one Tabata, or several in a row.',
+		defaultWorkout: tabata(TABATA_DEFAULTS),
 		form: TabataForm
 	},
 	{
 		style: 'circuit',
 		title: 'Circuit',
 		blurb: 'A list of exercises, each its own Interval, with Rest between, for a number of Rounds.',
+		defaultWorkout: circuit({ ...CIRCUIT_DEFAULTS, exercises: PLACEHOLDER_EXERCISES }),
 		form: CircuitForm
 	},
 	{
 		style: 'emom',
 		title: 'EMOM',
 		blurb: 'Every minute on the minute: one exercise per minute, for a number of Rounds.',
+		defaultWorkout: emom({ ...EMOM_DEFAULTS, exercises: PLACEHOLDER_EXERCISES }),
 		form: EmomForm
 	}
 ];

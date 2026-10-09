@@ -1,7 +1,13 @@
+<script module lang="ts">
+	/** The exercises the field suggests, as its placeholder, before the trainer types their own. */
+	export const PLACEHOLDER_EXERCISES = ['Squats', 'Push-ups', 'Lunges'];
+</script>
+
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import Field from '#lib/ui/Field.svelte';
 
-	/** The exercises row of a Wizard's form: names one per line, blank lines ignored, and at least one needed. */
+	/** The exercises field of a Wizard's form: names one per line, blank lines ignored, and at least one needed. */
 	let { exercises, onchange }: { exercises: string[]; onchange: (exercises: string[]) => void } = $props();
 
 	// Left as typed: tidying it into `exercises` on every keystroke would swallow a new line as it's started.
@@ -17,21 +23,12 @@
 	$effect(() => field.setCustomValidity(exercises.length ? '' : 'Add at least one exercise, one per line.'));
 </script>
 
-<label>
-	<span>Exercises</span>
+<Field label="Exercises" class="wide">
 	<textarea
 		bind:this={field}
 		rows="8"
-		placeholder={'Squats\nPush-ups\nLunges'}
+		placeholder={PLACEHOLDER_EXERCISES.join('\n')}
 		value={initial}
 		oninput={(event) => onchange(lines(event.currentTarget.value))}
 	></textarea>
-</label>
-
-<style>
-	textarea {
-		width: 100%;
-		max-width: 24em;
-		resize: vertical;
-	}
-</style>
+</Field>
