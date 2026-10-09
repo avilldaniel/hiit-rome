@@ -57,9 +57,8 @@
 		text-align: right;
 	}
 
+	/* The caller draws the invalid border; the underline is a cue that doesn't rely on color. */
 	[aria-invalid='true'] {
-		outline: 3px solid #fff;
-		outline-offset: 1px;
 		text-decoration: wavy underline;
 	}
 </style>

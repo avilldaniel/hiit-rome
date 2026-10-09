@@ -30,7 +30,7 @@
 		height: 22px;
 		border-radius: 50%;
 		background: var(--surface);
-		box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+		box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 20%, transparent);
 		transition: transform var(--dur) var(--ease-out);
 	}
 

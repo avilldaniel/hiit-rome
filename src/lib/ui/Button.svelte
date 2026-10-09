@@ -5,7 +5,8 @@
 
 	type Props = {
 		variant?: 'default' | 'primary' | 'ghost' | 'danger';
-		size?: 'default' | 'large';
+		/** `prompt` is for a choice read from across the room: the Resume prompt, confirm dialogs and Dismiss. */
+		size?: 'default' | 'large' | 'prompt';
 		icon?: IconName;
 		/** The label. Leave it out for an icon-only button, which then takes its name from `aria-label`. */
 		children?: Snippet;
@@ -16,7 +17,7 @@
 	const classes = $derived([
 		'button',
 		variant,
-		size === 'large' && 'large',
+		size !== 'default' && size,
 		!children && 'icon-only',
 		className
 	]);
@@ -81,6 +82,13 @@
 		min-height: 56px;
 		padding: 0 var(--s5);
 		font-size: 18px;
+	}
+
+	.prompt {
+		min-height: 72px;
+		padding: 0 var(--s7);
+		border-radius: var(--r-lg);
+		font-size: 24px;
 	}
 
 	.large.icon-only {

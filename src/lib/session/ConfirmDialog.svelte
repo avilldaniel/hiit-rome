@@ -30,10 +30,10 @@
 <dialog bind:this={dialog} oncancel={() => answer(false)} onclose={() => answer(false)}>
 	<p>{message}</p>
 	<div class="actions">
-		<Button onclick={() => answer(false)}>{cancelLabel}</Button>
+		<Button size="prompt" onclick={() => answer(false)}>{cancelLabel}</Button>
 		<!-- Focused, so Esc then Enter confirms from across the room. -->
 		<!-- svelte-ignore a11y_autofocus -->
-		<Button variant="primary" autofocus onclick={() => answer(true)}>{confirmLabel}</Button>
+		<Button variant="primary" size="prompt" autofocus onclick={() => answer(true)}>{confirmLabel}</Button>
 	</div>
 </dialog>
 
@@ -70,12 +70,5 @@
 		flex-wrap: wrap;
 		gap: var(--s4);
 		justify-content: center;
-	}
-
-	.actions :global(.button) {
-		min-height: 72px;
-		padding: 0 var(--s7);
-		border-radius: var(--r-lg);
-		font-size: 24px;
 	}
 </style>

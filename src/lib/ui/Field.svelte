@@ -22,7 +22,7 @@
 </script>
 
 <label class={['field', inline && 'inline', size === 'large' && 'large', className]}>
-	<span class={['label', hideLabel && 'hidden']}>{label}</span>
+	<span class={['label', hideLabel && 'sr-only']}>{label}</span>
 	{@render children()}
 </label>
 
@@ -42,15 +42,6 @@
 		font-size: 14px;
 		font-weight: 600;
 		color: var(--muted);
-		white-space: nowrap;
-	}
-
-	.hidden {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
 		white-space: nowrap;
 	}
 

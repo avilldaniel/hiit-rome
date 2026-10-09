@@ -6,6 +6,7 @@
 	import type { Workout } from '#lib/engine/workout.ts';
 	import { deviceStore, workoutWithSettings } from '#lib/store/device.ts';
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
+	import MessagePage from '#lib/ui/MessagePage.svelte';
 
 	const id = $derived(page.params.id!);
 	let workout = $state.raw<StoredWorkout | null | undefined>();
@@ -30,15 +31,8 @@
 		<WorkoutEditor {workout} cueDefaults={settings.cues} onsave={save} onstart={() => goto(`/session/${workout!.id}`)} />
 	{/key}
 {:else if workout === null}
-	<main class="missing">
-		<h1>Workout not found</h1>
+	<MessagePage title="Workout not found">
 		<p>It may have been deleted.</p>
-		<a href="/">Back to My Workouts</a>
-	</main>
+		<p><a href="/">Back to My Workouts</a></p>
+	</MessagePage>
 {/if}
-
-<style>
-	.missing {
-		padding: 10vh 6vw;
-	}
-</style>

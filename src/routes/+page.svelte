@@ -8,6 +8,7 @@
 	import Button from '#lib/ui/Button.svelte';
 	import Field from '#lib/ui/Field.svelte';
 	import Icon from '#lib/ui/Icon.svelte';
+	import Toast from '#lib/ui/Toast.svelte';
 
 	/** How long a deletion can be undone. */
 	const UNDO_MS = 8000;
@@ -136,10 +137,10 @@
 	</main>
 
 	{#if deleted}
-		<div class="toast" role="status">
+		<Toast>
 			Deleted “{deleted.name}”
 			<Button onclick={undo}>Undo</Button>
-		</div>
+		</Toast>
 	{/if}
 </div>
 
@@ -296,25 +297,12 @@
 		font-size: var(--fs-lead);
 	}
 
-	.toast {
-		position: fixed;
-		bottom: var(--s5);
-		left: 50%;
-		transform: translateX(-50%);
-		display: flex;
-		align-items: center;
-		gap: var(--s4);
-		padding: var(--s2) var(--s2) var(--s2) var(--s5);
-		border-radius: var(--r);
-		background: var(--surface);
-		font-weight: 600;
-		box-shadow: var(--shadow-raised);
-	}
-
 	/* Below laptop width the sidebar sits on top. */
 	@media (max-width: 900px) {
 		.home {
 			grid-template-columns: minmax(0, 1fr);
+			/* The list takes the room a short list leaves, not the sidebar. */
+			grid-template-rows: auto 1fr;
 		}
 
 		.side {

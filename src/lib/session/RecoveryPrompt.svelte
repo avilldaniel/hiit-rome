@@ -21,10 +21,10 @@
 			{where.current ? `${where.current.name} · ${formatClock(where.remainingMs)} left` : 'Lead-in'}
 		</p>
 		<div class="actions">
-			<Button onclick={ondiscard}>Discard</Button>
+			<Button size="prompt" onclick={ondiscard}>Discard</Button>
 			<!-- Focused, so Enter resumes from across the room. -->
 			<!-- svelte-ignore a11y_autofocus -->
-			<Button variant="primary" autofocus onclick={() => onresume(saved)}>Resume</Button>
+			<Button variant="primary" size="prompt" autofocus onclick={() => onresume(saved)}>Resume</Button>
 		</div>
 	</div>
 </main>
@@ -97,12 +97,5 @@
 		justify-content: center;
 		gap: var(--s4);
 		margin-top: calc(24 * var(--tv));
-	}
-
-	.actions :global(.button) {
-		min-height: 72px;
-		padding: 0 var(--s7);
-		border-radius: var(--r-lg);
-		font-size: 24px;
 	}
 </style>

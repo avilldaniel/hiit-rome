@@ -110,7 +110,7 @@
 	<Panel colors={countdownView.colors} class={['main', countdownView.timeUp && 'time-up']} data-testid="panel">
 		{#if countdownView.timeUp}
 			<h1 class="time-up-heading">TIME</h1>
-			<Button size="large" class="dismiss" data-controls onclick={ondone}>Dismiss</Button>
+			<Button size="prompt" data-controls onclick={ondone}>Dismiss</Button>
 		{:else}
 			<p class="eyebrow">{countdownView.status === 'paused' ? 'Paused' : 'Countdown'}</p>
 			{#key pulseKey}
@@ -183,13 +183,6 @@
 		line-height: 0.88;
 		letter-spacing: -0.04em;
 		animation: blink 1s steps(1) infinite;
-	}
-
-	.screen :global(.dismiss) {
-		min-height: 72px;
-		padding: 0 var(--s7);
-		border-radius: var(--r-lg);
-		font-size: 24px;
 	}
 
 	@media (orientation: portrait) {

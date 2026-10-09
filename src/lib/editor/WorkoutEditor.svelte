@@ -24,6 +24,7 @@
 	import ShareButton from '#lib/transfer/ShareButton.svelte';
 	import Button from '#lib/ui/Button.svelte';
 	import BackLink from '#lib/ui/BackLink.svelte';
+	import Toast from '#lib/ui/Toast.svelte';
 	import OutlineItems from './OutlineItems.svelte';
 	import TimelinePanel from './TimelinePanel.svelte';
 	import WorkoutSettings from './WorkoutSettings.svelte';
@@ -221,10 +222,10 @@
 	{/if}
 
 	{#if undoable}
-		<div class="toast" role="status">
+		<Toast>
 			{undoable.message}
 			<Button onclick={undo}>Undo</Button>
-		</div>
+		</Toast>
 	{/if}
 </div>
 
@@ -320,21 +321,6 @@
 		font-weight: 700;
 		box-shadow: var(--shadow-raised);
 		pointer-events: none;
-	}
-
-	.toast {
-		position: fixed;
-		bottom: var(--s5);
-		left: 50%;
-		transform: translateX(-50%);
-		display: flex;
-		align-items: center;
-		gap: var(--s4);
-		padding: var(--s2) var(--s2) var(--s2) var(--s5);
-		border-radius: var(--r);
-		background: var(--surface);
-		font-weight: 600;
-		box-shadow: var(--shadow-raised);
 	}
 
 	@media (max-width: 1100px) {
