@@ -23,7 +23,7 @@
 	import { group, interval, UNTITLED, type Item, type Workout } from '#lib/engine/workout.ts';
 	import ShareButton from '#lib/transfer/ShareButton.svelte';
 	import Button from '#lib/ui/Button.svelte';
-	import Icon from '#lib/ui/Icon.svelte';
+	import BackLink from '#lib/ui/BackLink.svelte';
 	import OutlineItems from './OutlineItems.svelte';
 	import TimelinePanel from './TimelinePanel.svelte';
 	import WorkoutSettings from './WorkoutSettings.svelte';
@@ -173,7 +173,7 @@
 
 <div class="editor">
 	<header>
-		<a class="back" href="/" aria-label="← My Workouts"><Icon name="left" />My Workouts</a>
+		<BackLink href="/" label="My Workouts" />
 		<input
 			class="input title"
 			type="text"
@@ -241,24 +241,6 @@
 		padding: var(--s5) var(--s8);
 		border-bottom: 1px solid var(--line);
 		background: var(--surface);
-	}
-
-	.back {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--s2);
-		min-height: 44px;
-		color: var(--text);
-		font-weight: 600;
-		text-decoration: none;
-		white-space: nowrap;
-	}
-
-	@media (hover: hover) {
-		.back:hover {
-			text-decoration: underline;
-			text-underline-offset: 4px;
-		}
 	}
 
 	.title {

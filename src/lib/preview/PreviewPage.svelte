@@ -1,20 +1,18 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { PALETTE } from '#lib/engine/palette.ts';
+	import BackLink, { type Back } from '#lib/ui/BackLink.svelte';
 
-	/** The page a Workout is previewed on before it's started or added, with a link back to where it came from. */
-	let { back, children }: { back: { href: string; label: string }; children: Snippet } = $props();
+	/**
+	 * The page a Workout is previewed on before it's started or added, or a message in its place, with a link
+	 * `back` to where it came from. The content's first `.preview-card` is drawn under the link.
+	 */
+	let { back, children }: { back: Back; children: Snippet } = $props();
 </script>
 
-<div
-	class="preview"
-	style:background-color={PALETTE.neutral.background}
-	style:color={PALETTE.neutral.text}
-	style:--start-bg={PALETTE.work.background}
-	style:--start-text={PALETTE.work.text}
->
+<!-- The back link keeps its own header, outside the main content, though it's drawn inside the card. -->
+<div class="page">
 	<header>
-		<a class="back" href={back.href}>← {back.label}</a>
+		<BackLink {...back} />
 	</header>
 	<main>
 		{@render children()}
@@ -22,26 +20,47 @@
 </div>
 
 <style>
-	.preview {
+	.page {
+		--pad: var(--s7);
+		display: grid;
+		box-sizing: border-box;
 		min-height: 100vh;
+		padding: var(--s7) var(--s8);
+	}
+
+	header,
+	main {
+		grid-area: 1 / 1;
+		min-width: 0;
 	}
 
 	header {
-		padding: 24px 32px;
+		z-index: 1;
+		align-self: start;
+		justify-self: start;
+		margin: calc(var(--pad) - var(--s3)) 0 0 calc(var(--pad) - var(--s1));
 	}
 
-	.preview :global(a) {
-		color: inherit;
-		font-weight: 600;
+	/* Room above the content for the back link: its 44 px and the card's gap. */
+	main :global(.preview-card) {
+		display: grid;
+		gap: var(--s5);
+		box-sizing: border-box;
+		padding: calc(var(--pad) - var(--s3) + 44px + var(--s5)) var(--pad) var(--s6);
+		border-radius: var(--r-xl);
+		background: var(--surface);
+		box-shadow: var(--shadow);
 	}
 
-	.preview :global(h1) {
-		margin: 0;
-		font-size: 36px;
+	@media (max-width: 1500px) {
+		.page {
+			--pad: var(--s6);
+		}
 	}
 
-	main {
-		max-width: 800px;
-		padding: 0 32px 96px;
+	@media (max-width: 1100px) {
+		.page {
+			padding: var(--s5) var(--s4) var(--s7);
+		}
 	}
 </style>

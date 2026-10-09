@@ -106,6 +106,16 @@ h3 {
 	font-family: var(--font-display);
 }
 
+/* Read by screen readers but not drawn, such as a separator that keeps an accessible name as it reads. */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 /* Bare form controls, for screens that lay them out without a Field: a text or number input, and a select. */
 .input,
 .select {

@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { copyWorkout, type Workout } from '#lib/engine/workout.ts';
-	import PreviewPage from '#lib/preview/PreviewPage.svelte';
+	import PreviewMessage from '#lib/preview/PreviewMessage.svelte';
 	import WorkoutPreview from '#lib/preview/WorkoutPreview.svelte';
 	import { deviceStore } from '#lib/store/device.ts';
 	import { readShareLink, type ShareLinkResult } from '#lib/transfer/share-link.ts';
 	import { startShared } from '#lib/transfer/shared.ts';
+	import Chip from '#lib/ui/Chip.svelte';
+
+	const back = { href: '/', label: 'My Workouts' };
 
 	/** The link's Workout, once read from the fragment (which never reached a server). */
 	let read = $state.raw<ShareLinkResult>();
@@ -24,25 +27,16 @@
 	<title>{read && 'workout' in read ? read.workout.name : 'Shared Workout'} · hiit-rome</title>
 </svelte:head>
 
-<PreviewPage back={{ href: '/', label: 'My Workouts' }}>
-	{#if read && 'workout' in read}
-		{@const workout = read.workout}
-		<WorkoutPreview {workout} onstart={() => startShared(workout)} onadd={add(workout)}>
-			{#snippet details()}
-				<p class="from">Shared with you</p>
-			{/snippet}
-		</WorkoutPreview>
-	{:else if read}
-		<h1>This link can’t be opened</h1>
+{#if read && 'workout' in read}
+	{@const workout = read.workout}
+	<WorkoutPreview {workout} {back} onstart={() => startShared(workout)} onadd={add(workout)}>
+		{#snippet chips()}
+			<Chip>Shared with you</Chip>
+		{/snippet}
+	</WorkoutPreview>
+{:else if read}
+	<PreviewMessage {back} title="This link can’t be opened">
 		<p role="alert">{read.error}</p>
 		<p><a href="/">Go to My Workouts</a></p>
-	{/if}
-</PreviewPage>
-
-<style>
-	.from {
-		margin: 8px 0 0;
-		font-weight: 600;
-		opacity: 0.8;
-	}
-</style>
+	</PreviewMessage>
+{/if}
