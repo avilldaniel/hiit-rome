@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { PALETTE } from '#lib/engine/palette.ts';
 	import type { SavedSession } from '#lib/store/workout-store.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
@@ -15,12 +14,7 @@
 	}: { current: SavedSession; starting: string; onend: () => void; onback: () => void } = $props();
 </script>
 
-<div
-	class="backdrop"
-	style:background-color={PALETTE.neutral.background}
-	style:--neutral-bg={PALETTE.neutral.background}
-	style:--neutral-text={PALETTE.neutral.text}
->
+<div class="backdrop">
 	<ConfirmDialog
 		message="{current.workoutName} is still under way. End it to start {starting}?"
 		confirmLabel="End {current.workoutName}"
@@ -34,5 +28,6 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
+		background: var(--ground);
 	}
 </style>

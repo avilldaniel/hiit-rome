@@ -25,9 +25,9 @@ test('once loaded, the app opens and runs a Workout with the network gone', asyn
 	await expect(page.getByText('Press Space or tap to start')).toBeVisible();
 	await page.clock.pauseAt(new Date('2026-10-01T09:00:01'));
 	await page.keyboard.press('Space');
-	// After the 10 s Lead-in the first Interval fills the screen with its color.
+	// After the 10 s Lead-in the first Interval fills the panel with its color.
 	await page.clock.runFor(10_016);
-	await expect(page.getByTestId('session')).toHaveCSS('background-color', WARM_UP_YELLOW);
+	await expect(page.getByTestId('session').getByRole('main')).toHaveCSS('background-color', WARM_UP_YELLOW);
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Warm-up');
 	expect(elsewhere).toEqual([]);
 });

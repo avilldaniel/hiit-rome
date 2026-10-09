@@ -27,8 +27,8 @@ test('a Preset counts down in Rest blue, chimes three times at zero, and shows T
 	}
 	await page.getByRole('button', { name: 'Start a 1:00 Countdown' }).click();
 
-	const screen = page.getByTestId('countdown');
-	await expect(screen).toHaveCSS('background-color', REST_BLUE);
+	const panel = page.getByTestId('countdown').getByTestId('panel');
+	await expect(panel).toHaveCSS('background-color', REST_BLUE);
 	await expect(page.getByTestId('remaining')).toHaveText('1:00');
 	await runFor(page, 10_000);
 	await expect(page.getByTestId('remaining')).toHaveText('0:50');
@@ -38,7 +38,7 @@ test('a Preset counts down in Rest blue, chimes three times at zero, and shows T
 	await expect(page.getByTestId('remaining')).toHaveText('0:20');
 	await runFor(page, 25_000);
 	await expect(page.getByRole('heading', { name: 'TIME' })).toBeVisible();
-	await expect(screen).toHaveCSS('background-color', REST_BLUE);
+	await expect(panel).toHaveCSS('background-color', REST_BLUE);
 	// No Warning on a 1-minute Countdown.
 	expect(await heard()).toEqual(['beep', 'beep', 'beep', 'chime', 'chime', 'chime']);
 
@@ -155,6 +155,6 @@ test('the Presets and the Countdown color are edited in Settings, and kept', asy
 	await page.goto('/countdown');
 	await expect(preset).toHaveCSS('background-color', COOL_DOWN_GREEN);
 	await preset.click();
-	await expect(page.getByTestId('countdown')).toHaveCSS('background-color', COOL_DOWN_GREEN);
+	await expect(page.getByTestId('countdown').getByTestId('panel')).toHaveCSS('background-color', COOL_DOWN_GREEN);
 	await expect(page.getByTestId('remaining')).toHaveText('2:00');
 });

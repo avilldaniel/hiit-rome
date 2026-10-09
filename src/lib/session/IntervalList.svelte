@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatClock } from '#lib/engine/format.ts';
 	import type { IntervalListItem } from '#lib/engine/session.ts';
+	import Button from '#lib/ui/Button.svelte';
 
 	let {
 		items,
@@ -72,7 +73,7 @@
 						aria-current={entry.index === currentIndex ? 'true' : undefined}
 						onclick={() => onjump(entry.index)}
 					>
-						<span class="chip" style:background-color={entry.colors.background}></span>
+						<span class="swatch" style:background-color={entry.colors.background}></span>
 						<span class="name">{entry.name}</span>
 						<span class="duration">{formatClock(entry.durationMs)}</span>
 					</button>
@@ -87,26 +88,29 @@
 	<div class="panel">
 		<header>
 			<h2 id="interval-list-title">Intervals</h2>
-			<button type="button" class="close" onclick={close}>Close</button>
+			<Button onclick={close}>Close</Button>
 		</header>
 		{@render rows(items, 0)}
 	</div>
 </dialog>
 
 <style>
+	/* A white card over the rail, as tall as the rail. */
 	dialog {
-		inset: 0 0 0 auto;
-		width: var(--rail-width);
-		min-width: min(360px, 100vw);
+		inset: var(--gap) var(--gap) var(--gap) auto;
+		box-sizing: border-box;
+		width: calc(var(--rail-width) - 2 * var(--gap));
+		min-width: min(360px, calc(100vw - 2 * var(--gap)));
 		max-width: none;
-		height: 100%;
+		height: auto;
 		max-height: none;
 		margin: 0;
 		padding: 0;
 		border: none;
-		background: var(--neutral-bg);
-		color: var(--neutral-text);
-		box-shadow: -1vw 0 3vw rgb(0 0 0 / 0.35);
+		border-radius: var(--r-xl);
+		background: var(--surface);
+		color: var(--text);
+		box-shadow: var(--shadow);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		/* The Session screen claims every touch for taps and swipes; this panel scrolls. */
@@ -121,29 +125,32 @@
 	.panel {
 		box-sizing: border-box;
 		min-height: 100%;
-		padding: 3vh 1.5vw 6vh;
+		padding: calc(48 * var(--tv)) calc(32 * var(--tv)) calc(64 * var(--tv));
 	}
 
 	header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1vw;
-		margin-bottom: 1.5vh;
+		gap: var(--s4);
+		margin-bottom: calc(16 * var(--tv));
+		padding: 0 calc(8 * var(--tv));
 	}
 
-	h2,
+	h2 {
+		margin: 0;
+		font-size: max(20px, calc(40 * var(--tv)));
+		font-weight: 800;
+		letter-spacing: -0.01em;
+	}
+
 	.round {
 		margin: 0;
-		font-size: clamp(12px, 2.4vh, 30px);
-		font-weight: 700;
-		letter-spacing: 0.3em;
-		text-transform: uppercase;
-		opacity: 0.7;
-	}
-
-	.round {
-		padding: 1.6vh 0.6vw 0.6vh;
+		padding: calc(20 * var(--tv)) calc(8 * var(--tv)) calc(8 * var(--tv));
+		color: var(--muted);
+		font-family: var(--font-body);
+		font-size: max(13px, calc(22 * var(--tv)));
+		font-weight: 600;
 	}
 
 	ul {
@@ -153,75 +160,69 @@
 	}
 
 	ul ul {
-		padding-left: 1.2vw;
-	}
-
-	button {
-		border: none;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
-
-	button:focus-visible {
-		outline: 0.15em solid var(--neutral-text);
-		outline-offset: -0.15em;
-	}
-
-	.close {
-		min-width: 44px;
-		min-height: 44px;
-		padding: 1vh 1.2vw;
-		border-radius: 1vh;
-		background: color-mix(in srgb, var(--neutral-text) 15%, transparent);
-		font-size: clamp(14px, 2.4vh, 30px);
-		font-weight: 700;
+		padding-left: calc(20 * var(--tv));
 	}
 
 	[data-entry] {
-		display: flex;
-		align-items: center;
-		gap: 1vw;
+		--swatch: calc(32 * var(--tv));
+		display: grid;
+		grid-template-columns: var(--swatch) minmax(0, 1fr) auto;
+		column-gap: calc(16 * var(--tv));
+		align-items: start;
+		box-sizing: border-box;
 		width: 100%;
 		min-height: 44px;
-		padding: 1vh 0.6vw;
-		border-radius: 1vh;
-		font-size: clamp(16px, 3.4vh, 40px);
-		font-weight: 700;
+		padding: calc(12 * var(--tv));
+		border: none;
+		border-radius: var(--r);
+		background: transparent;
+		color: inherit;
+		font-family: var(--font-display);
+		font-size: max(16px, calc(34 * var(--tv)));
+		font-weight: 800;
+		line-height: 1.1;
+		letter-spacing: -0.01em;
 		text-align: left;
+		cursor: pointer;
+	}
+
+	@media (hover: hover) {
+		[data-entry]:hover {
+			background: var(--surface-2);
+		}
+	}
+
+	[data-entry]:focus-visible {
+		outline-offset: -3px;
 	}
 
 	[data-entry][aria-current='true'] {
-		background: color-mix(in srgb, var(--neutral-text) 20%, transparent);
-		box-shadow: inset 0.25em 0 0 var(--neutral-text);
+		background: var(--surface-2);
+		box-shadow: inset 4px 0 0 var(--text);
 	}
 
-	.chip {
-		flex: none;
-		width: 0.9em;
-		height: 0.9em;
-		border-radius: 0.2em;
+	.swatch {
+		width: var(--swatch);
+		height: var(--swatch);
+		margin-top: calc((1.1em - var(--swatch)) / 2);
+		border-radius: calc(var(--swatch) * 0.3);
 	}
 
 	/* Names wrap rather than truncate, so near-identical ones stay distinguishable. */
 	.name {
-		flex: 1;
-		min-width: 0;
-		line-height: 1.1;
 		overflow-wrap: anywhere;
 	}
 
 	.duration {
-		flex: none;
 		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 
 	/* Portrait: the rail sits below the main area, so the list rises from the foot of the screen. */
 	@media (orientation: portrait) {
 		dialog {
-			inset: auto 0 0;
-			width: 100%;
+			inset: auto var(--gap) var(--gap);
+			width: auto;
 			height: 60vh;
 		}
 	}

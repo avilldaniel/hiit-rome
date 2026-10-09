@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Button from '#lib/ui/Button.svelte';
+
 	let {
 		message,
 		confirmLabel,
@@ -28,51 +30,52 @@
 <dialog bind:this={dialog} oncancel={() => answer(false)} onclose={() => answer(false)}>
 	<p>{message}</p>
 	<div class="actions">
-		<button type="button" onclick={() => answer(false)}>{cancelLabel}</button>
+		<Button onclick={() => answer(false)}>{cancelLabel}</Button>
 		<!-- Focused, so Esc then Enter confirms from across the room. -->
 		<!-- svelte-ignore a11y_autofocus -->
-		<button type="button" class="confirm" autofocus onclick={() => answer(true)}>{confirmLabel}</button>
+		<Button variant="primary" autofocus onclick={() => answer(true)}>{confirmLabel}</Button>
 	</div>
 </dialog>
 
 <style>
+	/* A centered card, as the Resume prompt. */
 	dialog {
-		padding: 4vh 3vw;
+		box-sizing: border-box;
+		max-width: min(calc(1040 * var(--tv)), calc(100vw - 2 * var(--s4)));
+		padding: calc(48 * var(--tv)) calc(64 * var(--tv));
 		border: none;
-		border-radius: 1.5vh;
-		background: var(--neutral-bg);
-		color: var(--neutral-text);
-		font-size: clamp(18px, 4vh, 44px);
-		font-weight: 700;
+		border-radius: var(--r-xl);
+		background: var(--surface);
+		box-shadow: var(--shadow);
+		color: var(--text);
 		text-align: center;
 	}
 
 	dialog::backdrop {
-		background: color-mix(in srgb, var(--neutral-bg) 70%, transparent);
+		background: color-mix(in srgb, var(--text) 55%, transparent);
 	}
 
 	p {
-		margin: 0 0 4vh;
+		margin: 0 0 calc(40 * var(--tv));
+		font-family: var(--font-display);
+		font-size: max(22px, calc(48 * var(--tv)));
+		font-weight: 800;
+		line-height: 1.1;
+		letter-spacing: -0.01em;
+		text-wrap: balance;
 	}
 
 	.actions {
 		display: flex;
-		gap: 2vw;
+		flex-wrap: wrap;
+		gap: var(--s4);
 		justify-content: center;
 	}
 
-	button {
-		padding: 1.5vh 2.5vw;
-		border: 2px solid currentColor;
-		border-radius: 1vh;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
-
-	.confirm {
-		background: var(--neutral-text);
-		color: var(--neutral-bg);
+	.actions :global(.button) {
+		min-height: 72px;
+		padding: 0 var(--s7);
+		border-radius: var(--r-lg);
+		font-size: 24px;
 	}
 </style>

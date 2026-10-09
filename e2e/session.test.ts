@@ -21,30 +21,31 @@ async function startSeededPaused(page: Page) {
 test('the seeded Workout runs from Lead-in to completion on the Session screen', async ({ page }) => {
 	await page.clock.install();
 	await startSeeded(page);
-	const screen = page.getByTestId('session');
+	// The current Interval's color fills the inset panel; the rail and the ground around it stay light.
+	const panel = page.getByTestId('session').getByRole('main');
 
-	await expect(screen).toHaveCSS('background-color', INK);
+	await expect(panel).toHaveCSS('background-color', INK);
 	await page.keyboard.press('Space');
 
-	// Lead-in: neutral screen, the rail already shows what's first.
+	// Lead-in: neutral panel, the rail already shows what's first.
 	await page.clock.runFor(3_000);
-	await expect(screen).toHaveCSS('background-color', INK);
+	await expect(panel).toHaveCSS('background-color', INK);
 	await expect(page.getByRole('list', { name: 'Up next' })).toContainText('Warm-up');
 
-	// After the 10 s Lead-in the first Interval fills the screen with its color.
+	// After the 10 s Lead-in the first Interval fills the panel with its color.
 	await page.clock.runFor(8_000);
-	await expect(screen).toHaveCSS('background-color', WARM_UP_YELLOW);
+	await expect(panel).toHaveCSS('background-color', WARM_UP_YELLOW);
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Warm-up');
 
-	// Space pauses: the screen goes neutral and the clock stops.
+	// Space pauses: the panel goes neutral and the clock stops.
 	await page.keyboard.press('Space');
-	await expect(screen).toHaveCSS('background-color', INK);
+	await expect(panel).toHaveCSS('background-color', INK);
 	const frozen = await page.getByTestId('remaining').textContent();
 	await page.clock.runFor(5_000);
 	await expect(page.getByTestId('remaining')).toHaveText(frozen!);
 	await page.keyboard.press('Space');
 	await page.clock.runFor(3_000); // the resume Lead-in
-	await expect(screen).toHaveCSS('background-color', WARM_UP_YELLOW);
+	await expect(panel).toHaveCSS('background-color', WARM_UP_YELLOW);
 
 	// Jump to the last Interval and let it play out.
 	await page.keyboard.press('KeyJ');

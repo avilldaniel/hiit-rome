@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
-	import { PALETTE } from '#lib/engine/palette.ts';
 	import {
 		ADJUST_MS,
 		createSession,
@@ -14,6 +13,7 @@
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 	import { toggleFullscreen } from '#lib/platform/screen.ts';
+	import Panel, { timeWidthEm } from '#lib/ui/Panel.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import ControlBar from './ControlBar.svelte';
 	import IntervalList from './IntervalList.svelte';
@@ -118,6 +118,7 @@
 			? ['Paused', sessionView.kindLabel].filter(Boolean).join(' · ')
 			: (STATUS_LINE[sessionView.status] ?? sessionView.kindLabel)
 	);
+	const clock = $derived(formatClock(sessionView.remainingMs));
 	// Re-keyed once per final second so the pulse animation replays.
 	const pulseKey = $derived(
 		sessionView.finalSecond ? `${sessionView.status}-${sessionView.current?.index}-${sessionView.finalSecond}` : 'steady'
@@ -132,10 +133,6 @@
 <div
 	class="screen"
 	data-testid="session"
-	style:background-color={sessionView.colors.background}
-	style:color={sessionView.colors.text}
-	style:--neutral-bg={PALETTE.neutral.background}
-	style:--neutral-text={PALETTE.neutral.text}
 	onpointerdown={touch.onpointerdown}
 	onpointerup={touch.onpointerup}
 	onpointermove={touch.onpointermove}
@@ -144,15 +141,15 @@
 	{#if sessionView.summary}
 		<SessionSummary summary={sessionView.summary} ended={sessionView.status === 'ended'} workoutName={workout.name} />
 	{:else}
-		<main class="main">
-			<p class="kind">{kindLine ?? ''}</p>
+		<Panel as="main" colors={sessionView.colors} class="main">
+			<p class="eyebrow">{kindLine ?? ''}</p>
 			<h1 class="name">{title}</h1>
 			{#key pulseKey}
-				<p class="digits" class:pulse={pulseKey !== 'steady'} data-testid="remaining">
-					{formatClock(sessionView.remainingMs)}
+				<p class="time" class:pulse={pulseKey !== 'steady'} style:--time-em={timeWidthEm(clock)} data-testid="remaining">
+					{clock}
 				</p>
 			{/key}
-			<div class="bar" aria-hidden="true"><div class="fill" style:width="{sessionView.progress * 100}%"></div></div>
+			<div class="bar" aria-hidden="true"><div style:width="{sessionView.progress * 100}%"></div></div>
 
 			<ControlBar
 				status={sessionView.status}
@@ -162,17 +159,17 @@
 				onrestart={askToRestart}
 				onend={askToEnd}
 			/>
-		</main>
+		</Panel>
 
 		<aside class="rail">
 			<h2 class="rail-title" id="up-next">Up next</h2>
 			<ol aria-labelledby="up-next">
 				{#if sessionView.isFinal}
-					<li><span class="item-name">Finish</span></li>
+					<li><span class="swatch"></span><span class="item-name">Finish</span></li>
 				{:else}
 					{#each sessionView.upcoming as entry (entry.index)}
 						<li>
-							<span class="chip" style:background-color={entry.colors.background}></span>
+							<span class="swatch" style:background-color={entry.colors.background}></span>
 							<span class="item-name">{entry.name}</span>
 							<span class="item-duration">{formatClock(entry.durationMs)}</span>
 						</li>
@@ -181,9 +178,9 @@
 			</ol>
 			<div class="rail-foot">
 				{#each sessionView.header.length ? sessionView.header : [workout.name] as line (line)}
-					<p>{line}</p>
+					<p class="line">{line}</p>
 				{/each}
-				<p class="time-left" data-testid="time-left">{formatClock(sessionView.totalRemainingMs)} left</p>
+				<p class="time-left" data-testid="time-left">{formatClock(sessionView.totalRemainingMs)} <small>left</small></p>
 			</div>
 		</aside>
 
@@ -217,126 +214,107 @@
 
 <style>
 	.screen {
+		/* The gap around the panel and the rail; the rail's width is shared with the Interval list, which opens over it. */
+		--gap: calc(24 * var(--tv));
+		--rail-width: calc(640 * var(--tv));
 		position: fixed;
 		inset: 0;
 		display: grid;
-		/* Shared with the Interval list, which opens over the rail. */
-		--rail-width: 31vw;
-		grid-template-columns: 1fr var(--rail-width);
-		transition:
-			background-color 0.2s,
-			color 0.2s;
+		grid-template-columns: minmax(0, 1fr) var(--rail-width);
+		background: var(--ground);
+		color: var(--text);
 		/* Taps and swipes are ours; there is nothing to scroll or zoom. */
 		touch-action: none;
 		user-select: none;
 	}
 
-	.main {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: 2vh;
-		padding: 4vh 4vw;
-		min-width: 0;
+	.screen > :global(.main) {
+		margin: var(--gap) 0 var(--gap) var(--gap);
+		padding: 0 calc(64 * var(--tv)) 0 calc(96 * var(--tv));
 	}
 
-	.kind {
-		margin: 0;
+	.eyebrow {
 		min-height: 1.2em;
-		font-size: clamp(14px, 4vh, 48px);
-		font-weight: 700;
-		letter-spacing: 0.3em;
-		text-transform: uppercase;
 		opacity: 0.85;
 	}
 
 	.name {
 		margin: 0;
-		font-size: clamp(24px, 10vh, 140px);
+		font-size: max(24px, calc(120 * var(--tv)));
 		font-weight: 800;
 		line-height: 1.05;
-	}
-
-	.digits {
-		margin: 0;
-		font-size: min(44vh, 19vw);
-		font-weight: 800;
-		font-variant-numeric: tabular-nums;
-		line-height: 0.88;
 		letter-spacing: -0.02em;
-		white-space: nowrap;
 	}
 
-	.bar {
-		height: 2vh;
-		margin-top: 2vh;
-		border-radius: 99px;
-		background: rgb(0 0 0 / 0.2);
-		overflow: hidden;
+	.time {
+		--time-size: calc(460 * var(--tv));
 	}
 
-	.fill {
-		height: 100%;
-		background: currentColor;
-	}
-
-	/* The rail is always the neutral palette color, whatever the current Interval's color. */
+	/* The rail is always a white card, whatever the current Interval's color. */
 	.rail {
-		background-color: var(--neutral-bg);
-		color: var(--neutral-text);
 		display: flex;
 		flex-direction: column;
-		gap: 2vh;
-		padding: 4vh 2vw;
 		min-width: 0;
+		min-height: 0;
+		margin: var(--gap);
+		padding: calc(64 * var(--tv)) calc(48 * var(--tv));
+		border-radius: var(--r-xl);
+		background: var(--surface);
+		box-shadow: var(--shadow);
 	}
 
 	.rail-title {
 		margin: 0;
-		font-size: clamp(12px, 3vh, 36px);
-		font-weight: 700;
-		letter-spacing: 0.3em;
-		text-transform: uppercase;
-		opacity: 0.7;
+		color: var(--muted);
+		font-family: var(--font-body);
+		font-size: max(14px, calc(24 * var(--tv)));
+		font-weight: 600;
 	}
 
 	ol {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 1.6vh;
-		margin: 0;
+		gap: calc(16 * var(--tv));
+		min-height: 0;
+		margin: calc(24 * var(--tv)) 0 0;
 		padding: 0;
 		list-style: none;
+		overflow: hidden;
 	}
 
+	/* The swatch is a fixed square pinned to the first line, so a wrapping name never stretches it. */
 	li {
-		display: flex;
-		align-items: center;
-		gap: 1vw;
-		min-width: 0;
-		font-size: clamp(14px, 4vh, 48px);
-		font-weight: 700;
-		opacity: 0.7;
+		--swatch: calc(40 * var(--tv));
+		display: grid;
+		grid-template-columns: var(--swatch) minmax(0, 1fr) auto;
+		column-gap: calc(16 * var(--tv));
+		align-items: start;
+		color: var(--muted);
+		font-family: var(--font-display);
+		font-size: max(16px, calc(40 * var(--tv)));
+		font-weight: 800;
+		line-height: 1.1;
+		letter-spacing: -0.01em;
 	}
 
 	li:first-child {
-		align-items: flex-start;
-		font-size: clamp(18px, 5.5vh, 68px);
-		opacity: 1;
+		--swatch: calc(48 * var(--tv));
+		padding-bottom: calc(16 * var(--tv));
+		margin-bottom: calc(8 * var(--tv));
+		border-bottom: 1px solid var(--line);
+		color: var(--text);
+		font-size: max(20px, calc(60 * var(--tv)));
 	}
 
-	.chip {
-		flex: none;
-		width: 1em;
-		height: 1em;
-		border-radius: 0.2em;
+	.swatch {
+		width: var(--swatch);
+		height: var(--swatch);
+		margin-top: calc((1.1em - var(--swatch)) / 2);
+		border-radius: calc(var(--swatch) * 0.3);
 	}
 
 	.item-name {
-		flex: 1;
-		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -346,29 +324,41 @@
 	li:first-child .item-name {
 		overflow: visible;
 		white-space: normal;
-		line-height: 1.05;
 	}
 
 	.item-duration {
-		flex: none;
-		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 
 	.rail-foot {
 		display: flex;
 		flex-direction: column;
-		gap: 1vh;
-		font-size: clamp(14px, 4vh, 48px);
-		font-weight: 700;
+		gap: calc(8 * var(--tv));
+		margin-top: calc(24 * var(--tv));
 	}
 
 	.rail-foot p {
 		margin: 0;
 	}
 
+	.line {
+		font-size: max(16px, calc(32 * var(--tv)));
+		font-weight: 700;
+		line-height: 1.2;
+	}
+
 	.time-left {
-		font-size: clamp(18px, 7vh, 90px);
+		font-family: var(--font-display);
+		font-size: max(24px, calc(72 * var(--tv)));
+		font-weight: 800;
 		font-variant-numeric: tabular-nums;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.time-left small {
+		color: var(--muted);
+		font-size: 0.5em;
 	}
 
 	@media (orientation: portrait) {
@@ -377,8 +367,14 @@
 			grid-template-rows: 1fr auto;
 		}
 
-		.digits {
-			font-size: 30vw;
+		.screen > :global(.main) {
+			margin: var(--gap) var(--gap) 0;
+			padding: calc(48 * var(--tv));
+		}
+
+		/* The narrow width sets --tv here, which would leave the time small in a tall panel. */
+		.time {
+			--time-size: 30vw;
 		}
 	}
 

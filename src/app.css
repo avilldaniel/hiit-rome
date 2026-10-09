@@ -72,6 +72,9 @@
 	--s8: 64px;
 	--s9: 96px;
 
+	/* TV-facing sizes (the Session, Countdown and Resume prompt): one pixel of the Studio design at 1920×1080, scaled to the viewport */
+	--tv: min(calc(100vh / 1080), calc(100vw / 1920));
+
 	/* Motion */
 	--dur-fast: 150ms;
 	--dur: 220ms;

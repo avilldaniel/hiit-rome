@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ADJUST_MS, type SessionCommand, type SessionView } from '#lib/engine/session.ts';
-	
+	import Button from '#lib/ui/Button.svelte';
+
 	let {
 		status,
 		visible,
@@ -26,43 +27,52 @@
 <!-- Every Session action, for touch. The screen ignores pointer events that start here. -->
 <nav class="controls" class:visible aria-label="Session controls" data-controls inert={!visible}>
 	{#if steps}
-		<button onclick={() => onaction({ type: 'previous' })}>Previous</button>
+		<Button size="large" onclick={() => onaction({ type: 'previous' })}>Previous</Button>
 	{/if}
-	<button onclick={() => onaction({ type: 'adjust', deltaMs: -ADJUST_MS })}>−30 s</button>
-	<button class="play" onclick={() => onaction({ type: 'toggle' })}>{playLabel}</button>
-	<button onclick={() => onaction({ type: 'adjust', deltaMs: ADJUST_MS })}>+30 s</button>
+	<Button size="large" onclick={() => onaction({ type: 'adjust', deltaMs: -ADJUST_MS })}>−30 s</Button>
+	<Button size="large" variant="primary" onclick={() => onaction({ type: 'toggle' })}>{playLabel}</Button>
+	<Button size="large" onclick={() => onaction({ type: 'adjust', deltaMs: ADJUST_MS })}>+30 s</Button>
 	{#if steps}
-		<button onclick={() => onaction({ type: 'next' })}>Next</button>
+		<Button size="large" onclick={() => onaction({ type: 'next' })}>Next</Button>
 	{/if}
 	{#if steps && status !== 'idle'}
-		<button onclick={onopenlist}>Intervals</button>
+		<Button size="large" onclick={onopenlist}>Intervals</Button>
 	{/if}
 	{#if status === 'paused'}
-		<button onclick={onrestart}>Restart</button>
+		<Button size="large" onclick={onrestart}>Restart</Button>
 	{/if}
 	{#if status !== 'idle'}
-		<button onclick={onend}>End</button>
+		<Button size="large" onclick={onend}>End</Button>
 	{/if}
 </nav>
 
 <style>
+	/* A white card floating at the foot of the panel, over whatever color it has. */
 	.controls {
 		position: absolute;
 		left: 50%;
-		bottom: 3vh;
+		bottom: calc(32 * var(--tv));
 		translate: -50% 0;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
-		gap: 1vw;
+		gap: var(--s2);
+		box-sizing: border-box;
 		width: max-content;
-		max-width: 92%;
-		padding: 1.2vh 1.2vw;
-		border-radius: 1.5vh;
-		background: color-mix(in srgb, var(--neutral-bg) 85%, transparent);
+		max-width: calc(100% - 2 * var(--s4));
+		padding: var(--s2);
+		border-radius: var(--r-lg);
+		background: var(--surface);
+		box-shadow: var(--shadow);
+		color: var(--text);
 		opacity: 0;
-		transition: opacity 0.3s;
+		transition: opacity var(--dur) var(--ease-out);
 		pointer-events: none;
+	}
+
+	/* Tighter than a large button's usual padding, so all eight fit on one row at 1280 px. */
+	.controls :global(.button) {
+		padding: 0 var(--s4);
 	}
 
 	/* Stacked portrait layout: the main area is too short to overlay, so float over the foot of the screen. */
@@ -75,25 +85,5 @@
 	.controls.visible {
 		opacity: 1;
 		pointer-events: auto;
-	}
-
-	button {
-		min-width: 44px;
-		min-height: 44px;
-		padding: 1.2vh 1.6vw;
-		border: none;
-		border-radius: 1vh;
-		background: color-mix(in srgb, var(--neutral-text) 15%, transparent);
-		color: var(--neutral-text);
-		font: inherit;
-		font-size: clamp(14px, 2.6vh, 32px);
-		font-weight: 700;
-		white-space: nowrap;
-		cursor: pointer;
-	}
-
-	.play {
-		background: var(--neutral-text);
-		color: var(--neutral-bg);
 	}
 </style>

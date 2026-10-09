@@ -8,10 +8,11 @@
 	import { untrack } from 'svelte';
 	import { createCountdown } from '#lib/engine/countdown.ts';
 	import { formatClock } from '#lib/engine/format.ts';
-	import { PALETTE } from '#lib/engine/palette.ts';
 	import { ADJUST_MS, restoreSession, type SessionCommand } from '#lib/engine/session.ts';
 	import type { Settings } from '#lib/engine/settings.ts';
 	import { toggleFullscreen } from '#lib/platform/screen.ts';
+	import Button from '#lib/ui/Button.svelte';
+	import Panel, { timeWidthEm } from '#lib/ui/Panel.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import ControlBar from './ControlBar.svelte';
 	import { SessionRunner } from './runner.svelte.ts';
@@ -88,6 +89,7 @@
 		ontap: () => (countdownView.timeUp ? ondone() : act({ type: 'toggle' }))
 	});
 
+	const clock = $derived(formatClock(countdownView.remainingMs));
 	// Re-keyed once per final second so the pulse animation replays.
 	const pulseKey = $derived(countdownView.finalSecond ? `${countdownView.finalSecond}` : 'steady');
 </script>
@@ -100,53 +102,51 @@
 <div
 	class="screen"
 	data-testid="countdown"
-	style:background-color={countdownView.colors.background}
-	style:color={countdownView.colors.text}
-	style:--neutral-bg={PALETTE.neutral.background}
-	style:--neutral-text={PALETTE.neutral.text}
 	onpointerdown={touch.onpointerdown}
 	onpointerup={touch.onpointerup}
 	onpointermove={touch.onpointermove}
 	onpointercancel={touch.onpointercancel}
 >
-	{#if countdownView.timeUp}
-		<h1 class="time">TIME</h1>
-		<button type="button" class="dismiss" data-controls onclick={ondone}>Dismiss</button>
-	{:else}
-		<p class="label">{countdownView.status === 'paused' ? 'Paused' : 'Countdown'}</p>
-		{#key pulseKey}
-			<p class="digits" class:pulse={pulseKey !== 'steady'} data-testid="remaining">
-				{formatClock(countdownView.remainingMs)}
-			</p>
-		{/key}
-		<div class="bar" aria-hidden="true"><div class="fill" style:width="{countdownView.progress * 100}%"></div></div>
+	<Panel colors={countdownView.colors} class={['main', countdownView.timeUp && 'time-up']} data-testid="panel">
+		{#if countdownView.timeUp}
+			<h1 class="time-up-heading">TIME</h1>
+			<Button size="large" class="dismiss" data-controls onclick={ondone}>Dismiss</Button>
+		{:else}
+			<p class="eyebrow">{countdownView.status === 'paused' ? 'Paused' : 'Countdown'}</p>
+			{#key pulseKey}
+				<p class="time" class:pulse={pulseKey !== 'steady'} style:--time-em={timeWidthEm(clock)} data-testid="remaining">
+					{clock}
+				</p>
+			{/key}
+			<div class="bar" aria-hidden="true"><div style:width="{countdownView.progress * 100}%"></div></div>
 
-		<ControlBar
-			status={countdownView.status}
-			visible={touch.visible}
-			steps={false}
-			onaction={act}
-			onrestart={askToRestart}
-			onend={askToEnd}
-		/>
+			<ControlBar
+				status={countdownView.status}
+				visible={touch.visible}
+				steps={false}
+				onaction={act}
+				onrestart={askToRestart}
+				onend={askToEnd}
+			/>
 
-		{#if confirming === 'end'}
-			<ConfirmDialog
-				message="End this Countdown?"
-				confirmLabel="End Countdown"
-				cancelLabel="Keep going"
-				onconfirm={confirmed}
-				oncancel={() => (confirming = null)}
-			/>
-		{:else if confirming === 'restart'}
-			<ConfirmDialog
-				message="Restart the Countdown from the beginning?"
-				confirmLabel="Restart"
-				onconfirm={confirmed}
-				oncancel={() => (confirming = null)}
-			/>
+			{#if confirming === 'end'}
+				<ConfirmDialog
+					message="End this Countdown?"
+					confirmLabel="End Countdown"
+					cancelLabel="Keep going"
+					onconfirm={confirmed}
+					oncancel={() => (confirming = null)}
+				/>
+			{:else if confirming === 'restart'}
+				<ConfirmDialog
+					message="Restart the Countdown from the beginning?"
+					confirmLabel="Restart"
+					onconfirm={confirmed}
+					oncancel={() => (confirming = null)}
+				/>
+			{/if}
 		{/if}
-	{/if}
+	</Panel>
 </div>
 
 <style>
@@ -154,76 +154,52 @@
 		position: fixed;
 		inset: 0;
 		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: 2vh;
-		padding: 4vh 6vw;
-		transition:
-			background-color 0.2s,
-			color 0.2s;
+		box-sizing: border-box;
+		padding: calc(24 * var(--tv));
+		background: var(--ground);
 		/* Taps are ours; there is nothing to scroll or zoom. */
 		touch-action: none;
 		user-select: none;
 	}
 
-	.label {
-		margin: 0;
-		font-size: clamp(14px, 4vh, 48px);
-		font-weight: 700;
-		letter-spacing: 0.3em;
-		text-transform: uppercase;
-		opacity: 0.85;
+	.screen > :global(.main) {
+		flex: 1;
+		padding: 0 calc(120 * var(--tv));
 	}
 
-	.digits {
-		margin: 0;
-		font-size: min(56vh, 28vw);
-		font-weight: 800;
-		font-variant-numeric: tabular-nums;
-		line-height: 0.88;
-		letter-spacing: -0.02em;
-		white-space: nowrap;
-	}
-
-	.bar {
-		height: 2vh;
-		margin-top: 2vh;
-		border-radius: 99px;
-		background: rgb(0 0 0 / 0.2);
-		overflow: hidden;
-	}
-
-	.fill {
-		height: 100%;
-		background: currentColor;
+	.screen > :global(.time-up) {
+		align-items: center;
+		gap: calc(48 * var(--tv));
 	}
 
 	.time {
+		--time-size: calc(520 * var(--tv));
+	}
+
+	.time-up-heading {
 		margin: 0;
-		font-size: min(56vh, 30vw);
+		font-size: min(calc(520 * var(--tv)), 38cqi);
 		font-weight: 800;
-		line-height: 1;
-		text-align: center;
+		line-height: 0.88;
+		letter-spacing: -0.04em;
 		animation: blink 1s steps(1) infinite;
 	}
 
-	.dismiss {
-		align-self: center;
-		min-height: 44px;
-		padding: 1.5vh 3vw;
-		border: 2px solid currentColor;
-		border-radius: 1vh;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		font-size: clamp(18px, 4vh, 44px);
-		font-weight: 700;
-		cursor: pointer;
+	.screen :global(.dismiss) {
+		min-height: 72px;
+		padding: 0 var(--s7);
+		border-radius: var(--r-lg);
+		font-size: 24px;
 	}
 
 	@media (orientation: portrait) {
-		.digits {
-			font-size: 30vw;
+		.screen > :global(.main) {
+			padding: 0 calc(64 * var(--tv));
+		}
+
+		/* The narrow width sets --tv here, which would leave the time small in a tall panel. */
+		.time {
+			--time-size: 30vw;
 		}
 	}
 
@@ -262,7 +238,7 @@
 		}
 
 		/* Still flashing, but gently. */
-		.time {
+		.time-up-heading {
 			animation: flash 2s ease-in-out infinite alternate;
 		}
 	}
