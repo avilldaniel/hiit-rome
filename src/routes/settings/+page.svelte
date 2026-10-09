@@ -8,6 +8,11 @@
 	import { deviceStore } from '#lib/store/device.ts';
 	import BackupSection from '#lib/transfer/BackupSection.svelte';
 	import type { WorkoutStore } from '#lib/store/workout-store.ts';
+	import BackLink from '#lib/ui/BackLink.svelte';
+	import Button from '#lib/ui/Button.svelte';
+	import Card from '#lib/ui/Card.svelte';
+	import Field from '#lib/ui/Field.svelte';
+	import Switch from '#lib/ui/Switch.svelte';
 
 	let settings = $state.raw<Settings>();
 	let presets = $state.raw<number[]>([]);
@@ -65,9 +70,9 @@
 	<title>Settings · hiit-rome</title>
 </svelte:head>
 
-<div class="settings" style:background-color={PALETTE.neutral.background} style:color={PALETTE.neutral.text}>
+<div class="settings">
 	<header>
-		<a class="back" href="/">← My Workouts</a>
+		<BackLink href="/" label="My Workouts" />
 		<h1>Settings</h1>
 	</header>
 
@@ -79,215 +84,265 @@
 				<p class="message" role="alert">Your changes couldn’t be saved. Try reloading the page.</p>
 			{/if}
 
-			<section aria-labelledby="voice-heading">
-				<h2 id="voice-heading">Voice</h2>
-				<div class="row">
-					<label>
-						Voice
-						<select
-							value={settings.voiceId ?? ''}
-							onchange={(event) => change({ voiceId: event.currentTarget.value || null })}
-						>
-							<option value="">Device default</option>
-							{#each voices as voice (voice.id)}
-								<option value={voice.id}>{voice.name} ({voice.lang})</option>
-							{/each}
-						</select>
-					</label>
-					<button type="button" onclick={testVoice}>Test voice</button>
-				</div>
-			</section>
+			<div class="columns">
+				<div class="column">
+					<Card as="section" aria-labelledby="voice-heading">
+						<h2 id="voice-heading">Voice</h2>
+						<div class="row">
+							<Field label="Voice" inline class="fill">
+								<select
+									value={settings.voiceId ?? ''}
+									onchange={(event) => change({ voiceId: event.currentTarget.value || null })}
+								>
+									<option value="">Device default</option>
+									{#each voices as voice (voice.id)}
+										<option value={voice.id}>{voice.name} ({voice.lang})</option>
+									{/each}
+								</select>
+							</Field>
+							<Button icon="speaker" onclick={testVoice}>Test voice</Button>
+						</div>
+					</Card>
 
-			<section aria-labelledby="cues-heading">
-				<h2 id="cues-heading">Cues</h2>
-				<p class="hint">The defaults for every Workout; a Workout can override them in its own settings.</p>
-				{#each CUE_TOGGLES as toggle (toggle.key)}
-					<div class="row">
-						<label>
-							<input
-								type="checkbox"
-								checked={settings.cues[toggle.key]}
-								onchange={(event) => changeCues({ [toggle.key]: event.currentTarget.checked })}
-							/>
-							{toggle.label}
-						</label>
-						{#if toggle.key === 'warning'}
-							<label>
-								<input
-									class="seconds"
-									type="number"
-									min={LIMITS.minWarningSec}
-									max={LIMITS.maxWarningSec}
-									aria-label="Warning seconds"
-									aria-invalid={warningInvalid}
-									value={settings.cues.warningSec}
-									oninput={(event) => changeWarningSec(event.currentTarget.value)}
+					<Card as="section" aria-labelledby="cues-heading">
+						<h2 id="cues-heading">Cues</h2>
+						<p class="hint">The defaults for every Workout; a Workout can override them in its own settings.</p>
+						<div>
+							{#each CUE_TOGGLES as toggle (toggle.key)}
+								<div class="row">
+									<label class="toggle">
+										<Switch
+											checked={settings.cues[toggle.key]}
+											onchange={(event) => changeCues({ [toggle.key]: event.currentTarget.checked })}
+										/>
+										{toggle.label}
+									</label>
+									{#if toggle.key === 'warning'}
+										<label class="end">
+											<input
+												class="input seconds"
+												type="number"
+												min={LIMITS.minWarningSec}
+												max={LIMITS.maxWarningSec}
+												aria-label="Warning seconds"
+												aria-invalid={warningInvalid}
+												value={settings.cues.warningSec}
+												oninput={(event) => changeWarningSec(event.currentTarget.value)}
+											/>
+											s before the end
+										</label>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</Card>
+
+					<Card as="section" aria-labelledby="pause-heading">
+						<h2 id="pause-heading">Pause</h2>
+						<div class="row">
+							<label class="toggle">
+								<Switch
+									checked={settings.resumeLeadIn}
+									onchange={(event) => change({ resumeLeadIn: event.currentTarget.checked })}
 								/>
-								s before the end
+								3 s Lead-in when resuming from pause
 							</label>
-						{/if}
-					</div>
-				{/each}
-			</section>
-
-			<section aria-labelledby="pause-heading">
-				<h2 id="pause-heading">Pause</h2>
-				<label>
-					<input
-						type="checkbox"
-						checked={settings.resumeLeadIn}
-						onchange={(event) => change({ resumeLeadIn: event.currentTarget.checked })}
-					/>
-					3 s Lead-in when resuming from pause
-				</label>
-			</section>
-
-			<section aria-labelledby="countdown-heading">
-				<h2 id="countdown-heading">Countdown</h2>
-				<p class="hint">The five Presets offered as one-tap starts.</p>
-				<div class="row">
-					{#each presets as sec, i (i)}
-						<DurationInput label="Preset {i + 1}" seconds={sec} onchange={(next) => changePreset(i, next)} />
-					{/each}
+						</div>
+					</Card>
 				</div>
-				<div class="row">
-					<label>
-						Color
-						<select
-							value={settings.countdown.color}
-							onchange={(event) =>
-								changeCountdown({ color: event.currentTarget.value as CountdownSettings['color'] })}
-						>
-							{#each COUNTDOWN_COLORS as token (token)}
-								<option value={token}>{COLOR_NAME[token]}</option>
+
+				<div class="column">
+					<Card as="section" aria-labelledby="countdown-heading">
+						<h2 id="countdown-heading">Countdown</h2>
+						<p class="hint">The five Presets offered as one-tap starts.</p>
+						<div class="presets">
+							{#each presets as sec, i (i)}
+								<Field label="Preset {i + 1}">
+									<DurationInput label="Preset {i + 1}" seconds={sec} onchange={(next) => changePreset(i, next)} />
+								</Field>
 							{/each}
-						</select>
-					</label>
-					<span
-						class="swatch"
-						aria-hidden="true"
-						style:background-color={PALETTE[settings.countdown.color].background}
-						style:color={PALETTE[settings.countdown.color].text}>0:00</span
-					>
-				</div>
-				<label>
-					<input
-						type="checkbox"
-						checked={settings.countdown.warning}
-						onchange={(event) => changeCountdown({ warning: event.currentTarget.checked })}
-					/>
-					Say “1 minute remaining” on Countdowns over 1 minute
-				</label>
-			</section>
+						</div>
+						<div class="row">
+							<Field label="Color" inline class="fill">
+								<select
+									value={settings.countdown.color}
+									onchange={(event) =>
+										changeCountdown({ color: event.currentTarget.value as CountdownSettings['color'] })}
+								>
+									{#each COUNTDOWN_COLORS as token (token)}
+										<option value={token}>{COLOR_NAME[token]}</option>
+									{/each}
+								</select>
+							</Field>
+							<span
+								class="swatch"
+								aria-hidden="true"
+								style:background-color={PALETTE[settings.countdown.color].background}
+								style:color={PALETTE[settings.countdown.color].text}>0:00</span
+							>
+						</div>
+						<div class="row">
+							<label class="toggle">
+								<Switch
+									checked={settings.countdown.warning}
+									onchange={(event) => changeCountdown({ warning: event.currentTarget.checked })}
+								/>
+								Say “1 minute remaining” on Countdowns over 1 minute
+							</label>
+						</div>
+					</Card>
 
-			<BackupSection onreplaced={(next, nextPresets) => ((settings = next), (presets = nextPresets))} />
+					<BackupSection onreplaced={(next, nextPresets) => ((settings = next), (presets = nextPresets))} />
+				</div>
+			</div>
 		{/if}
 	</main>
 </div>
 
 <style>
 	.settings {
-		min-height: 100vh;
+		display: grid;
+		gap: var(--s5);
+		padding: var(--s7) var(--s8) var(--s9);
 	}
 
 	header {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 24px;
-		padding: 24px 32px;
-	}
-
-	.back {
-		color: inherit;
-		font-weight: 600;
+		display: grid;
+		gap: var(--s2);
 	}
 
 	h1 {
 		margin: 0;
-		font-size: 36px;
+		font-size: var(--fs-title);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
 	}
 
 	main {
-		max-width: 720px;
-		padding: 0 32px 96px;
+		display: grid;
+		gap: var(--s5);
 	}
 
-	section {
-		margin-bottom: 32px;
+	.columns {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		align-items: start;
+		gap: var(--s5);
+		max-width: 1640px;
+	}
+
+	.column {
+		display: grid;
+		gap: var(--s5);
+	}
+
+	/* The Settings cards, BackupSection's among them, are a little tighter than a Card's default. */
+	.column :global(.card) {
+		gap: var(--s3);
+		padding: var(--s5) var(--s6);
 	}
 
 	h2 {
-		margin: 0 0 12px;
-		font-size: 22px;
+		margin: 0;
+		font-size: var(--fs-h2);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
 	}
 
 	.hint {
-		margin: 0 0 12px;
-		opacity: 0.8;
+		max-width: 68ch;
+		margin: 0;
+		color: var(--muted);
+		font-size: 16px;
 	}
 
 	.row {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
-		gap: 16px;
-		min-height: 44px;
+		gap: var(--s4);
+		min-height: 52px;
 	}
 
-	label {
+	.row + .row {
+		border-top: 1px solid var(--line);
+	}
+
+	.row :global(.fill) {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+
+	.toggle {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-	}
-
-	select,
-	button,
-	.seconds,
-	.row :global(.duration) {
-		padding: 8px 12px;
-		border: 1px solid rgb(255 255 255 / 0.3);
-		border-radius: 8px;
-		background: rgb(255 255 255 / 0.08);
-		color: inherit;
-		font: inherit;
-	}
-
-	.seconds,
-	.row :global(.duration) {
-		width: 4.5em;
-	}
-
-	.swatch {
-		padding: 4px 12px;
-		border-radius: 8px;
-		font-weight: 800;
-		font-variant-numeric: tabular-nums;
-	}
-
-	[aria-invalid='true'] {
-		outline: 3px solid #fff;
-		outline-offset: 1px;
-	}
-
-	option {
-		color: initial;
-	}
-
-	button {
+		gap: var(--s4);
+		font-weight: 500;
 		cursor: pointer;
 	}
 
-	input[type='checkbox'] {
-		width: 20px;
-		height: 20px;
+	.end {
+		display: flex;
+		align-items: center;
+		gap: var(--s2);
+		margin-left: auto;
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.seconds {
+		width: 88px;
+		text-align: right;
+	}
+
+	.presets {
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: var(--s3);
+	}
+
+	.swatch {
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: 120px;
+		height: 56px;
+		border-radius: var(--r);
+		font: 800 28px var(--font-display);
+		font-variant-numeric: tabular-nums;
 	}
 
 	.message {
-		padding: 12px 16px;
-		border-radius: 8px;
-		background: #f7b928;
-		color: var(--text);
+		margin: 0;
+		color: var(--danger);
+		font-size: var(--fs-lead);
 		font-weight: 600;
+	}
+
+	@media (max-width: 1100px) {
+		.columns {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	@media (max-width: 1000px) {
+		.settings {
+			padding: var(--s5) var(--s4) var(--s7);
+		}
+
+		h1 {
+			font-size: 48px;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.presets {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+
+		.row {
+			flex-wrap: wrap;
+		}
 	}
 </style>

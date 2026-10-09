@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { PALETTE } from '#lib/engine/palette.ts';
 	import type { Settings } from '#lib/engine/settings.ts';
 	import { deviceStore } from '#lib/store/device.ts';
+	import Button from '#lib/ui/Button.svelte';
+	import Card from '#lib/ui/Card.svelte';
+	import Icon from '#lib/ui/Icon.svelte';
 	import { exportBackup, importBackup, readBackupFile, type Backup } from './backup.ts';
 
 	/** Called once an import has replaced this device's Settings and Presets with the backup's. */
@@ -84,92 +86,100 @@
 		new Date(at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 </script>
 
-<section aria-labelledby="backup-heading">
+<Card as="section" aria-labelledby="backup-heading">
 	<h2 id="backup-heading">Backup</h2>
 	<p class="hint">
 		Your Workouts live only on this device. Export a backup now and then, and import it here or on another device.
 	</p>
 	{#if lastBackupAt !== undefined}
-		<p>Last backed up: {lastBackupAt === null ? 'never' : formatDate(lastBackupAt)}</p>
+		<p>Last backed up: <b>{lastBackupAt === null ? 'never' : formatDate(lastBackupAt)}</b></p>
 	{/if}
 	<div class="row">
-		<button type="button" onclick={exportFile}>Export backup</button>
-		<label class="button">
+		<Button icon="down-tray" onclick={exportFile}>Export backup</Button>
+		<!-- A label, not a Button, so the file input it holds takes its name and opens from it. -->
+		<label class="import">
+			<Icon name="up-tray" />
 			Import backup
 			<input type="file" accept="application/json,.json" onchange={chooseFile} />
 		</label>
 	</div>
 	{#if outcome}
-		<p class:message={outcome.failed} role={outcome.failed ? 'alert' : 'status'}>{outcome.text}</p>
+		<p class={['outcome', outcome.failed && 'failed']} role={outcome.failed ? 'alert' : 'status'}>{outcome.text}</p>
 	{/if}
-</section>
+</Card>
 
 {#if pending}
-	<dialog
-		bind:this={dialog}
-		aria-labelledby="import-heading"
-		style:--neutral-bg={PALETTE.neutral.background}
-		style:--neutral-text={PALETTE.neutral.text}
-		onclose={() => (pending = undefined)}
-	>
+	<dialog bind:this={dialog} aria-labelledby="import-heading" onclose={() => (pending = undefined)}>
 		<h2 id="import-heading">Import backup</h2>
 		<p>
 			This backup from {formatDate(pending.exportedAt)} has {workouts(pending.workouts.length)}. They’re added
 			alongside yours, skipping any you already have; none of yours change.
 		</p>
-		<label>
-			<input type="checkbox" bind:checked={replaceSettings} />
+		<label class="replace">
+			<input class="checkbox" type="checkbox" bind:checked={replaceSettings} />
 			Also replace my Settings and Presets with the backup’s
 		</label>
 		<div class="actions">
-			<button type="button" onclick={() => dialog?.close()}>Cancel</button>
-			<button type="button" class="confirm" onclick={confirmImport}>Import</button>
+			<Button onclick={() => dialog?.close()}>Cancel</Button>
+			<Button variant="primary" icon="up-tray" onclick={confirmImport}>Import</Button>
 		</div>
 	</dialog>
 {/if}
 
 <style>
-	section {
-		margin-bottom: 32px;
+	h2 {
+		margin: 0;
+		font-size: var(--fs-h2);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
 	}
 
-	h2 {
-		margin: 0 0 12px;
-		font-size: 22px;
+	p {
+		margin: 0;
 	}
 
 	.hint {
-		margin: 0 0 12px;
-		opacity: 0.8;
+		max-width: 68ch;
+		color: var(--muted);
+		font-size: 16px;
 	}
 
 	.row {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 16px;
-		min-height: 44px;
+		gap: var(--s3);
 	}
 
-	label {
-		display: flex;
+	/* Drawn as a default Button. */
+	.import {
+		position: relative;
+		display: inline-flex;
 		align-items: center;
-		gap: 8px;
-	}
-
-	button,
-	.button {
-		padding: 8px 12px;
-		border: 1px solid rgb(255 255 255 / 0.3);
-		border-radius: 8px;
-		background: rgb(255 255 255 / 0.08);
-		color: inherit;
-		font: inherit;
+		justify-content: center;
+		gap: var(--s2);
+		box-sizing: border-box;
+		min-height: 44px;
+		padding: 0 var(--s4);
+		border: 1px solid var(--line);
+		border-radius: var(--r);
+		background: var(--surface);
+		color: var(--text);
+		font: 600 16px/1 var(--font-body);
+		white-space: nowrap;
 		cursor: pointer;
+		transition: border-color var(--dur-fast) var(--ease-out);
 	}
 
-	.button:focus-within {
-		outline: 2px solid currentColor;
+	@media (hover: hover) {
+		.import:hover {
+			border-color: var(--text);
+		}
+	}
+
+	.import:focus-within {
+		outline: 3px solid var(--focus);
 		outline-offset: 2px;
 	}
 
@@ -181,41 +191,48 @@
 		opacity: 0;
 	}
 
-	input[type='checkbox'] {
-		width: 20px;
-		height: 20px;
-	}
-
-	.message {
-		padding: 12px 16px;
-		border-radius: 8px;
-		background: #f7b928;
-		color: var(--text);
+	.outcome {
 		font-weight: 600;
 	}
 
+	.failed {
+		color: var(--danger);
+	}
+
+	/* A card over the page, as the other confirm dialogs. */
 	dialog {
-		max-width: 560px;
-		padding: 24px 32px;
+		box-sizing: border-box;
+		width: min(600px, calc(100vw - 2 * var(--s4)));
+		padding: var(--s6);
 		border: none;
-		border-radius: 12px;
-		background: var(--neutral-bg);
-		color: var(--neutral-text);
+		border-radius: var(--r-lg);
+		background: var(--surface);
+		box-shadow: var(--shadow);
+		color: var(--text);
 	}
 
 	dialog::backdrop {
-		background: color-mix(in srgb, var(--neutral-bg) 70%, transparent);
+		background: color-mix(in srgb, var(--text) 55%, transparent);
+	}
+
+	dialog h2 {
+		margin-bottom: var(--s4);
+	}
+
+	.replace {
+		display: flex;
+		align-items: center;
+		gap: var(--s3);
+		margin-top: var(--s5);
+		font-weight: 500;
+		cursor: pointer;
 	}
 
 	.actions {
 		display: flex;
-		gap: 16px;
+		flex-wrap: wrap;
+		gap: var(--s3);
 		justify-content: flex-end;
-		margin-top: 24px;
-	}
-
-	.confirm {
-		background: var(--neutral-text);
-		color: var(--neutral-bg);
+		margin-top: var(--s6);
 	}
 </style>

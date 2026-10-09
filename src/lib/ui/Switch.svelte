@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { HTMLInputAttributes } from 'svelte/elements';
 
-	// A checkbox drawn as a toggle; it keeps checkbox behavior and announces itself as a switch.
+	// A checkbox drawn as a toggle. It stays a checkbox to assistive tech, as the visual-only redesign keeps every role.
 	let { checked = $bindable(false), class: className, ...rest }: Omit<HTMLInputAttributes, 'type'> = $props();
 </script>
 
-<input type="checkbox" role="switch" class={['switch', className]} bind:checked {...rest} />
+<input type="checkbox" class={['switch', className]} bind:checked {...rest} />
 
 <style>
 	.switch {

@@ -10,6 +10,10 @@
 	import { resumeSaved, sessionPath, takeResumed } from '#lib/session/recovery.ts';
 	import { deviceStore } from '#lib/store/device.ts';
 	import type { SavedSession } from '#lib/store/workout-store.ts';
+	import BackLink from '#lib/ui/BackLink.svelte';
+	import Button from '#lib/ui/Button.svelte';
+	import Card from '#lib/ui/Card.svelte';
+	import Field from '#lib/ui/Field.svelte';
 
 	const PATH = '/countdown';
 	/** The custom duration first offered: 2 minutes. */
@@ -92,9 +96,9 @@
 {:else if current}
 	<EndCurrentPrompt {current} starting="a Countdown" onend={endCurrent} onback={() => backToCurrent(current!)} />
 {:else}
-	<div class="countdown" style:background-color={PALETTE.neutral.background} style:color={PALETTE.neutral.text}>
+	<div class="countdown">
 		<header>
-			<a class="back" href="/">← My Workouts</a>
+			<BackLink href="/" label="My Workouts" />
 			<h1>Countdown</h1>
 		</header>
 
@@ -121,7 +125,7 @@
 					<a class="edit" href="/settings#countdown-heading">Edit Presets in Settings</a>
 				</section>
 
-				<section aria-labelledby="custom-heading">
+				<Card as="section" class="custom" aria-labelledby="custom-heading">
 					<h2 id="custom-heading">Custom</h2>
 					<form
 						onsubmit={(event) => {
@@ -129,10 +133,12 @@
 							void start(customSec);
 						}}
 					>
-						<DurationInput label="Custom duration" seconds={customSec} onchange={(sec) => (customSec = sec)} />
-						<button type="submit">Start</button>
+						<Field label="Custom duration" hideLabel size="large">
+							<DurationInput label="Custom duration" seconds={customSec} onchange={(sec) => (customSec = sec)} />
+						</Field>
+						<Button type="submit" variant="primary" size="large" icon="play">Start</Button>
 					</form>
-				</section>
+				</Card>
 			{/if}
 		</main>
 	</div>
@@ -140,86 +146,133 @@
 
 <style>
 	.countdown {
-		min-height: 100vh;
+		display: grid;
+		gap: var(--s6);
+		padding: var(--s7) var(--s8);
 	}
 
 	header {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 24px;
-		padding: 24px 32px;
-	}
-
-	.back,
-	.edit {
-		color: inherit;
-		font-weight: 600;
+		display: grid;
+		gap: var(--s2);
 	}
 
 	h1 {
 		margin: 0;
-		font-size: 36px;
+		font-size: var(--fs-title);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
 	}
 
 	main {
-		padding: 0 32px 96px;
-	}
-
-	section {
-		margin-bottom: 40px;
+		display: grid;
+		align-content: start;
+		gap: var(--s7);
 	}
 
 	h2 {
-		margin: 0 0 16px;
-		font-size: 22px;
+		margin: 0;
+		font-size: var(--fs-h2);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+
+	section > h2 {
+		margin-bottom: var(--s3);
 	}
 
 	.presets {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-		gap: 16px;
-		margin-bottom: 16px;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: var(--s5);
 	}
 
+	/* Sized with the viewport, so "15:00" fits its tile from 1280 wide and the page fits 720 high. */
 	.preset {
-		min-height: 120px;
-		border: none;
-		border-radius: 16px;
-		font: inherit;
-		font-size: 48px;
-		font-weight: 800;
+		appearance: none;
+		min-height: clamp(160px, 24vh, 260px);
+		border: 0;
+		border-radius: var(--r-xl);
+		box-shadow: var(--shadow);
+		font: 800 min(112px, 5.8vw) / 1 var(--font-display);
+		letter-spacing: -0.03em;
 		font-variant-numeric: tabular-nums;
 		cursor: pointer;
+		transition: transform var(--dur) var(--ease-out);
+	}
+
+	@media (hover: hover) {
+		.preset:hover {
+			transform: translateY(-4px);
+		}
+	}
+
+	.preset:active {
+		transform: translateY(0);
+	}
+
+	.edit {
+		display: inline-flex;
+		align-items: center;
+		width: max-content;
+		min-height: 44px;
+		color: var(--text);
+		font-weight: 600;
+		text-underline-offset: 4px;
+	}
+
+	main :global(.custom) {
+		box-sizing: border-box;
+		width: min(680px, 100%);
 	}
 
 	form {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 12px;
+		gap: var(--s4);
 	}
 
-	form :global(.duration),
-	form button {
-		padding: 8px 12px;
-		border: 1px solid rgb(255 255 255 / 0.3);
-		border-radius: 8px;
-		background: rgb(255 255 255 / 0.08);
-		color: inherit;
-		font: inherit;
-		font-size: 20px;
-	}
-
-	form button {
-		cursor: pointer;
+	/* A large field, but right-aligned like every other duration. */
+	form :global(.field input.duration) {
+		width: 220px;
+		text-align: right;
 	}
 
 	.message {
-		padding: 12px 16px;
-		border-radius: 8px;
-		background: #f7b928;
-		color: var(--text);
+		margin: 0;
+		color: var(--danger);
+		font-size: var(--fs-lead);
 		font-weight: 600;
+	}
+
+	@media (max-width: 1000px) {
+		.countdown {
+			padding: var(--s5) var(--s4) var(--s7);
+		}
+
+		h1 {
+			font-size: 48px;
+		}
+
+		.presets {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: var(--s4);
+		}
+
+		.preset {
+			font-size: min(88px, 9vw);
+		}
+	}
+
+	@media (max-width: 560px) {
+		.presets {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.preset {
+			font-size: 13vw;
+		}
 	}
 </style>
