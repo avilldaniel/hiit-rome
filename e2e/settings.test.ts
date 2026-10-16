@@ -54,3 +54,15 @@ test('Settings are kept, and the next Session plays its Cues with them', async (
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mountain Climbers');
 	await expect(page.getByText('Get ready')).toBeHidden();
 });
+
+test('the Session layout chosen in Settings is the one the next Session opens in', async ({ page }) => {
+	await page.goto('/settings');
+	const layout = page.getByRole('combobox', { name: 'Session layout' });
+	await expect(layout).toHaveValue('column');
+	await layout.selectOption({ label: 'Diptych' });
+
+	await page.getByRole('link', { name: '← My Workouts' }).click();
+	await page.getByRole('link', { name: 'Start Thursday Tabatas' }).click();
+	await expect(page.getByTestId('session')).toHaveAttribute('data-layout', 'diptych');
+	await expect(page.getByRole('combobox', { name: 'Layout' })).toHaveValue('diptych');
+});

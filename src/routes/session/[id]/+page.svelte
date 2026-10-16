@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { startBlocker } from '#lib/engine/outline.ts';
 	import type { SessionSnapshot } from '#lib/engine/session.ts';
-	import type { Settings } from '#lib/engine/settings.ts';
+	import type { SessionLayout, Settings } from '#lib/engine/settings.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
 	import { findSample } from '#lib/library/samples.ts';
 	import EndCurrentPrompt from '#lib/session/EndCurrentPrompt.svelte';
@@ -71,6 +71,11 @@
 			.catch(() => {});
 	};
 	const clear = () => void deviceStore().then((store) => store.clearSession()).catch(() => {});
+	// A layout picked from the Session's controls is the one the next Session opens in too.
+	const keepLayout = (sessionLayout: SessionLayout) =>
+		void deviceStore()
+			.then(async (store) => store.saveSettings({ ...(await store.getSettings()), sessionLayout }))
+			.catch(() => {});
 </script>
 
 <svelte:head>
@@ -78,7 +83,7 @@
 </svelte:head>
 
 {#if workout && blocker}
-	<MessagePage title="{workout.name} can’t start yet">
+	<MessagePage title="{workout.name} can’t start yet" mark="0">
 		<p>{blocker}</p>
 		<p><a href="/edit/{workout.id}">Edit {workout.name}</a></p>
 	</MessagePage>
@@ -86,7 +91,7 @@
 	<EndCurrentPrompt {current} starting={workout.name} onend={endCurrent} onback={() => backToCurrent(current!)} />
 {:else if workout && settings}
 	{#key workout.id}
-		<SessionScreen {workout} {settings} {restored} onstart={markUsed} onsave={save} onclear={clear} />
+		<SessionScreen {workout} {settings} {restored} onstart={markUsed} onsave={save} onclear={clear} onlayout={keepLayout} />
 	{/key}
 {:else if workout === null}
 	<MessagePage title="Workout not found">

@@ -1,17 +1,28 @@
 <script lang="ts">
 	import type { CueSettings } from '#lib/engine/cues.ts';
 	import { COLOR_NAME, PALETTE } from '#lib/engine/palette.ts';
-	import { COUNTDOWN_COLORS, CUE_TOGGLES, type CountdownSettings, type Settings } from '#lib/engine/settings.ts';
+	import {
+		COUNTDOWN_COLORS,
+		CUE_TOGGLES,
+		SESSION_LAYOUTS,
+		type CountdownSettings,
+		type SessionLayout,
+		type Settings
+	} from '#lib/engine/settings.ts';
 	import DurationInput from '#lib/editor/DurationInput.svelte';
 	import { isValidWarningSec, LIMITS } from '#lib/engine/workout.ts';
 	import { createCuePlayer, type Voice } from '#lib/platform/cue-player.ts';
 	import { deviceStore } from '#lib/store/device.ts';
+	import LayoutSketch from '#lib/session/LayoutSketch.svelte';
 	import BackupSection from '#lib/transfer/BackupSection.svelte';
 	import type { WorkoutStore } from '#lib/store/workout-store.ts';
-	import BackLink from '#lib/ui/BackLink.svelte';
+	import Alert from '#lib/ui/Alert.svelte';
+	import Band from '#lib/ui/Band.svelte';
 	import Button from '#lib/ui/Button.svelte';
-	import Card from '#lib/ui/Card.svelte';
 	import Field from '#lib/ui/Field.svelte';
+	import Loading from '#lib/ui/Loading.svelte';
+	import { dealIn } from '#lib/ui/motion.ts';
+	import NumberedCard from '#lib/ui/NumberedCard.svelte';
 	import Switch from '#lib/ui/Switch.svelte';
 
 	let settings = $state.raw<Settings>();
@@ -58,6 +69,16 @@
 		if (!warningInvalid) changeCues({ warningSec: sec });
 	}
 
+	/** The sections, for the chips that jump straight to one. */
+	const SECTIONS = [
+		{ id: 'voice-heading', label: 'Voice' },
+		{ id: 'cues-heading', label: 'Cues' },
+		{ id: 'pause-heading', label: 'Pause' },
+		{ id: 'session-heading', label: 'Session' },
+		{ id: 'countdown-heading', label: 'Countdown' },
+		{ id: 'backup-heading', label: 'Backup' }
+	];
+
 	function testVoice() {
 		player.unlock();
 		player.cancelPending();
@@ -71,23 +92,29 @@
 </svelte:head>
 
 <div class="settings">
-	<header>
-		<BackLink href="/" label="My Workouts" />
-		<h1>Settings</h1>
-	</header>
+	<Band hue="var(--hue-purple)" back={{ href: '/', label: 'My Workouts' }} title="Settings">
+		{#if settings}
+			<nav class="jump" aria-label="Sections" {@attach dealIn({ gap: 0.04 })}>
+				{#each SECTIONS as section (section.id)}
+					<a href="#{section.id}">{section.label}</a>
+				{/each}
+			</nav>
+		{/if}
+	</Band>
 
 	<main>
 		{#if failed}
-			<p class="message" role="alert">Your Settings couldn’t be loaded. Try reloading the page.</p>
-		{:else if settings}
+			<Alert>Your Settings couldn’t be loaded. Try reloading the page.</Alert>
+		{:else if !settings}
+			<Loading />
+		{:else}
 			{#if saveFailed}
-				<p class="message" role="alert">Your changes couldn’t be saved. Try reloading the page.</p>
+				<Alert>Your changes couldn’t be saved. Try reloading the page.</Alert>
 			{/if}
 
 			<div class="columns">
-				<div class="column">
-					<Card as="section" aria-labelledby="voice-heading">
-						<h2 id="voice-heading">Voice</h2>
+				<div class="column" {@attach dealIn({ gap: 0.07 })}>
+					<NumberedCard number="01" title="Voice" hue="var(--hue-teal)" id="voice-heading">
 						<div class="row">
 							<Field label="Voice" inline class="fill">
 								<select
@@ -102,12 +129,11 @@
 							</Field>
 							<Button icon="speaker" onclick={testVoice}>Test voice</Button>
 						</div>
-					</Card>
+					</NumberedCard>
 
-					<Card as="section" aria-labelledby="cues-heading">
-						<h2 id="cues-heading">Cues</h2>
+					<NumberedCard number="02" title="Cues" hue="var(--hue-yellow)" id="cues-heading">
 						<p class="hint">The defaults for every Workout; a Workout can override them in its own settings.</p>
-						<div>
+						<div class="switches">
 							{#each CUE_TOGGLES as toggle (toggle.key)}
 								<div class="row">
 									<label class="toggle">
@@ -135,10 +161,9 @@
 								</div>
 							{/each}
 						</div>
-					</Card>
+					</NumberedCard>
 
-					<Card as="section" aria-labelledby="pause-heading">
-						<h2 id="pause-heading">Pause</h2>
+					<NumberedCard number="03" title="Pause" hue="var(--hue-pink)" id="pause-heading">
 						<div class="row">
 							<label class="toggle">
 								<Switch
@@ -148,12 +173,28 @@
 								3 s Lead-in when resuming from pause
 							</label>
 						</div>
-					</Card>
+					</NumberedCard>
+
+					<NumberedCard number="04" title="Session" hue="var(--hue-purple)" id="session-heading">
+						<p class="hint">How the Session is laid out for the room. It can be switched from the Session’s controls too.</p>
+						<div class="row">
+							<Field label="Session layout" inline class="fill">
+								<select
+									value={settings.sessionLayout}
+									onchange={(event) => change({ sessionLayout: event.currentTarget.value as SessionLayout })}
+								>
+									{#each SESSION_LAYOUTS as layout (layout.id)}
+										<option value={layout.id}>{layout.label}</option>
+									{/each}
+								</select>
+							</Field>
+							<LayoutSketch layout={settings.sessionLayout} />
+						</div>
+					</NumberedCard>
 				</div>
 
-				<div class="column">
-					<Card as="section" aria-labelledby="countdown-heading">
-						<h2 id="countdown-heading">Countdown</h2>
+				<div class="column" {@attach dealIn({ gap: 0.07, delay: 0.05 })}>
+					<NumberedCard number="05" title="Countdown" hue="var(--hue-orange)" id="countdown-heading">
 						<p class="hint">The five Presets offered as one-tap starts.</p>
 						<div class="presets">
 							{#each presets as sec, i (i)}
@@ -190,7 +231,7 @@
 								Say “1 minute remaining” on Countdowns over 1 minute
 							</label>
 						</div>
-					</Card>
+					</NumberedCard>
 
 					<BackupSection onreplaced={(next, nextPresets) => ((settings = next), (presets = nextPresets))} />
 				</div>
@@ -201,61 +242,69 @@
 
 <style>
 	.settings {
-		display: grid;
-		gap: var(--s5);
-		padding: var(--s7) var(--s8) var(--s9);
+		padding-bottom: var(--s9);
 	}
 
-	header {
-		display: grid;
+	/* Chips in the band that jump straight to a section, alternately tilted. */
+	.jump {
+		display: flex;
+		flex-wrap: wrap;
 		gap: var(--s2);
+		margin-top: var(--s5);
 	}
 
-	h1 {
-		margin: 0;
-		font-size: var(--fs-title);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
+	.jump a {
+		padding: var(--s1) var(--s3);
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--surface);
+		color: var(--text);
+		font: 700 var(--fs-xs) / 1.6 var(--font-mono);
+		text-decoration: none;
+		box-shadow: var(--shadow-sm);
+		transition: translate var(--dur) var(--ease-out);
+	}
+
+	.jump a:nth-child(odd) {
+		rotate: -2deg;
+	}
+
+	.jump a:nth-child(even) {
+		rotate: 2deg;
+	}
+
+	@media (hover: hover) {
+		.jump a:hover {
+			translate: 0 -3px;
+		}
 	}
 
 	main {
+		box-sizing: border-box;
 		display: grid;
 		gap: var(--s5);
+		max-width: 1216px;
+		margin: 0 auto;
+		padding: var(--s7) var(--s6) 0;
 	}
 
 	.columns {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		align-items: start;
-		gap: var(--s5);
-		max-width: 1640px;
+		gap: var(--s6);
 	}
 
 	.column {
 		display: grid;
-		gap: var(--s5);
-	}
-
-	/* The Settings cards, BackupSection's among them, are a little tighter than a Card's default. */
-	.column :global(.card) {
-		gap: var(--s3);
-		padding: var(--s5) var(--s6);
-	}
-
-	h2 {
-		margin: 0;
-		font-size: var(--fs-h2);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
+		gap: var(--s6);
 	}
 
 	.hint {
 		max-width: 68ch;
 		margin: 0;
 		color: var(--muted);
-		font-size: 16px;
+		font-weight: 600;
 	}
 
 	.row {
@@ -265,8 +314,9 @@
 		min-height: 52px;
 	}
 
-	.row + .row {
-		border-top: 1px solid var(--line);
+	/* Switches one under another, between dashed rules. */
+	.switches .row + .row {
+		border-top: 2px dashed var(--line);
 	}
 
 	.row :global(.fill) {
@@ -277,8 +327,8 @@
 	.toggle {
 		display: flex;
 		align-items: center;
-		gap: var(--s4);
-		font-weight: 500;
+		gap: var(--s3);
+		font-weight: 700;
 		cursor: pointer;
 	}
 
@@ -287,13 +337,15 @@
 		align-items: center;
 		gap: var(--s2);
 		margin-left: auto;
-		color: var(--muted);
+		font-weight: 700;
 		white-space: nowrap;
 	}
 
 	.seconds {
-		width: 88px;
-		text-align: right;
+		width: 76px;
+		font-family: var(--font-display);
+		font-weight: 900;
+		text-align: center;
 	}
 
 	.presets {
@@ -302,22 +354,25 @@
 		gap: var(--s3);
 	}
 
+	.presets :global(input) {
+		text-align: center;
+	}
+
+	/* The Countdown color, as a tilted time in it. */
 	.swatch {
 		display: grid;
 		flex: none;
 		place-items: center;
+		box-sizing: border-box;
 		width: 120px;
 		height: 56px;
+		border: var(--stroke) solid var(--line);
 		border-radius: var(--r);
-		font: 800 28px var(--font-display);
+		font: 900 var(--fs-h2) var(--font-display);
 		font-variant-numeric: tabular-nums;
-	}
-
-	.message {
-		margin: 0;
-		color: var(--danger);
-		font-size: var(--fs-lead);
-		font-weight: 600;
+		rotate: 2deg;
+		box-shadow: var(--shadow);
+		transition: background-color var(--dur) ease;
 	}
 
 	@media (max-width: 1100px) {
@@ -326,17 +381,15 @@
 		}
 	}
 
-	@media (max-width: 1000px) {
-		.settings {
-			padding: var(--s5) var(--s4) var(--s7);
+	@media (max-width: 767px) {
+		main {
+			padding: var(--s6) var(--s4) 0;
 		}
 
-		h1 {
-			font-size: 48px;
+		.column {
+			gap: var(--s5);
 		}
-	}
 
-	@media (max-width: 640px) {
 		.presets {
 			grid-template-columns: repeat(3, minmax(0, 1fr));
 		}

@@ -1,10 +1,20 @@
 <script lang="ts">
 	import { formatClock } from '#lib/engine/format.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
-	import BackLink from '#lib/ui/BackLink.svelte';
+	import Band from '#lib/ui/Band.svelte';
 	import Chip from '#lib/ui/Chip.svelte';
+	import { boing, dealIn, pressable } from '#lib/ui/motion.ts';
 	import Strip from '#lib/ui/Strip.svelte';
-	import { LEVEL_LABEL, LEVELS, SAMPLES } from '#lib/library/samples.ts';
+	import { LEVEL_LABEL, LEVELS, SAMPLES, type Level } from '#lib/library/samples.ts';
+
+	/** Each level's hue: its heading's sticker, and the level tag on its cards. */
+	const LEVEL_HUE: Record<Level, string> = {
+		beginner: 'var(--hue-lime)',
+		intermediate: 'var(--hue-orange)',
+		advanced: 'var(--hue-pink)'
+	};
+	/** Each card's tilt, in turn. */
+	const TILTS = [-0.8, 0.6, -0.4, 0.9];
 
 	// The Timeline is the source of truth for the total duration and the Interval sequence.
 	const byLevel = LEVELS.map((level) => ({
@@ -21,32 +31,38 @@
 </svelte:head>
 
 <div class="library">
-	<header>
-		<BackLink href="/" label="My Workouts" />
-		<h1>Library</h1>
-		<p class="intro">Ready-made Samples to start as they are, or add to your Workouts and make your own.</p>
-	</header>
+	<Band hue="var(--hue-teal)" back={{ href: '/', label: 'My Workouts' }} title="Library">
+		<p class="intro">Ready-made Samples. Start one as it is, or add it to your Workouts and make it yours.</p>
+	</Band>
 
 	<main>
 		{#each byLevel as { level, samples } (level)}
 			<section aria-labelledby="level-{level}">
-				<h2 id="level-{level}">{LEVEL_LABEL[level]}</h2>
-				<ul class="cards">
-					{#each samples as { sample, timeline } (sample.workout.id)}
+				<!-- The level as a pill sticker in its hue, with how many Samples it has. -->
+				<h2 id="level-{level}" style:--hue={LEVEL_HUE[level]} {@attach boing(0, 0.6)}>
+					<span>{LEVEL_LABEL[level]}</span>
+					<span class="count" aria-hidden="true">{samples.length}</span>
+				</h2>
+				<ul class="cards" {@attach dealIn({ gap: 0.05 })}>
+					{#each samples as { sample, timeline }, i (sample.workout.id)}
 						<li>
-							<a class="card" href="/library/{sample.workout.id}">
+							<a
+								class="card pressable"
+								href="/library/{sample.workout.id}"
+								style:--tilt="{TILTS[i % TILTS.length]}deg"
+								{@attach pressable}
+							>
 								<span class="strip-row"><Strip {timeline} /></span>
-								<span class="body">
-									<span class="title">
-										<span class="name">{sample.workout.name}</span>
-										<span class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</span>
-									</span>
-									<!-- The hidden dot keeps the link's name "Level · Style", as it read before the chips. -->
-									<span class="tags"
-										><Chip>{LEVEL_LABEL[sample.level]}</Chip><span class="sr-only">{' · '}</span><Chip>{sample.style}</Chip></span
-									>
-									<span class="blurb">{sample.blurb}</span>
+								<span class="title">
+									<span class="name">{sample.workout.name}</span>
+									<span class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</span>
 								</span>
+								<!-- The hidden dot keeps the link's name "Level · Style", as it read before the chips. -->
+								<span class="tags"
+									><Chip hue={LEVEL_HUE[sample.level]}>{LEVEL_LABEL[sample.level]}</Chip><span class="sr-only">{' · '}</span
+									><Chip>{sample.style}</Chip></span
+								>
+								<span class="blurb">{sample.blurb}</span>
 							</a>
 						</li>
 					{/each}
@@ -58,117 +74,120 @@
 
 <style>
 	.library {
-		display: grid;
-		gap: var(--s6);
-		padding: var(--s7) var(--s8) var(--s9);
-	}
-
-	header {
-		display: grid;
-		gap: var(--s2);
-	}
-
-	h1 {
-		margin: 0;
-		font-size: var(--fs-title);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
+		padding-bottom: var(--s9);
 	}
 
 	.intro {
-		max-width: 68ch;
-		margin: 0;
-		color: var(--muted);
+		max-width: 60ch;
+		margin: var(--s3) 0 0;
 		font-size: var(--fs-lead);
+		font-weight: 600;
+	}
+
+	main {
+		box-sizing: border-box;
+		display: grid;
+		gap: var(--s7);
+		max-width: 1216px;
+		margin: 0 auto;
+		padding: var(--s7) var(--s6) 0;
 	}
 
 	section {
 		display: grid;
-		gap: var(--s3);
-	}
-
-	section + section {
-		margin-top: var(--s5);
+		justify-items: start;
+		gap: var(--s5);
 	}
 
 	h2 {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--s3);
 		margin: 0;
-		font-size: var(--fs-h2);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
+		padding: var(--s2) var(--s2) var(--s2) var(--s4);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--hue);
+		font-size: var(--fs-lead);
+		font-weight: 900;
+		text-transform: uppercase;
+		rotate: -1.5deg;
+		box-shadow: var(--shadow);
+	}
+
+	.count {
+		display: grid;
+		place-content: center;
+		box-sizing: border-box;
+		width: 32px;
+		height: 32px;
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--surface);
+		font: 700 var(--fs-sm) / 1 var(--font-mono);
 	}
 
 	.cards {
+		justify-self: stretch;
 		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 20px;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--s5);
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
+	.cards li {
+		display: flex;
+	}
+
+	/* A tilted sticker card that straightens up on hover. */
 	.card {
-		display: grid;
-		grid-template-rows: auto 1fr;
-		height: 100%;
-		box-sizing: border-box;
-		border: 1px solid transparent;
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		gap: var(--s3);
+		padding: var(--s4) var(--s4) var(--s5);
+		border: var(--stroke) solid var(--line);
 		border-radius: var(--r-lg);
 		background: var(--surface);
-		box-shadow: var(--shadow);
-		color: inherit;
+		color: var(--text);
 		text-decoration: none;
-		transition:
-			transform var(--dur) var(--ease-out),
-			border-color var(--dur) var(--ease-out);
+		rotate: var(--tilt);
+		transition: rotate var(--dur) var(--ease-out);
 	}
 
 	@media (hover: hover) {
 		.card:hover {
-			border-color: var(--text);
-			transform: translateY(-2px);
+			rotate: 0deg;
 		}
 	}
 
-	.strip-row {
-		display: grid;
-		margin: var(--s4) var(--s5) 0;
-	}
-
 	.strip-row :global(.strip) {
-		height: 6px;
-	}
-
-	.body {
-		display: grid;
-		align-content: start;
-		gap: var(--s1);
-		padding: var(--s3) var(--s5) var(--s5);
+		height: 26px;
 	}
 
 	.title {
 		display: flex;
+		justify-content: space-between;
 		align-items: flex-start;
 		gap: var(--s3);
 	}
 
-	.name,
-	.duration {
-		font: 800 24px/1.15 var(--font-display);
-		letter-spacing: -0.02em;
-	}
-
 	.name {
-		min-width: 0;
-		overflow-wrap: anywhere;
+		font: 700 var(--fs-body) / 1.2 var(--font-display);
 	}
 
+	/* The total, boxed and tilted. */
 	.duration {
-		margin-left: auto;
+		flex: none;
+		padding: 0 var(--s2);
+		border: 2px solid var(--line);
+		border-radius: var(--r-sm);
+		background: var(--surface-2);
+		font: 900 var(--fs-lead) / 1.2 var(--font-display);
 		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
+		rotate: 2deg;
 	}
 
 	.tags {
@@ -177,35 +196,38 @@
 	}
 
 	.blurb {
+		font-size: var(--fs-sm);
+		font-weight: 600;
 		display: -webkit-box;
-		margin-top: var(--s1);
-		overflow: hidden;
-		font-size: 16px;
-		line-height: 1.45;
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
-	}
-
-	@media (max-width: 1500px) {
-		.cards {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
+		overflow: hidden;
 	}
 
 	@media (max-width: 1000px) {
-		.library {
-			padding: var(--s5) var(--s4) var(--s7);
-		}
-
 		.cards {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 767px) {
+		.intro {
+			font-size: var(--fs-body);
+		}
+
+		main {
+			gap: var(--s6);
+			padding: var(--s6) var(--s4) 0;
+		}
+
 		.cards {
 			grid-template-columns: minmax(0, 1fr);
+			gap: var(--s4);
+		}
+
+		h2 {
+			font-size: var(--fs-body);
 		}
 	}
 </style>

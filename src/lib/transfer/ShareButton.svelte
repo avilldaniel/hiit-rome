@@ -3,6 +3,7 @@
 	import { shareUrl } from './share.ts';
 	import { shareLink } from './share-link.ts';
 	import Button from '#lib/ui/Button.svelte';
+	import { boing } from '#lib/ui/motion.ts';
 
 	/** Shares a link to `workout`, saying briefly whether it was copied. `icon` makes it an icon-only button. */
 	let { workout, icon = false }: { workout: Workout; icon?: boolean } = $props();
@@ -39,8 +40,12 @@
 
 {#if icon}
 	<span class="share">
-		<Button variant="ghost" icon="share" aria-label="Share {workout.name}" title="Share" disabled={!link} onclick={share} />
-		<span class="notice above" role="status">{notice ?? ''}</span>
+		<Button icon="share" aria-label="Share {workout.name}" title="Share" disabled={!link} onclick={share} />
+		<span class="above" role="status">
+			{#if notice}
+				<span class={['sticker', notice !== 'Link copied' && 'bad']} {@attach boing()}>{notice}</span>
+			{/if}
+		</span>
 	</span>
 {:else}
 	<Button icon="share" aria-label="Share {workout.name}" disabled={!link} onclick={share}>Share</Button>
@@ -57,19 +62,31 @@
 	.above {
 		position: absolute;
 		bottom: calc(100% + var(--s2));
-		left: 50%;
-		transform: translateX(-50%);
+		right: -6px;
+	}
+
+	/* The outcome, as a tilted sticker: green, or red when it failed. */
+	.sticker {
+		display: block;
 		padding: var(--s1) var(--s3);
-		border-radius: var(--r-sm);
-		background: var(--primary);
-		color: var(--on-primary);
-		font-size: 15px;
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--hue-lime);
+		color: var(--text);
+		font: 700 var(--fs-xs) / 1.4 var(--font-mono);
 		white-space: nowrap;
+		rotate: -6deg;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.bad {
+		background: var(--danger);
+		color: var(--surface);
 	}
 
 	.notice {
 		align-self: center;
-		font-weight: 600;
+		font-weight: 700;
 	}
 
 	.notice:empty {

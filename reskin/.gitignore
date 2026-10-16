@@ -1,0 +1,5 @@
+*.png
+archive/
+variants.html
+.auth/
+.apply/

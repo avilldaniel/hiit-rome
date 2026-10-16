@@ -15,7 +15,23 @@ export interface CountdownSettings {
 export const COUNTDOWN_COLORS = ['rest', 'work', 'warmup', 'cooldown'] as const satisfies PaletteToken[];
 export type CountdownColor = (typeof COUNTDOWN_COLORS)[number];
 
-/** The trainer's app-wide audio settings, configured once. */
+/**
+ * How the Session screen is laid out for the room: the Column (the Interval beside a wide Up next column), the
+ * Billboard (full-width bands for now, next and later), the Diptych (now and next as two posters side by side) or the
+ * Dial (the Interval draining around a giant ring).
+ */
+export const SESSION_LAYOUTS = [
+	{ id: 'column', label: 'Column' },
+	{ id: 'billboard', label: 'Billboard' },
+	{ id: 'diptych', label: 'Diptych' },
+	{ id: 'dial', label: 'Dial' }
+] as const;
+export type SessionLayout = (typeof SESSION_LAYOUTS)[number]['id'];
+
+export const isSessionLayout = (value: unknown): value is SessionLayout =>
+	SESSION_LAYOUTS.some((layout) => layout.id === value);
+
+/** The trainer's app-wide settings, configured once. */
 export interface Settings {
 	/** The device voice to speak Cues with, by its id; null for the device's default. */
 	voiceId: string | null;
@@ -24,6 +40,8 @@ export interface Settings {
 	/** Play the short Lead-in when resuming from pause. */
 	resumeLeadIn: boolean;
 	countdown: CountdownSettings;
+	/** How the Session screen is laid out; chosen here or from the Session's own controls. */
+	sessionLayout: SessionLayout;
 }
 
 /** Settings on first launch. */
@@ -31,7 +49,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	voiceId: null,
 	cues: { announce: true, warning: true, warningSec: 10, finalBeeps: true, halfway: false, completion: true },
 	resumeLeadIn: true,
-	countdown: { color: 'rest', warning: true }
+	countdown: { color: 'rest', warning: true },
+	sessionLayout: 'column'
 };
 
 /** The Cue settings that are simply on or off, as the trainer sees them. */

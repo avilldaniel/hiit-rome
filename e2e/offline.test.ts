@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const WARM_UP_YELLOW = 'rgb(247, 185, 40)';
+const WARM_UP_YELLOW = 'rgb(255, 210, 63)';
 
 test('once loaded, the app opens and runs a Workout with the network gone', async ({ page, context, baseURL }) => {
 	// Fonts and everything else are bundled: no request leaves the app's own origin.

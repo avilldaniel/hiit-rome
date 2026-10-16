@@ -1,5 +1,11 @@
 import { DEFAULT_PRESETS_SEC } from '../engine/countdown';
-import { COUNTDOWN_COLORS, DEFAULT_SETTINGS, type CountdownColor, type Settings } from '../engine/settings';
+import {
+	COUNTDOWN_COLORS,
+	DEFAULT_SETTINGS,
+	isSessionLayout,
+	type CountdownColor,
+	type Settings
+} from '../engine/settings';
 import { copyWorkout, isValidDuration, isValidWarningSec, type Workout } from '../engine/workout';
 import type { CueSettings } from '../engine/cues';
 import type { StoredWorkout, WorkoutStore } from '../store/workout-store';
@@ -132,7 +138,9 @@ function parseSettings(data: unknown): Settings | null {
 	const { color, warning } = data.countdown;
 	if (!(voiceId === null || isString(voiceId)) || !isBoolean(resumeLeadIn) || !isCueSettings(cues)) return null;
 	if (!isCountdownColor(color) || !isBoolean(warning)) return null;
-	return { voiceId, cues, resumeLeadIn, countdown: { color, warning } };
+	// Added later: a backup from before it, or with a layout this version doesn't know, takes the default.
+	const sessionLayout = isSessionLayout(data.sessionLayout) ? data.sessionLayout : DEFAULT_SETTINGS.sessionLayout;
+	return { voiceId, cues, resumeLeadIn, countdown: { color, warning }, sessionLayout };
 }
 
 /** Cue overrides that set every Cue setting, as full Settings do. */

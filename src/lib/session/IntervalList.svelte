@@ -2,6 +2,8 @@
 	import { formatClock } from '#lib/engine/format.ts';
 	import type { IntervalListItem } from '#lib/engine/session.ts';
 	import Button from '#lib/ui/Button.svelte';
+	import { boing } from '#lib/ui/motion.ts';
+	import BreakableName from './BreakableName.svelte';
 
 	let {
 		items,
@@ -67,15 +69,19 @@
 					{@render rows(item.items, depth + 1)}
 				{:else}
 					{@const { entry } = item}
+					{@const now = entry.index === currentIndex}
 					<button
 						type="button"
 						data-entry
-						aria-current={entry.index === currentIndex ? 'true' : undefined}
+						aria-current={now ? 'true' : undefined}
+						style:--now-fill={now ? entry.colors.background : undefined}
+						style:--now-ink={now ? entry.colors.text : undefined}
 						onclick={() => onjump(entry.index)}
 					>
 						<span class="swatch" style:background-color={entry.colors.background}></span>
-						<span class="name">{entry.name}</span>
+						<span class="name"><BreakableName text={entry.name} /></span>
 						<span class="duration">{formatClock(entry.durationMs)}</span>
+						{#if now}<span class="now" aria-hidden="true">Now</span>{/if}
 					</button>
 				{/if}
 			</li>
@@ -83,38 +89,36 @@
 	</ul>
 {/snippet}
 
-<!-- A panel over the rail, so the main area stays in view, and the Session keeps running, while the trainer chooses. -->
+<!-- A panel over the layout's Up next, so the time stays in view, and the Session keeps running, while the trainer chooses. -->
 <dialog bind:this={dialog} aria-labelledby="interval-list-title" oncancel={close} onclose={close} {onkeydown} {onclick}>
-	<div class="panel">
+	<div class="panel" {@attach boing(0, 0.9)}>
 		<header>
 			<h2 id="interval-list-title">Intervals</h2>
-			<Button onclick={close}>Close</Button>
+			<Button class="close" icon="close" onclick={close}>Close</Button>
 		</header>
 		{@render rows(items, 0)}
 	</div>
 </dialog>
 
 <style>
-	/* A white card over the rail, as tall as the rail. */
+	/*
+	 * A white sticker over the layout's Up next (`--list-inset`, from the layout), sized in TV pixels. Its rows are
+	 * Manrope; the one playing now is filled in its Kind color, with a Now sticker.
+	 */
 	dialog {
-		inset: var(--gap) var(--gap) var(--gap) auto;
+		inset: var(--list-inset, calc(24 * var(--tv)) calc(24 * var(--tv)) calc(24 * var(--tv)) auto);
 		box-sizing: border-box;
-		width: calc(var(--rail-width) - 2 * var(--gap));
-		min-width: min(360px, calc(100vw - 2 * var(--gap)));
+		width: var(--list-width, calc(700 * var(--tv)));
+		height: var(--list-height, auto);
+		min-width: min(360px, calc(100vw - 48px));
 		max-width: none;
-		height: auto;
 		max-height: none;
 		margin: 0;
 		padding: 0;
 		border: none;
-		border-radius: var(--r-xl);
-		background: var(--surface);
+		background: transparent;
 		color: var(--text);
-		box-shadow: var(--shadow);
-		overflow-y: auto;
-		overscroll-behavior: contain;
-		/* The Session screen claims every touch for taps and swipes; this panel scrolls. */
-		touch-action: pan-y;
+		overflow: visible;
 	}
 
 	dialog::backdrop {
@@ -124,33 +128,50 @@
 	/* Fills the dialog, so only a tap outside the panel reaches the dialog itself. */
 	.panel {
 		box-sizing: border-box;
-		min-height: 100%;
-		padding: calc(48 * var(--tv)) calc(32 * var(--tv)) calc(64 * var(--tv));
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		padding: calc(32 * var(--tv)) calc(24 * var(--tv)) calc(24 * var(--tv)) calc(32 * var(--tv));
+		border: var(--ln) solid var(--line);
+		border-radius: var(--r-lg-tv);
+		background: var(--surface);
+		box-shadow: var(--o-lg) var(--o-lg) 0 var(--line);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		/* The Session screen claims every touch for taps and swipes; this panel scrolls. */
+		touch-action: pan-y;
 	}
 
 	header {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
-		gap: var(--s4);
-		margin-bottom: calc(16 * var(--tv));
-		padding: 0 calc(8 * var(--tv));
+		gap: calc(16 * var(--tv));
+		margin-bottom: calc(20 * var(--tv));
 	}
 
 	h2 {
 		margin: 0;
-		font-size: max(20px, calc(40 * var(--tv)));
-		font-weight: 800;
+		font-size: max(20px, calc(52 * var(--tv)));
+		font-weight: 900;
+		text-transform: uppercase;
 		letter-spacing: -0.01em;
+	}
+
+	header :global(.close) {
+		--depth: var(--o-sm);
+		min-height: max(44px, calc(80 * var(--tv)));
+		padding: 0 calc(28 * var(--tv));
+		border-width: var(--ln2);
+		font-size: max(14px, calc(32 * var(--tv)));
 	}
 
 	.round {
 		margin: 0;
-		padding: calc(20 * var(--tv)) calc(8 * var(--tv)) calc(8 * var(--tv));
-		color: var(--muted);
-		font-family: var(--font-body);
-		font-size: max(13px, calc(22 * var(--tv)));
-		font-weight: 600;
+		padding: calc(24 * var(--tv)) calc(8 * var(--tv)) calc(8 * var(--tv));
+		font: 700 max(13px, calc(32 * var(--tv))) / 1.15 var(--font-mono);
+		text-transform: uppercase;
 	}
 
 	ul {
@@ -159,36 +180,47 @@
 		list-style: none;
 	}
 
+	/* A wide, short list (the Billboard's) flows into columns, `--list-columns`. */
+	.panel > ul {
+		column-count: var(--list-columns, 1);
+		column-gap: calc(40 * var(--tv));
+	}
+
+	[data-entry],
+	.round {
+		break-inside: avoid;
+	}
+
 	ul ul {
-		padding-left: calc(20 * var(--tv));
+		padding-left: calc(44 * var(--tv));
 	}
 
 	[data-entry] {
 		--swatch: calc(32 * var(--tv));
+		position: relative;
 		display: grid;
 		grid-template-columns: var(--swatch) minmax(0, 1fr) auto;
-		column-gap: calc(16 * var(--tv));
-		align-items: start;
+		column-gap: calc(18 * var(--tv));
+		align-items: baseline;
 		box-sizing: border-box;
 		width: 100%;
 		min-height: 44px;
-		padding: calc(12 * var(--tv));
-		border: none;
-		border-radius: var(--r);
+		padding: calc(12 * var(--tv)) calc(16 * var(--tv));
+		border: var(--ln2) solid transparent;
+		border-radius: calc(14 * var(--tv));
 		background: transparent;
 		color: inherit;
-		font-family: var(--font-display);
-		font-size: max(16px, calc(34 * var(--tv)));
-		font-weight: 800;
-		line-height: 1.1;
-		letter-spacing: -0.01em;
+		font: 800 max(16px, calc(36 * var(--tv))) / 1.12 var(--font-body);
+		letter-spacing: -0.02em;
 		text-align: left;
 		cursor: pointer;
+		transition: translate var(--dur) var(--ease-out);
 	}
 
 	@media (hover: hover) {
 		[data-entry]:hover {
-			background: var(--surface-2);
+			border-color: var(--line);
+			translate: calc(6 * var(--tv)) 0;
 		}
 	}
 
@@ -197,15 +229,21 @@
 	}
 
 	[data-entry][aria-current='true'] {
-		background: var(--surface-2);
-		box-shadow: inset 4px 0 0 var(--text);
+		grid-template-columns: var(--swatch) minmax(0, 1fr) auto auto;
+		border: var(--ln) solid var(--line);
+		background: var(--now-fill);
+		color: var(--now-ink);
+		box-shadow: var(--o-sm) var(--o-sm) 0 var(--line);
 	}
 
 	.swatch {
+		align-self: start;
+		box-sizing: border-box;
 		width: var(--swatch);
 		height: var(--swatch);
-		margin-top: calc((1.1em - var(--swatch)) / 2);
-		border-radius: calc(var(--swatch) * 0.3);
+		margin-top: calc(4 * var(--tv));
+		border: var(--ln2) solid var(--line);
+		border-radius: calc(8 * var(--tv));
 	}
 
 	/* Names wrap rather than truncate, so near-identical ones stay distinguishable. */
@@ -214,16 +252,34 @@
 	}
 
 	.duration {
+		font-family: var(--font-display);
+		font-weight: 900;
 		font-variant-numeric: tabular-nums;
+		letter-spacing: -0.04em;
 		white-space: nowrap;
 	}
 
-	/* Portrait: the rail sits below the main area, so the list rises from the foot of the screen. */
-	@media (orientation: portrait) {
+	.now {
+		align-self: center;
+		padding: calc(4 * var(--tv)) calc(16 * var(--tv));
+		border: var(--ln2) solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--accent);
+		color: var(--on-accent);
+		font: 700 max(12px, calc(28 * var(--tv))) / 1.3 var(--font-mono);
+		rotate: 8deg;
+	}
+
+	/* Portrait or narrow: the list covers the screen, inset. */
+	@media (max-width: 768px), (orientation: portrait) {
 		dialog {
-			inset: auto var(--gap) var(--gap);
+			inset: calc(24 * var(--tv));
 			width: auto;
-			height: 60vh;
+			height: auto;
+		}
+
+		.panel > ul {
+			column-count: 1;
 		}
 	}
 </style>

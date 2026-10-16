@@ -23,15 +23,15 @@ export const COLOR_NAME: Record<PaletteToken, string> = {
 	neutral: 'Black'
 };
 
-const INK = '#11161d';
-const WHITE = '#ffffff';
+const INK = '#111111';
+const CREAM = '#fff4d6';
 
 export const PALETTE: Record<PaletteToken, ColorPair> = {
-	work: { background: '#f0476a', text: INK },
-	rest: { background: '#3b9fd6', text: INK },
-	warmup: { background: '#f7b928', text: INK },
-	cooldown: { background: '#1fc79a', text: INK },
-	neutral: { background: INK, text: WHITE }
+	work: { background: '#ff3864', text: INK },
+	rest: { background: '#2ec4ff', text: INK },
+	warmup: { background: '#ffd23f', text: INK },
+	cooldown: { background: '#4ee39a', text: INK },
+	neutral: { background: INK, text: CREAM }
 };
 
 function relativeLuminance(hex: string): number {

@@ -1,0 +1,196 @@
+{
+  "app": "hiit-rome",
+  "platform": "web",
+  "layout": "restructure",
+  "include": {
+    "mobile": true,
+    "dark": false,
+    "additions": true,
+    "copy": true
+  },
+  "keep": [],
+  "hints": [],
+  "primaryViewport": "desktop",
+  "screens": [
+    {
+      "id": "home",
+      "name": "My Workouts",
+      "route": "/",
+      "states": [
+        "loading",
+        "no-match",
+        "empty",
+        "load-error",
+        "undo-toast",
+        "share-notice",
+        "update-available"
+      ],
+      "original": {
+        "desktop": "inputs/home.png",
+        "mobile": "inputs/home.mobile.png",
+        "states": {
+          "no-match": "inputs/home@no-match.png",
+          "undo-toast": "inputs/home@undo-toast.png"
+        }
+      }
+    },
+    {
+      "id": "session",
+      "name": "Session",
+      "route": "/session/[id]",
+      "states": [
+        "lead-in",
+        "running",
+        "paused",
+        "final-seconds",
+        "interval-list",
+        "confirm-end",
+        "confirm-restart",
+        "summary",
+        "summary-finished",
+        "cant-start",
+        "not-found",
+        "end-current"
+      ],
+      "original": {
+        "desktop": "inputs/session.png",
+        "mobile": "inputs/session.mobile.png",
+        "states": {
+          "running": "inputs/session@running.png",
+          "interval-list": "inputs/session@interval-list.png",
+          "summary": "inputs/session@summary.png"
+        }
+      }
+    },
+    {
+      "id": "edit",
+      "name": "Workout editor",
+      "route": "/edit/[id]",
+      "states": [
+        "settings-open",
+        "selection",
+        "wrap-refused",
+        "undo-toast",
+        "group-collapsed",
+        "empty-group",
+        "empty-workout",
+        "start-blocked",
+        "save-failed",
+        "dragging",
+        "invalid-field",
+        "not-found"
+      ],
+      "original": {
+        "desktop": "inputs/edit.png",
+        "mobile": "inputs/edit.mobile.png",
+        "states": {
+          "settings-open": "inputs/edit@settings-open.png",
+          "selection": "inputs/edit@selection.png",
+          "undo-toast": "inputs/edit@undo-toast.png"
+        }
+      }
+    },
+    {
+      "id": "wizard",
+      "name": "Wizards",
+      "route": "/wizard",
+      "states": [],
+      "original": {
+        "desktop": "inputs/wizard.png",
+        "mobile": "inputs/wizard.mobile.png"
+      }
+    },
+    {
+      "id": "library",
+      "name": "Library",
+      "route": "/library",
+      "states": [],
+      "original": {
+        "desktop": "inputs/library.png",
+        "mobile": "inputs/library.mobile.png"
+      }
+    },
+    {
+      "id": "countdown",
+      "name": "Countdown",
+      "route": "/countdown",
+      "states": [
+        "loading",
+        "presets-error",
+        "running",
+        "paused",
+        "final-seconds",
+        "time-up",
+        "confirm-end",
+        "confirm-restart",
+        "end-current"
+      ],
+      "original": {
+        "desktop": "inputs/countdown.png",
+        "mobile": "inputs/countdown.mobile.png",
+        "states": {
+          "running": "inputs/countdown@running.png",
+          "time-up": "inputs/countdown@time-up.png",
+          "end-current": "inputs/countdown@end-current.png"
+        }
+      }
+    },
+    {
+      "id": "settings",
+      "name": "Settings",
+      "route": "/settings",
+      "states": [
+        "loading",
+        "load-error",
+        "save-failed",
+        "invalid-warning",
+        "exported",
+        "export-failed",
+        "import-dialog",
+        "imported",
+        "import-failed",
+        "bad-file"
+      ],
+      "original": {
+        "desktop": "inputs/settings.png",
+        "mobile": "inputs/settings.mobile.png",
+        "states": {
+          "exported": "inputs/settings@exported.png",
+          "import-dialog": "inputs/settings@import-dialog.png"
+        }
+      }
+    },
+    {
+      "id": "wizard-style",
+      "name": "Wizard form",
+      "route": "/wizard/[style]",
+      "states": [
+        "circuit",
+        "hiit",
+        "emom",
+        "tabatas-multiple",
+        "invalid-field",
+        "saving",
+        "save-failed",
+        "not-found"
+      ],
+      "original": {
+        "desktop": "inputs/wizard-style.png",
+        "mobile": "inputs/wizard-style.mobile.png",
+        "states": {
+          "circuit": "inputs/wizard-style@circuit.png",
+          "not-found": "inputs/wizard-style@not-found.png"
+        }
+      }
+    }
+  ],
+  "variants": [
+    "scoreboard",
+    "index",
+    "clay",
+    "pop",
+    "pop-billboard",
+    "pop-diptych",
+    "pop-dial"
+  ]
+}

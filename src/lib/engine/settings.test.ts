@@ -5,11 +5,12 @@ const settings: Settings = {
 	voiceId: null,
 	cues: { announce: true, warning: true, warningSec: 10, finalBeeps: true, halfway: false, completion: true },
 	resumeLeadIn: true,
-	countdown: { color: 'rest', warning: true }
+	countdown: { color: 'rest', warning: true },
+	sessionLayout: 'column'
 };
 
 describe('Settings', () => {
-	it('start with every Cue on but Halfway, the Warning at 10 s, the resume Lead-in on, the device’s own voice, and a Rest-blue Countdown with its Warning on', () => {
+	it('start with every Cue on but Halfway, the Warning at 10 s, the resume Lead-in on, the device’s own voice, and a Rest-blue Countdown with its Warning on, and the Column Session layout', () => {
 		expect(DEFAULT_SETTINGS).toEqual(settings);
 	});
 });

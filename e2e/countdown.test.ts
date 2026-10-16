@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const REST_BLUE = 'rgb(59, 159, 214)';
-const COOL_DOWN_GREEN = 'rgb(31, 199, 154)';
+const REST_BLUE = 'rgb(46, 196, 255)';
+const COOL_DOWN_GREEN = 'rgb(78, 227, 154)';
 
 /** Moves the stopped page clock on by `ms`, and one animation frame more, so the screen shows the moment reached. */
 const runFor = (page: Page, ms: number) => page.clock.runFor(ms + 16);

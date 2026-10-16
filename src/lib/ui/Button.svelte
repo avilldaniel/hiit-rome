@@ -2,11 +2,12 @@
 	import type { Snippet } from 'svelte';
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
 	import Icon, { type IconName } from './Icon.svelte';
+	import { pressable } from './motion.ts';
 
 	type Props = {
-		variant?: 'default' | 'primary' | 'ghost' | 'danger';
+		variant?: 'default' | 'primary' | 'accent' | 'ink' | 'ghost' | 'danger';
 		/** `prompt` is for a choice read from across the room: the Resume prompt, confirm dialogs and Dismiss. */
-		size?: 'default' | 'large' | 'prompt';
+		size?: 'small' | 'default' | 'large' | 'prompt';
 		icon?: IconName;
 		/** The label. Leave it out for an icon-only button, which then takes its name from `aria-label`. */
 		children?: Snippet;
@@ -16,6 +17,7 @@
 
 	const classes = $derived([
 		'button',
+		'pressable',
 		variant,
 		size !== 'default' && size,
 		!children && 'icon-only',
@@ -24,109 +26,121 @@
 </script>
 
 {#snippet content()}
-	{#if icon}<Icon name={icon} />{/if}
+	{#if icon}<Icon name={icon} size={size === 'large' || size === 'prompt' ? 24 : 20} />{/if}
 	{@render children?.()}
 {/snippet}
 
+<!-- An ink-outlined sticker of a button: it lifts on hover and squashes into its shadow when pressed. -->
 {#if rest.href !== undefined}
-	<a class={classes} {...rest as HTMLAnchorAttributes}>{@render content()}</a>
+	<a class={classes} {...rest as HTMLAnchorAttributes} {@attach pressable}>{@render content()}</a>
 {:else}
-	<button type="button" class={classes} {...rest as HTMLButtonAttributes}>{@render content()}</button>
+	<button type="button" class={classes} {...rest as HTMLButtonAttributes} {@attach pressable}>{@render content()}</button>
 {/if}
 
 <style>
 	.button {
+		--fill: var(--surface);
+		--ink: var(--text);
 		appearance: none;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: var(--s2);
 		box-sizing: border-box;
-		min-height: 44px;
+		min-height: 48px;
 		padding: 0 var(--s4);
-		border: 1px solid var(--line);
+		border: var(--stroke) solid var(--line);
 		border-radius: var(--r);
-		background: var(--surface);
-		color: var(--text);
-		font: 600 16px/1 var(--font-body);
+		background: var(--fill);
+		color: var(--ink);
+		font: 700 var(--fs-body) / 1 var(--font-body);
 		white-space: nowrap;
 		text-decoration: none;
 		cursor: pointer;
-		transition:
-			background var(--dur-fast) var(--ease-out),
-			border-color var(--dur-fast) var(--ease-out),
-			transform var(--dur-fast) var(--ease-out);
+		transition: background-color var(--dur) ease;
 	}
 
 	.primary {
-		border-color: transparent;
-		background: var(--primary);
-		color: var(--on-primary);
+		--fill: var(--primary);
+		--ink: var(--on-primary);
 	}
 
+	.accent {
+		--fill: var(--accent);
+		--ink: var(--on-accent);
+	}
+
+	.ink {
+		--fill: var(--text);
+		--ink: var(--ground);
+	}
+
+	/* No shadow to sink into: a dashed outline that nudges when pressed. */
 	.ghost {
-		border-color: transparent;
-		background: transparent;
+		--fill: transparent;
+		--depth: 0px;
+		border-style: dashed;
 	}
 
 	.danger {
-		color: var(--danger);
+		--ink: var(--danger);
 	}
 
 	.icon-only {
+		--depth: 2px;
 		width: 44px;
+		min-height: 44px;
 		padding: 0;
+		border-width: 2px;
+	}
+
+	.small {
+		--depth: 2px;
+		min-height: 40px;
+		padding: 0 var(--s3);
+		font-size: var(--fs-sm);
 	}
 
 	.large {
-		min-height: 56px;
+		min-height: 60px;
 		padding: 0 var(--s5);
-		font-size: 18px;
+		font-size: var(--fs-lead);
 	}
 
 	.prompt {
-		min-height: 72px;
+		min-height: 76px;
 		padding: 0 var(--s7);
 		border-radius: var(--r-lg);
 		font-size: 24px;
+		font-weight: 800;
 	}
 
 	.large.icon-only {
-		width: 56px;
+		width: 60px;
 		padding: 0;
 	}
 
-	.button:disabled {
-		opacity: 0.45;
+	.button:disabled,
+	.button[aria-disabled='true'] {
+		--depth: 2px;
+		opacity: 0.5;
 		cursor: not-allowed;
 	}
 
-	@media (hover: hover) {
-		.button:not(:disabled):hover {
-			border-color: var(--text);
-		}
-
-		.primary:not(:disabled):hover {
-			border-color: transparent;
-			background: var(--primary-hover);
-		}
-
-		.ghost:not(:disabled):hover {
-			border-color: transparent;
-			background: color-mix(in srgb, var(--text) 7%, transparent);
-		}
-	}
-
-	.button:not(:disabled):active {
-		transform: translateY(1px);
-	}
-
-	/* A pressed toggle, such as Favorite, shows its state in the favorite color with a filled star. */
+	/* A pressed toggle, such as Favorite, fills yellow with a filled icon. */
 	.button[aria-pressed='true'] {
-		color: var(--favorite);
+		--fill: var(--hue-yellow);
+		--ink: var(--favorite);
 	}
 
 	.button[aria-pressed='true'] :global(.icon) {
 		fill: currentColor;
+	}
+
+	@media (max-width: 767px) {
+		.large {
+			min-height: 56px;
+			font-size: var(--fs-body);
+		}
 	}
 </style>

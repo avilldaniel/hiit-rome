@@ -132,7 +132,8 @@ describe('Workout store', () => {
 			voiceId: 'com.apple.voice.Daniel',
 			cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5, halfway: true },
 			resumeLeadIn: false,
-			countdown: { color: 'cooldown', warning: false }
+			countdown: { color: 'cooldown', warning: false },
+			sessionLayout: 'billboard'
 		};
 		await first.saveSettings(changed);
 		first.close();
@@ -152,8 +153,22 @@ describe('Workout store', () => {
 			voiceId: 'com.apple.voice.Daniel',
 			cues: { ...DEFAULT_SETTINGS.cues, warningSec: 5 },
 			resumeLeadIn: true,
-			countdown: DEFAULT_SETTINGS.countdown
+			countdown: DEFAULT_SETTINGS.countdown,
+			sessionLayout: 'column'
 		});
+	});
+
+	it('keeps the Session layout the trainer chose, and falls back to the default for one it doesn’t know', async () => {
+		const { open } = device();
+		const first = await open();
+		await first.saveSettings({ ...DEFAULT_SETTINGS, sessionLayout: 'diptych' });
+		first.close();
+		const second = await open();
+		expect((await second.getSettings()).sessionLayout).toBe('diptych');
+
+		await second.saveSettings({ ...DEFAULT_SETTINGS, sessionLayout: 'hologram' } as unknown as Settings);
+		second.close();
+		expect((await (await open()).getSettings()).sessionLayout).toBe('column');
 	});
 
 	it('fills in a Countdown setting added since the trainer last saved theirs with the default', async () => {

@@ -1,0 +1,145 @@
+{
+  "slug": "scoreboard",
+  "name": "Scoreboard",
+  "nativeFeel": "override",
+  "fonts": {
+    "display": {
+      "family": "Barlow Condensed",
+      "source": "google",
+      "weights": [
+        600,
+        700,
+        800
+      ],
+      "fallback": "'Arial Narrow', sans-serif"
+    },
+    "body": {
+      "family": "Barlow",
+      "source": "google",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "fallback": "system-ui, sans-serif"
+    },
+    "mono": {
+      "family": "JetBrains Mono",
+      "source": "google",
+      "weights": [
+        500,
+        700
+      ],
+      "fallback": "ui-monospace, Menlo, monospace"
+    }
+  },
+  "color": {
+    "light": {
+      "bg": "#0b0d10",
+      "surface": "#14181e",
+      "surface-2": "#1c222a",
+      "text": "#f2f4f7",
+      "text-muted": "#9aa4b2",
+      "border": "#2a323d",
+      "border-strong": "#46505e",
+      "primary": "#ffd400",
+      "on-primary": "#0b0d10",
+      "accent": "#ff3b5c",
+      "on-accent": "#0b0d10",
+      "success": "#2fdc8a",
+      "warning": "#ffb020",
+      "danger": "#ff5a5f",
+      "focus": "#4cc9ff",
+      "kind-work": "#ff3d5a",
+      "kind-rest": "#2fa8ff",
+      "kind-warmup": "#ffc531",
+      "kind-cooldown": "#20e0a0",
+      "kind-neutral": "#1c222a",
+      "on-kind": "#0b0d10",
+      "on-kind-neutral": "#f2f4f7",
+      "pick-red": "#ff3d5a",
+      "pick-blue": "#2fa8ff",
+      "pick-yellow": "#ffc531",
+      "pick-green": "#20e0a0",
+      "pick-black": "#1c222a",
+      "glow": "#ffd40033"
+    },
+    "dark": {
+      "bg": "#000000",
+      "surface": "#0e1013",
+      "surface-2": "#171a1f",
+      "text": "#ffffff",
+      "text-muted": "#a3acb8",
+      "border": "#262b33",
+      "border-strong": "#40474f",
+      "primary": "#ffd400",
+      "on-primary": "#000000",
+      "accent": "#ff3b5c",
+      "on-accent": "#000000",
+      "success": "#2fdc8a",
+      "warning": "#ffb020",
+      "danger": "#ff5a5f",
+      "focus": "#4cc9ff",
+      "kind-work": "#ff3d5a",
+      "kind-rest": "#2fa8ff",
+      "kind-warmup": "#ffc531",
+      "kind-cooldown": "#20e0a0",
+      "kind-neutral": "#171a1f",
+      "on-kind": "#000000",
+      "on-kind-neutral": "#ffffff",
+      "pick-red": "#ff3d5a",
+      "pick-blue": "#2fa8ff",
+      "pick-yellow": "#ffc531",
+      "pick-green": "#20e0a0",
+      "pick-black": "#171a1f",
+      "glow": "#ffd40033"
+    }
+  },
+  "text": {
+    "xs": 13,
+    "sm": 15,
+    "md": 17,
+    "lg": 21,
+    "xl": 28,
+    "2xl": 44,
+    "3xl": 72
+  },
+  "leading": {
+    "tight": 0.92,
+    "body": 1.45
+  },
+  "weight": {
+    "regular": 400,
+    "medium": 500,
+    "semibold": 600,
+    "bold": 700,
+    "black": 800
+  },
+  "space": {
+    "1": 4,
+    "2": 8,
+    "3": 12,
+    "4": 16,
+    "6": 24,
+    "8": 32,
+    "12": 48,
+    "16": 64
+  },
+  "radius": {
+    "sm": 2,
+    "md": 4,
+    "lg": 6,
+    "full": 999
+  },
+  "shadow": {
+    "sm": "0 0 0 1px var(--color-border)",
+    "md": "0 0 0 1px var(--color-border-strong), 0 8px 24px rgb(0 0 0 / .5)",
+    "lg": "0 0 0 1px var(--color-border-strong), 0 0 48px var(--color-glow)"
+  },
+  "motion": {
+    "fast": "90ms",
+    "base": "160ms",
+    "ease": "cubic-bezier(.3,0,.2,1)"
+  }
+}

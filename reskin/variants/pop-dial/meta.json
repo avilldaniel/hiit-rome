@@ -1,0 +1,38 @@
+{
+  "slug": "pop-dial",
+  "name": "Pop · Dial",
+  "thesis": "Pop's loud neo-brutalism, with the Session as a giant game dial: the Interval drains around a thick ink ring the whole room can read at a glance, even before reading the digits.",
+  "nativeFeel": "override",
+  "layoutChanges": {
+    "home": "The sidebar becomes a lime header band (brand, giant title, count as a tilted sticker) with a row of six colored launch tiles overlapping its edge (New Workout, My Workouts as the pressed current tile, Wizard, Library, Countdown, Settings); Workout cards become tilted sticker cards with a chunky Timeline bar, a boxed total, a big Start and a dashed tool row.",
+    "session": "Built for a TV across the room: every size is in TV pixels (1tv = 1px of a 1920x1080 design) on a fixed 1920x1080tv stage that letterboxes to any screen. The left two-thirds is a huge dial, a slightly wide oval (1216x1010tv) because 400tv Unbounded digits are ~970tv wide: a thick ink ring whose Kind fill drains clockwise as a conic wedge with tick marks, the drained track hatched ink (hatched cream on the ink Ready/Paused dial), a white knob riding the drain edge, and the 400tv time centred on a solid Kind-colored disc, never on the ring. The current name (110tv, 80tv over ~40 characters) is a tilted Kind-colored banner across the top of the dial; the ring is a 256deg horseshoe whose opening tucks under the banner, so no progress is ever hidden, and a coin in the next Interval's Kind marks the finish where the next Interval begins. A name that won't fit one line over the dial runs the banner across the full screen width and opens the horseshoe to 228deg. The 48tv Kind pill is a badge pinned inside the ring above the time. Up next is a purple tray on the right of cream sticker cards (64tv next name and duration with a fat Kind edge and a NEXT sticker, then 44tv cards in an offset stack, names in Manrope 800 that wrap and are dropped whole when they don't fit), with Group/Round and '<time> left' as two round coins in its bottom corners. Final seconds add a spinning burst of sticker rays behind the dial while the time thumps each second. The chunky deck shows on demand at the foot of the dial: pinned when Ready or Paused, and for 3s after a pointer move or tap while running. The Interval list opens over the Up next tray. In portrait or on narrow screens the banner, a true-circle dial (with a small start/finish notch) and Up next stack at full width and the deck floats at the bottom of the screen.",
+    "edit": "The header becomes a lime band with the total as a tilted sticker; Groups become colored trays with Interval chips that carry a Kind-colored edge, a Kind-filled Kind select and a Kind-colored duration tile; the selection toolbar becomes a sticky blue bar.",
+    "wizard": "A yellow header band replaces the plain header and the four Wizard cards become tilted sticker cards with a colored top panel holding the Timeline bar and a round go-arrow.",
+    "library": "A teal header band; level headings become hued pill stickers and Sample cards become tilted sticker cards with a boxed duration and mono Level/Style tags.",
+    "countdown": "An orange header band; Presets become tilted square stickers with a play badge, the Custom card puts a wide duration field beside Start, and the running screen uses the Session's TV-scaled panel (sizes in TV pixels, a 520tv time) with the same chunky deck overlaid on demand at its foot (pinned while Paused); TIME is a tilted red sticker on a spinning sunburst.",
+    "settings": "A purple header band with section jump chips; each card gets a numbered colored header strip, Cues and the other toggles become chunky pill switches, and Backup outcomes show as stickers inside the Backup card.",
+    "wizard-style": "A yellow header band; fieldsets get numbered legends, every field is a large outlined box, and the Your Workout card is a tilted sticky sticker with a giant total and full-width Start now."
+  },
+  "additions": {
+    "home": [
+      "Loading bounce"
+    ],
+    "session": [
+      "Confetti burst",
+      "NEXT sticker",
+      "Next-Kind coin",
+      "Final-seconds ray burst"
+    ],
+    "library": [
+      "Sample count per level"
+    ],
+    "countdown": [
+      "Loading bounce"
+    ],
+    "settings": [
+      "Section jump chips",
+      "Loading bounce"
+    ]
+  },
+  "newRoutes": []
+}

@@ -22,7 +22,8 @@ const mySettings: Settings = {
 	...DEFAULT_SETTINGS,
 	voiceId: 'moira',
 	cues: { ...DEFAULT_SETTINGS.cues, finalBeeps: false },
-	countdown: { color: 'work', warning: false }
+	countdown: { color: 'work', warning: false },
+	sessionLayout: 'dial'
 };
 
 /** A device with its own store and clock. */
@@ -189,6 +190,16 @@ describe('Backup', () => {
 			expect(result).toMatchObject({ backup: { version: 2, presets: [30, 60, 90, 120, 150], workouts: [{ name: 'Tabata' }] } });
 			const current = { ...old, version: 2, presets: [10, 20, 30, 40, 50] };
 			expect(readBackup(JSON.stringify(current), [renamePresets])).toMatchObject({ backup: { presets: [10, 20, 30, 40, 50] } });
+		});
+
+		it('takes the default Session layout from a backup made before there was a choice, or with one it doesn’t know', async () => {
+			const { store } = await device();
+			const exported = JSON.parse((await exportBackup(store)).text);
+			const { sessionLayout: _, ...before } = exported.settings;
+
+			expect(read(JSON.stringify({ ...exported, settings: before })).settings.sessionLayout).toBe('column');
+			expect(read(JSON.stringify({ ...exported, settings: { ...before, sessionLayout: 'hologram' } })).settings.sessionLayout).toBe('column');
+			expect(read(JSON.stringify({ ...exported, settings: { ...before, sessionLayout: 'billboard' } })).settings.sessionLayout).toBe('billboard');
 		});
 
 		describe('refuses, with a reason for the trainer,', () => {

@@ -21,6 +21,8 @@ export interface OutlineActions {
 	toggleSelected(intervalId: string): void;
 	startDrag(id: string): void;
 	endDrag(): void;
+	/** Whether `id` is the item being dragged, drawn lifted from its place. */
+	isDragging(id: string): boolean;
 	/** Marks `target` as the one being hovered; whether the dragged item may drop there. */
 	dragOver(target: DropTarget): boolean;
 	dragLeave(target: DropTarget): void;

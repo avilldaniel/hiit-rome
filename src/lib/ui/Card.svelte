@@ -18,8 +18,9 @@
 		align-content: start;
 		gap: var(--s4);
 		padding: var(--s6);
+		border: var(--stroke) solid var(--line);
 		border-radius: var(--r-lg);
 		background: var(--surface);
-		box-shadow: var(--shadow);
+		box-shadow: var(--shadow-raised);
 	}
 </style>

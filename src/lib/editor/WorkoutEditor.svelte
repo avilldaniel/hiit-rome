@@ -22,8 +22,10 @@
 	import type { CueSettings } from '#lib/engine/cues.ts';
 	import { group, interval, UNTITLED, type Item, type Workout } from '#lib/engine/workout.ts';
 	import ShareButton from '#lib/transfer/ShareButton.svelte';
-	import Button from '#lib/ui/Button.svelte';
+	import Alert from '#lib/ui/Alert.svelte';
 	import BackLink from '#lib/ui/BackLink.svelte';
+	import Button from '#lib/ui/Button.svelte';
+	import { boing, thump } from '#lib/ui/motion.ts';
 	import Toast from '#lib/ui/Toast.svelte';
 	import OutlineItems from './OutlineItems.svelte';
 	import TimelinePanel from './TimelinePanel.svelte';
@@ -135,6 +137,7 @@
 		toggleSelected: (intervalId) => void (selected.delete(intervalId) || selected.add(intervalId)),
 		startDrag: (id) => void (drag = { id, over: null, blocker: null }),
 		endDrag: () => void (drag = null),
+		isDragging: (id) => drag?.id === id,
 		dragOver(target) {
 			if (!drag) return false;
 			if (!sameTarget(drag.over, target)) {
@@ -159,6 +162,16 @@
 		}
 	};
 
+	// The total thumps each time an edit changes it.
+	const total = $derived(formatClock(timeline.totalMs));
+	let totalElement: HTMLElement;
+	let shownTotal = untrack(() => total);
+	$effect(() => {
+		if (total === shownTotal) return;
+		shownTotal = total;
+		thump(totalElement, 1.12);
+	});
+
 	let blocked = $state<string | null>(null);
 	// Clear the message as soon as there's something to play.
 	$effect(() => {
@@ -174,27 +187,29 @@
 
 <div class="editor">
 	<header>
-		<BackLink href="/" label="My Workouts" />
-		<input
-			class="input title"
-			type="text"
-			aria-label="Workout name"
-			placeholder={UNTITLED}
-			value={workout.name}
-			oninput={(event) => change({ name: event.currentTarget.value })}
-			onchange={(event) => !event.currentTarget.value.trim() && change({ name: UNTITLED })}
-		/>
-		<p class="total"><span class="label">Total</span> <span data-testid="total">{formatClock(timeline.totalMs)}</span></p>
-		<ShareButton {workout} />
-		<Button variant="primary" icon="play" onclick={start}>Start</Button>
+		<div class="bar">
+			<BackLink href="/" label="My Workouts" />
+			<input
+				class="title"
+				type="text"
+				aria-label="Workout name"
+				placeholder={UNTITLED}
+				value={workout.name}
+				oninput={(event) => change({ name: event.currentTarget.value })}
+				onchange={(event) => !event.currentTarget.value.trim() && change({ name: UNTITLED })}
+			/>
+			<p class="total" bind:this={totalElement}><span class="label">Total</span> <span data-testid="total">{total}</span></p>
+			<ShareButton {workout} />
+			<Button variant="primary" size="large" icon="play" onclick={start}>Start</Button>
+		</div>
 	</header>
 
 	<div class="column">
 		{#if blocked}
-			<p class="message" role="alert">{blocked}</p>
+			<Alert>{blocked}</Alert>
 		{/if}
 		{#if saveFailed}
-			<p class="message" role="alert">Your changes couldn’t be saved. Try reloading the page.</p>
+			<Alert>Your changes couldn’t be saved. Try reloading the page.</Alert>
 		{/if}
 
 		<TimelinePanel {timeline} />
@@ -202,13 +217,13 @@
 		<WorkoutSettings {workout} defaults={cueDefaults} onchange={change} />
 
 		{#if selection.length}
-			<div class="selection" role="toolbar" aria-label="Selected Intervals">
-				<span>{selection.length} selected</span>
-				<Button variant="primary" disabled={wrapProblem !== null} onclick={wrap}>Wrap in Group</Button>
-				<Button variant="ghost" onclick={() => selected.clear()}>Clear</Button>
+			<div class="selection" role="toolbar" aria-label="Selected Intervals" {@attach boing(0, 0.85)}>
+				<span class="selected">{selection.length} selected</span>
+				<Button variant="accent" disabled={wrapProblem !== null} onclick={wrap}>Wrap in Group</Button>
 				{#if wrapProblem}
 					<span class="problem">{wrapProblem}</span>
 				{/if}
+				<Button variant="ghost" class="clear" onclick={() => selected.clear()}>Clear</Button>
 			</div>
 		{/if}
 
@@ -218,13 +233,13 @@
 	</div>
 
 	{#if drag?.blocker}
-		<p class="refusal" role="status">Can’t drop here: {drag.blocker}</p>
+		<p class="refusal" role="status" {@attach boing(0, 0.7)}>Can’t drop here: {drag.blocker}</p>
 	{/if}
 
 	{#if undoable}
 		<Toast>
 			{undoable.message}
-			<Button onclick={undo}>Undo</Button>
+			<Button variant="accent" size="small" onclick={undo}>Undo</Button>
 		</Toast>
 	{/if}
 </div>
@@ -232,101 +247,182 @@
 <style>
 	.editor {
 		min-height: 100vh;
+		padding-bottom: var(--s9);
 	}
 
+	/* A lime bar: the way back, the name, the total as a tilted sticker, then Share and Start. */
 	header {
+		border-bottom: var(--stroke) solid var(--line);
+		background: var(--hue-lime);
+	}
+
+	.bar {
+		box-sizing: border-box;
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
 		gap: var(--s4);
-		padding: var(--s5) var(--s8);
-		border-bottom: 1px solid var(--line);
-		background: var(--surface);
+		max-width: 1216px;
+		margin: 0 auto;
+		padding: var(--s4) var(--s6);
 	}
 
+	/* The name reads as a title, and shows it can be typed into when hovered or focused. */
 	.title {
 		flex: 1 1 16em;
+		box-sizing: border-box;
 		width: auto;
 		min-width: 0;
 		min-height: 56px;
-		border-color: transparent;
-		background-color: transparent;
-		font: 800 30px var(--font-display);
+		padding: var(--s2) var(--s3);
+		border: var(--stroke) solid transparent;
+		border-radius: var(--r);
+		background: transparent;
+		color: var(--text);
+		font: 900 var(--fs-h2) var(--font-display);
 		letter-spacing: -0.02em;
+		text-overflow: ellipsis;
+	}
+
+	.title::placeholder {
+		color: var(--muted);
+	}
+
+	@media (hover: hover) {
+		.title:hover {
+			border-color: var(--line);
+			border-style: dashed;
+		}
+	}
+
+	.title:focus {
+		outline: none;
+		border-style: solid;
+		border-color: var(--line);
+		background: var(--surface);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.total {
-		display: grid;
-		margin: 0 var(--s3) 0 0;
-		text-align: right;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 0;
+		padding: var(--s1) var(--s4);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r);
+		background: var(--surface);
 		font-variant-numeric: tabular-nums;
+		rotate: -2deg;
+		box-shadow: var(--shadow-sm);
 	}
 
 	.total .label {
-		color: var(--muted);
-		font-size: 14px;
-		font-weight: 600;
+		font: 700 var(--fs-xs) / 1.2 var(--font-mono);
+		text-transform: uppercase;
 	}
 
 	.total [data-testid='total'] {
-		font: 800 36px/1 var(--font-display);
+		font: 900 var(--fs-h2) / 1.1 var(--font-display);
 	}
 
 	.column {
+		box-sizing: border-box;
 		display: grid;
-		gap: var(--s4);
-		max-width: 1600px;
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--s5);
+		max-width: 1216px;
 		margin: 0 auto;
-		padding: var(--s5) var(--s8) var(--s9);
+		padding: var(--s6) var(--s6) 0;
 	}
 
-	.message {
-		margin: 0;
-		padding: var(--s3) var(--s4);
-		border-left: 4px solid var(--danger);
-		border-radius: var(--r-sm);
-		background: color-mix(in oklab, var(--danger) 10%, var(--surface));
-		font-weight: 600;
-	}
-
+	/* The ticked Intervals: a sticky blue bar, the count as a yellow sticker. */
 	.selection {
 		position: sticky;
-		top: var(--s2);
-		z-index: 1;
+		top: var(--s3);
+		z-index: 10;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: var(--s3);
-		padding: var(--s2) var(--s2) var(--s2) var(--s5);
-		border-radius: var(--r);
-		background: var(--surface);
-		font-weight: 600;
+		gap: var(--s4);
+		padding: var(--s3) var(--s4);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-lg);
+		background: var(--primary);
+		color: var(--on-primary);
 		box-shadow: var(--shadow-raised);
 	}
 
-	.problem {
-		color: var(--danger);
+	.selected {
+		padding: var(--s1) var(--s3);
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--hue-yellow);
+		color: var(--text);
+		font: 700 var(--fs-sm) / 1.4 var(--font-mono);
+		rotate: -4deg;
+		box-shadow: var(--shadow-sm);
 	}
 
+	.problem {
+		font-weight: 700;
+	}
+
+	.selection :global(.clear) {
+		--ink: var(--on-primary);
+		margin-left: auto;
+		border-color: var(--on-primary);
+	}
+
+	/* Why the dragged item can't go here: a red sticker over the page. */
 	.refusal {
 		position: fixed;
 		top: var(--s5);
 		left: 50%;
-		transform: translateX(-50%);
+		z-index: 20;
+		translate: -50% 0;
 		margin: 0;
-		padding: var(--s3) var(--s5);
-		border-radius: var(--r);
+		padding: var(--s2) var(--s4);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-full);
 		background: var(--danger);
-		color: var(--on-primary);
+		color: var(--surface);
 		font-weight: 700;
-		box-shadow: var(--shadow-raised);
+		rotate: -2deg;
+		box-shadow: var(--shadow);
 		pointer-events: none;
 	}
 
-	@media (max-width: 1100px) {
-		header,
+	@media (max-width: 767px) {
+		.bar {
+			flex-wrap: wrap;
+			gap: var(--s3);
+			padding: var(--s3) var(--s4);
+		}
+
+		.title {
+			order: 5;
+			flex-basis: 100%;
+			font-size: var(--fs-lead);
+		}
+
+		.total {
+			margin-left: auto;
+			flex-direction: row;
+			align-items: baseline;
+			gap: var(--s2);
+		}
+
+		.total [data-testid='total'] {
+			font-size: var(--fs-lead);
+		}
+
 		.column {
-			padding-inline: var(--s5);
+			gap: var(--s4);
+			padding: var(--s4) var(--s4) 0;
+		}
+
+		.selection {
+			gap: var(--s2);
 		}
 	}
 </style>

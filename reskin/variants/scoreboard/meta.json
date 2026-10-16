@@ -1,0 +1,27 @@
+{
+  "slug": "scoreboard",
+  "name": "Scoreboard",
+  "thesis": "The app is stadium equipment: it runs dark, the numbers are huge, condensed and lit in the Kind color, and everything else stays out of the way.",
+  "nativeFeel": "override",
+  "layoutChanges": {
+    "home": "The left sidebar becomes a slim top bar (wordmark, uppercase nav tabs, New Workout on the right), and the card grid becomes a dense standings table with one row per Workout: a Kind-mix lane, the name over its Timeline strip, Intervals, a big right-aligned time and inline actions.",
+    "session": "The rounded panel and right-hand rail become one edge-to-edge board: a Kind-colored band and left lane carry the Kind label, the time is set in glowing LED digits, the progress bar becomes LED cells, and Up next moves from the rail to a ticker strip along the bottom with the Group/Round line and time left at its right end; the Interval list slides in as a full-height drawer.",
+    "edit": "The header bar and Timeline are pinned together at the top, and the outline becomes a spreadsheet with column headers (Name · Kind · Duration · Color), Kind lanes on every row, and Groups as shaded header rows with their children indented under a dashed rule.",
+    "wizard": "The four separate cards become one ruled four-column strip of tall tiles, each with its Timeline on top, a giant condensed title, and a go arrow.",
+    "library": "Each level's three-column card grid becomes a standings table, with one full-width row per Sample: Kind-mix lane, name over Timeline, Level and Style chips, blurb, and time.",
+    "countdown": "The app top bar is added; the Preset tiles become dark LED tiles lit in the Countdown color, Custom becomes an LED readout with Start beside it, and the running screen is an edge-to-edge board with a color band, glowing digits and LED progress cells.",
+    "settings": "The app top bar is added and every card becomes a numbered panel with ruled rows; switches become OFF/ON segment toggles and the Countdown color swatch becomes an LED readout.",
+    "wizard-style": "The app top bar is added; fields become large LED readouts with a lane in their Kind color, and the Your Workout card becomes a sticky scoreboard panel with a glowing yellow Total."
+  },
+  "additions": {
+    "home": ["Standings position number", "Standings column headers", "New Workout shortcut in the empty state"],
+    "session": ["Keyboard hints on the controls", "Timeline strip of the finished Workout"],
+    "edit": ["App top bar with the nav on every screen", "Spreadsheet column headers"],
+    "wizard": ["App top bar with the nav on every screen", "Wizard index numbers", "Default settings line on each Wizard"],
+    "library": ["App top bar with the nav on every screen", "Sample count beside each level"],
+    "countdown": ["App top bar with the nav on every screen", "Keyboard hints on the controls"],
+    "settings": ["App top bar with the nav on every screen", "Section numbers"],
+    "wizard-style": ["App top bar with the nav on every screen"]
+  },
+  "newRoutes": []
+}

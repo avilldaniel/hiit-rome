@@ -1,0 +1,684 @@
+<style>
+html,body{overflow-x:clip}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3,p{margin:0}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ico{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.mono{font-family:var(--font-mono)}
+.num{font-family:var(--font-display);font-weight:var(--weight-black);font-variant-numeric:tabular-nums;line-height:var(--leading-tight);letter-spacing:-.02em}
+:focus-visible{outline:3px solid var(--color-focus);outline-offset:3px}
+
+/* buttons: ink outline + hard shadow that collapses when pressed */
+.btn{--btn-bg:var(--color-surface);--btn-fg:var(--color-text);display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);min-height:48px;padding:0 var(--space-4);border:3px solid var(--color-border);border-radius:var(--radius-md);background:var(--btn-bg);color:var(--btn-fg);font-family:var(--font-body);font-weight:var(--weight-bold);font-size:var(--text-md);line-height:1;text-decoration:none;white-space:nowrap;box-shadow:var(--shadow-md);transition:transform var(--motion-base) var(--motion-ease),box-shadow var(--motion-base) var(--motion-ease),background var(--motion-base)}
+.btn:hover{transform:translate(-2px,-2px)}
+.btn:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--color-border);transition-duration:var(--motion-fast)}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:var(--shadow-sm)}
+.btn-primary{--btn-bg:var(--color-primary);--btn-fg:var(--color-on-primary)}
+.btn-accent{--btn-bg:var(--color-accent);--btn-fg:var(--color-on-accent)}
+.btn-ink{--btn-bg:var(--color-text);--btn-fg:var(--color-bg)}
+.btn-ghost{--btn-bg:transparent;border-style:dashed;box-shadow:none}
+.btn-ghost:active{transform:translate(1px,1px)}
+.btn-danger{--btn-fg:var(--color-danger)}
+.btn-lg{min-height:60px;padding:0 var(--space-6);font-size:var(--text-lg);font-weight:var(--weight-bold)}
+.btn-sm{min-height:40px;padding:0 var(--space-3);font-size:var(--text-sm);box-shadow:var(--shadow-sm)}
+.btn-icon{width:44px;min-height:44px;padding:0;box-shadow:var(--shadow-sm);border-width:2px}
+.btn-sm:active,.btn-icon:active{transform:translate(2px,2px)}
+.btn .ico{width:20px;height:20px}
+.btn-lg .ico{width:24px;height:24px}
+
+/* fields */
+.label{display:block;margin-bottom:var(--space-2);font-size:var(--text-sm);font-weight:var(--weight-bold)}
+.input,.select,.textarea{width:100%;min-height:48px;padding:0 var(--space-3);border:3px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);font-size:var(--text-md);font-weight:var(--weight-medium)}
+.textarea{padding:var(--space-3);line-height:var(--leading-body);resize:vertical}
+.input::placeholder,.textarea::placeholder{color:var(--color-text-muted);font-style:italic}
+.input:focus,.select:focus,.textarea:focus{outline:none;box-shadow:var(--shadow-sm);background:var(--color-surface-2)}
+.selwrap{position:relative;display:block}
+.select{appearance:none;-webkit-appearance:none;padding-right:44px;cursor:pointer}
+.selwrap>.ico{position:absolute;right:var(--space-3);top:50%;translate:0 -50%;pointer-events:none}
+.is-invalid,.input.is-invalid{border-color:var(--color-danger)!important;background:color-mix(in srgb,var(--color-danger) 12%,var(--color-surface))!important;color:var(--color-danger)!important;box-shadow:var(--shadow-sm)}
+.check{appearance:none;-webkit-appearance:none;flex:none;width:26px;height:26px;margin:0;border:3px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);display:inline-grid;place-content:center;cursor:pointer;transition:transform var(--motion-base) var(--motion-ease)}
+.check:checked{background:var(--color-primary)}
+.check:checked::after{content:"";width:10px;height:5px;border:solid var(--color-on-primary);border-width:0 0 3px 3px;rotate:-45deg;translate:0 -2px}
+.check:active{transform:scale(.85)}
+
+/* hover tips for disabled controls */
+[data-tip]{position:relative}
+[data-tip]:hover::after,[data-tip]:focus-within::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);translate:-50% 0;z-index:20;width:max-content;max-width:260px;padding:var(--space-1) var(--space-3);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-text);color:var(--color-bg);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:400;line-height:1.4;white-space:normal;box-shadow:var(--shadow-sm)}
+
+/* stickers: rotated badges that boing in */
+@keyframes boing{from{scale:.3}to{scale:1}}
+.sticker{display:inline-flex;align-items:center;gap:var(--space-1);padding:var(--space-1) var(--space-3);border:2px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-accent);color:var(--color-on-accent);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;line-height:1.4;white-space:nowrap;rotate:-5deg;box-shadow:var(--shadow-sm);animation:boing var(--motion-base) var(--motion-ease) both}
+.sticker .ico{width:14px;height:14px}
+.tag{display:inline-block;padding:2px var(--space-2);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700}
+
+/* Timeline strip: chunky, outlined */
+.strip{display:flex;gap:2px;height:22px;border:3px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-border);overflow:hidden}
+.strip>i{display:block;min-width:2px}
+.k-work{background:var(--color-kind-work)}
+.k-rest{background:var(--color-kind-rest)}
+.k-warmup{background:var(--color-kind-warmup)}
+.k-cooldown{background:var(--color-kind-cooldown)}
+
+/* brand */
+.brand{display:inline-flex;align-items:center;gap:var(--space-3);text-decoration:none;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-lg);letter-spacing:-.02em}
+.mark{display:inline-flex;gap:3px;align-items:flex-end}
+.mark i{display:block;width:9px;border:2px solid var(--color-border);border-radius:3px}
+.mark i:nth-child(1){height:18px}.mark i:nth-child(2){height:26px}.mark i:nth-child(3){height:14px}.mark i:nth-child(4){height:22px}
+
+/* destination header band */
+.band{background:var(--hue,var(--color-primary));border-bottom:3px solid var(--color-border);position:relative;overflow:hidden}
+.band::after{content:"";position:absolute;right:-40px;top:-60px;width:260px;height:260px;border:3px solid var(--color-border);border-radius:50%;background:repeating-linear-gradient(-45deg,transparent 0 10px,color-mix(in srgb,var(--color-border) 18%,transparent) 10px 13px);pointer-events:none}
+.band-inner{position:relative;z-index:1;max-width:1216px;margin:0 auto;padding:var(--space-6) var(--space-8) var(--space-8)}
+.back{display:inline-flex;align-items:center;gap:var(--space-2);min-height:40px;padding:0 var(--space-3) 0 var(--space-2);border:2px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);font-weight:var(--weight-bold);font-size:var(--text-sm);text-decoration:none;box-shadow:var(--shadow-sm);transition:transform var(--motion-base) var(--motion-ease)}
+.back:hover{transform:translateX(-3px)}
+.page-title{margin-top:var(--space-4);font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-3xl);line-height:var(--leading-tight);text-transform:uppercase;letter-spacing:-.03em}
+.intro{margin-top:var(--space-3);max-width:60ch;font-size:var(--text-lg);font-weight:var(--weight-medium)}
+.wrap{max-width:1216px;margin:0 auto;padding:var(--space-8)}
+.h2{font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-xl);text-transform:uppercase;letter-spacing:-.01em;line-height:var(--leading-tight)}
+
+/* loading bounce */
+@keyframes hop{0%,100%{translate:0 0}40%{translate:0 -18px}}
+.loading{display:flex;justify-content:center;gap:var(--space-3);padding:var(--space-16) 0}
+.loading i{width:28px;height:28px;border:3px solid var(--color-border);border-radius:var(--radius-sm);animation:hop 900ms var(--motion-ease) infinite}
+.loading i:nth-child(2){animation-delay:120ms}.loading i:nth-child(3){animation-delay:240ms}.loading i:nth-child(4){animation-delay:360ms}
+
+/* surfaces */
+.card{background:var(--color-surface);border:3px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg)}
+
+/* messages */
+.alert{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-4);border:3px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-danger);color:var(--color-surface);font-weight:var(--weight-bold);box-shadow:var(--shadow-md)}
+.alert .ico{width:24px;height:24px;margin-top:1px}
+.alert-warn{background:var(--color-hue-yellow);color:var(--color-text)}
+.alert-ok{background:var(--color-kind-cooldown);color:var(--color-text)}
+@keyframes rise{from{translate:-50% 140%}to{translate:-50% 0}}
+.toast{position:fixed;left:50%;bottom:var(--space-6);translate:-50% 0;z-index:40;display:flex;align-items:center;gap:var(--space-4);max-width:calc(100vw - 32px);padding:var(--space-2) var(--space-2) var(--space-2) var(--space-6);border:3px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-text);color:var(--color-bg);font-weight:var(--weight-bold);box-shadow:var(--shadow-md);animation:rise var(--motion-base) var(--motion-ease) both}
+.toast .btn{min-height:40px;box-shadow:none;border-color:var(--color-bg)}
+.toast span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* dialogs */
+dialog.dlg{width:min(560px,calc(100vw - 32px));padding:var(--space-8);border:3px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-lg)}
+dialog.dlg[open]{animation:boing var(--motion-base) var(--motion-ease)}
+dialog.dlg::backdrop{background:color-mix(in srgb,var(--color-text) 55%,transparent)}
+.dlg-title{font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-xl);line-height:1.15;text-transform:uppercase}
+.dlg-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-3);margin-top:var(--space-6)}
+
+/* a stand-alone message page (not found, can't start) */
+.lost{min-height:100vh;display:grid;place-content:center;justify-items:start;gap:var(--space-4);padding:var(--space-8);max-width:760px;margin:0 auto}
+.lost .page-title{margin:0;font-size:var(--text-2xl)}
+.lost p{font-size:var(--text-lg);font-weight:var(--weight-medium)}
+.lost-blob{width:120px;height:120px;border:3px solid var(--color-border);border-radius:38% 62% 55% 45%/48% 40% 60% 52%;background:var(--hue,var(--color-accent));box-shadow:var(--shadow-lg);display:grid;place-content:center;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-2xl);rotate:-8deg}
+
+@media (max-width:767px){
+  .band-inner{padding:var(--space-4) var(--space-4) var(--space-6)}
+  .band::after{width:160px;height:160px;right:-50px;top:-50px}
+  .wrap{padding:var(--space-6) var(--space-4)}
+  .page-title{font-size:calc(var(--text-2xl) * .8);overflow-wrap:anywhere}
+  .h2{font-size:var(--text-lg)}
+  .intro{font-size:var(--text-md)}
+  .btn-lg{min-height:56px;font-size:var(--text-md)}
+  dialog.dlg{padding:var(--space-6)}
+  .toast{bottom:var(--space-4);padding-left:var(--space-4);gap:var(--space-2);font-size:var(--text-sm)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.edit{padding-bottom:var(--space-16)}
+.ebar.band::after{display:none}
+.ebar-inner{max-width:1216px;margin:0 auto;padding:var(--space-4) var(--space-8);display:flex;align-items:center;gap:var(--space-4)}
+.wname{flex:1;min-width:0;padding:var(--space-2) var(--space-3);border:3px solid transparent;border-radius:var(--radius-md);background:transparent;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-xl);letter-spacing:-.02em;text-overflow:ellipsis}
+.wname:hover{border-color:var(--color-border);border-style:dashed}
+.wname:focus{outline:none;border-style:solid;border-color:var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-sm)}
+.total{display:flex;flex-direction:column;align-items:center;padding:var(--space-1) var(--space-4);border:3px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-sm);rotate:-2deg}
+.total-label{font-size:var(--text-xs);font-weight:700;text-transform:uppercase;line-height:1.2}
+.total .num{font-size:var(--text-xl)}
+
+.ecol{max-width:1216px;margin:0 auto;padding:var(--space-8);display:flex;flex-direction:column;gap:var(--space-6)}
+
+/* timeline */
+.tl{padding:var(--space-6)}
+.tl-head{display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-4)}
+.tl-count{background:var(--color-hue-yellow);color:var(--color-text);font-size:var(--text-sm)}
+.tl-strip{height:72px;border-radius:var(--radius-md);gap:3px}
+.axis{position:relative;height:24px;margin-top:var(--space-2);font-size:var(--text-xs)}
+.axis span{position:absolute;top:0;padding-left:var(--space-1);border-left:3px solid var(--color-border);line-height:1.6}
+.axis span:last-child{display:none}
+.tl-empty{height:72px;border:3px dashed var(--color-border);border-radius:var(--radius-md);background:repeating-linear-gradient(-45deg,transparent 0 12px,var(--color-surface-2) 12px 20px)}
+
+/* settings */
+.settings{padding:0}
+.settings summary{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4) var(--space-6);cursor:pointer;list-style:none}
+.settings summary::-webkit-details-marker{display:none}
+.chev-s{display:grid;place-content:center;width:36px;height:36px;border:2px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-hue-yellow);transition:rotate var(--motion-base) var(--motion-ease)}
+.settings[open] .chev-s{rotate:90deg}
+.set-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4) var(--space-6);padding:var(--space-2) var(--space-6) var(--space-6);border-top:3px dashed var(--color-border);padding-top:var(--space-6)}
+.suffix{display:flex;align-items:center;gap:var(--space-2);font-weight:var(--weight-bold)}
+.suffix .input{width:96px}
+.warn-s{margin-top:var(--space-2)}
+.hint{grid-column:1/-1;font-weight:var(--weight-medium);color:var(--color-text-muted)}
+
+/* selection toolbar */
+.seltool{position:sticky;top:var(--space-3);z-index:10;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border:3px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-primary);color:var(--color-on-primary);box-shadow:var(--shadow-lg);animation:boing var(--motion-base) var(--motion-ease) both}
+.sel-n{font-size:var(--text-sm);background:var(--color-hue-yellow);color:var(--color-text)}
+.sel-why{font-weight:var(--weight-bold)}
+.sel-clear{--btn-fg:var(--color-on-primary);border-color:var(--color-on-primary);margin-left:auto}
+
+/* outline */
+.outline,.nest,.tray-body{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-3)}
+.grip{display:grid;place-content:center;width:28px;height:40px;padding:0;border:0;background:none;cursor:grab;color:var(--color-text)}
+.grip .ico{width:22px;height:22px}
+
+/* Interval chip */
+.iv{display:grid;grid-template-columns:auto auto minmax(0,1fr) 150px 112px 150px auto auto;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3) var(--space-2) var(--space-2);border:3px solid var(--color-border);border-left:12px solid var(--kc);border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-sm);transition:transform var(--motion-base) var(--motion-ease)}
+.iv:has(.check:checked){background:color-mix(in srgb,var(--color-primary) 14%,var(--color-surface));box-shadow:var(--shadow-md);transform:translate(-2px,-2px)}
+.iv-name{min-width:0;padding:var(--space-2);border:2px solid transparent;border-radius:var(--radius-sm);background:transparent;font-weight:var(--weight-bold);font-size:var(--text-md);text-overflow:ellipsis}
+.iv-name:focus{outline:none;border-color:var(--color-border);background:var(--color-surface-2)}
+.iv .select{min-height:42px;font-size:var(--text-sm);font-weight:var(--weight-bold)}
+.kindsel .select{background:var(--kc);border-width:2px}
+.colorsel .select{border-width:2px}
+.dur-cell{position:relative;display:block}
+.dur{width:100%;min-height:48px;padding:0 var(--space-2);border:3px solid var(--color-border);border-radius:var(--radius-sm);text-align:center;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-lg);color:var(--color-on-kind);box-shadow:var(--shadow-sm);font-variant-numeric:tabular-nums}
+.dur:focus{outline:none;box-shadow:var(--shadow-md);transform:translate(-1px,-1px)}
+.bubble{position:absolute;right:0;bottom:calc(100% + 10px);z-index:5;width:240px;padding:var(--space-2) var(--space-3);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-danger);color:var(--color-surface);font-size:var(--text-xs);font-weight:var(--weight-bold);line-height:1.4;box-shadow:var(--shadow-sm);rotate:-1deg}
+
+/* Group trays */
+.tray{padding:var(--space-3);border:3px solid var(--color-border);border-radius:var(--radius-lg);background:color-mix(in srgb,var(--tray) 55%,var(--color-surface));box-shadow:var(--shadow-md);transition:rotate var(--motion-base) var(--motion-ease),transform var(--motion-base) var(--motion-ease)}
+.tray-head{display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-1) var(--space-3)}
+.chev{width:36px;min-height:36px;border-radius:var(--radius-full);background:var(--color-surface)}
+.chev .ico{transition:rotate var(--motion-base) var(--motion-ease)}
+.tray-name{flex:1;min-width:0;padding:var(--space-1) var(--space-2);border:2px solid transparent;border-radius:var(--radius-sm);background:transparent;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-lg);text-transform:uppercase;letter-spacing:-.01em}
+.tray-name::placeholder{color:var(--color-text-muted);font-style:normal}
+.tray-name:focus{outline:none;border-color:var(--color-border);background:var(--color-surface)}
+.rounds{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-1) var(--space-3) var(--space-1) var(--space-3);border:3px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-text);color:var(--color-bg);font-weight:var(--weight-bold);box-shadow:var(--shadow-sm)}
+.rounds input{width:52px;min-height:34px;border:2px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);color:var(--color-text);text-align:center;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-md);-moz-appearance:textfield}
+.rounds input::-webkit-inner-spin-button{-webkit-appearance:none}
+.skip{display:inline-flex;align-items:center;gap:var(--space-2);font-weight:var(--weight-bold);font-size:var(--text-sm);white-space:nowrap}
+.tray-body{padding-left:var(--space-6)}
+.tray.is-collapsed .tray-body,.tray.is-collapsed .tray-note{display:none}
+.tray.is-collapsed .tray-head{padding-bottom:0}
+.tray.is-collapsed .chev .ico{rotate:-90deg}
+.tray.is-lifted{rotate:-1.2deg;transform:translate(-4px,-6px);box-shadow:var(--shadow-lg);opacity:.92;cursor:grabbing}
+.tray-empty{border-style:dashed;border-color:var(--color-warning);background:color-mix(in srgb,var(--color-hue-yellow) 35%,var(--color-surface))}
+.tray-note{display:flex;gap:var(--space-2);align-items:flex-start;margin:0 var(--space-1) var(--space-3);padding:var(--space-3);border:2px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-hue-yellow);font-weight:var(--weight-bold);font-size:var(--text-sm)}
+.adds{display:flex;gap:var(--space-3);padding:var(--space-1) 0}
+.adds .btn-ghost{--btn-bg:color-mix(in srgb,var(--color-surface) 60%,transparent)}
+.adds-top{margin-top:var(--space-2)}
+.adds-top .btn{min-height:52px;font-size:var(--text-md);--btn-bg:var(--color-surface)}
+
+/* drag affordances */
+.drop{display:flex;align-items:center;justify-content:center;gap:var(--space-2);min-height:48px;border:3px dashed;border-radius:var(--radius-md);font-weight:var(--weight-bold)}
+.drop-ok{border-color:var(--color-primary);background:color-mix(in srgb,var(--color-primary) 14%,var(--color-surface));color:var(--color-primary)}
+.drop-no{position:relative;border-color:var(--color-danger);background:color-mix(in srgb,var(--color-danger) 12%,var(--color-surface));color:var(--color-danger)}
+.notice{position:absolute;left:50%;top:calc(100% + var(--space-2));translate:-50% 0;z-index:5;white-space:nowrap;padding:var(--space-2) var(--space-4);border:3px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-danger);color:var(--color-surface);box-shadow:var(--shadow-md);rotate:-2deg;font-size:var(--text-sm)}
+
+@media (max-width:767px){
+  .ebar-inner{flex-wrap:wrap;padding:var(--space-3) var(--space-4);gap:var(--space-3)}
+  .wname{order:5;flex-basis:100%;font-size:var(--text-lg);padding:var(--space-2)}
+  .total{order:2;margin-left:auto;flex-direction:row;gap:var(--space-2);align-items:baseline}
+  .total .num{font-size:var(--text-lg)}
+  .ebar-inner>.btn{order:3}
+  .ebar-inner>.btn-lg{min-height:48px;font-size:var(--text-md);padding:0 var(--space-4)}
+  .ecol{padding:var(--space-4);gap:var(--space-4)}
+  .tl{padding:var(--space-4)}
+  .tl-head{flex-wrap:wrap;gap:var(--space-2)}
+  .tl-strip{height:48px}
+  .axis span:nth-child(even){display:none}
+  .set-grid{grid-template-columns:1fr;padding:var(--space-4)}
+  .settings summary{padding:var(--space-3) var(--space-4)}
+  .seltool{flex-wrap:wrap;gap:var(--space-2)}
+  .iv{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"g c n n n n" "k k k d d d" "o o o o x y";row-gap:var(--space-2)}
+  .iv>.grip{grid-area:g}.iv>.check{grid-area:c}.iv>.iv-name{grid-area:n}.iv>.kindsel{grid-area:k}.iv>.dur-cell{grid-area:d}.iv>.colorsel{grid-area:o}.iv>.btn:nth-last-child(2){grid-area:x}.iv>.btn:last-child{grid-area:y}
+  .tray{padding:var(--space-2)}
+  .tray-head{flex-wrap:wrap;gap:var(--space-2)}
+  .tray-name{flex-basis:calc(100% - 90px);font-size:var(--text-md)}
+  .tray-head .btn-icon:not(.chev){margin-left:auto}
+  .tray-head .btn-icon + .btn-icon{margin-left:0}
+  .tray-body{padding-left:var(--space-2)}
+  .adds{flex-wrap:wrap}
+  .notice{white-space:normal;width:90%;text-align:center}
+  .bubble{right:auto;left:0}
+}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol><symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol><symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol><symbol id="i-down-tray" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></symbol><symbol id="i-up-tray" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M5 19h14"/></symbol><symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol><symbol id="i-wand" viewBox="0 0 24 24"><path d="M5 19L15.5 8.5"/><path d="M14 4.5v2M19.5 10h-2M17.8 6.2l-1.4 1.4M10 5l.6 1.6M19 14l-1.6-.6"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19M9 7h6"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol><symbol id="i-prev" viewBox="0 0 24 24"><path d="M18 6l-9 6 9 6z"/><path d="M6 6v12"/></symbol><symbol id="i-next" viewBox="0 0 24 24"><path d="M6 6l9 6-9 6z"/><path d="M18 6v12"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol><symbol id="i-restart" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.5h.01"/></symbol><symbol id="i-reload" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></symbol><symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></symbol></svg>
+<div class="edit" data-reskin-state="default settings-open selection wrap-refused undo-toast group-collapsed empty-group empty-workout start-blocked save-failed dragging invalid-field">
+<header class="band ebar" style="--hue:var(--color-hue-lime)">
+  <div class="ebar-inner">
+    <a class="back" href="#"><svg class="ico " aria-hidden="true"><use href="#i-left"/></svg><span>My Workouts</span></a>
+    <label class="vh" for="wname">Workout name</label>
+    <input class="wname" id="wname" value="Lean Burn 11/12" placeholder="Untitled Workout">
+    <p class="total"><span class="total-label mono">Total</span><span class="num" data-reskin-state="default settings-open selection wrap-refused undo-toast group-collapsed empty-group save-failed dragging invalid-field">44:05</span><span class="num" data-reskin-state="empty-workout start-blocked">0:00</span></p>
+    <button class="btn" type="button"><svg class="ico " aria-hidden="true"><use href="#i-share"/></svg>Share</button>
+    <a class="btn btn-primary btn-lg" href="#"><svg class="ico " aria-hidden="true"><use href="#i-play"/></svg>Start</a>
+  </div>
+</header>
+
+<main class="ecol">
+  <div class="alert" role="alert" data-reskin-state="start-blocked"><svg class="ico " aria-hidden="true"><use href="#i-alert"/></svg><span>Nothing to play yet: add an Interval before starting.</span></div>
+  <div class="alert" role="alert" data-reskin-state="save-failed"><svg class="ico " aria-hidden="true"><use href="#i-alert"/></svg><span>Your changes couldn’t be saved. Try reloading the page.</span></div>
+
+  <section class="card tl" aria-labelledby="tl-h">
+    <div class="tl-head"><h2 class="h2" id="tl-h">Timeline</h2>
+      <p class="sticker tl-count" data-reskin-state="default settings-open selection wrap-refused undo-toast group-collapsed empty-group save-failed dragging invalid-field">32 Intervals · 44:05</p>
+      <p class="sticker tl-count" data-reskin-state="empty-workout start-blocked">0 Intervals · 0:00</p>
+    </div>
+    <div data-reskin-state="default settings-open selection wrap-refused undo-toast group-collapsed empty-group save-failed dragging invalid-field">
+      <div class="strip tl-strip" role="img" aria-label="Timeline"><i class="k-warmup" style="flex:240"></i><i class="k-rest" style="flex:60"></i><i class="k-work" style="flex:120"></i><i class="k-work" style="flex:60"></i><i class="k-work" style="flex:60"></i><i class="k-work" style="flex:60"></i><i class="k-work" style="flex:75"></i><i class="k-work" style="flex:75"></i><i class="k-work" style="flex:75"></i><i class="k-work" style="flex:60"></i><i class="k-work" style="flex:90"></i><i class="k-work" style="flex:90"></i><i class="k-work" style="flex:30"></i><i class="k-work" style="flex:180"></i><i class="k-rest" style="flex:120"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-rest" style="flex:15"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-rest" style="flex:20"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-rest" style="flex:15"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-work" style="flex:45"></i><i class="k-rest" style="flex:180"></i><i class="k-work" style="flex:480"></i></div>
+      <div class="axis mono" aria-hidden="true"><span style="left:0.000%">0:00</span><span style="left:11.342%">5:00</span><span style="left:22.684%">10:00</span><span style="left:34.026%">15:00</span><span style="left:45.369%">20:00</span><span style="left:56.711%">25:00</span><span style="left:68.053%">30:00</span><span style="left:79.395%">35:00</span><span style="left:90.737%">40:00</span></div>
+    </div>
+    <div class="tl-empty" data-reskin-state="empty-workout start-blocked" aria-hidden="true"></div>
+  </section>
+
+  <details class="card settings" data-reskin-on="settings-open">
+    <summary><span class="chev-s"><svg class="ico " aria-hidden="true"><use href="#i-chevron"/></svg></span><span class="h2">Workout settings</span></summary>
+    <div class="set-grid">
+      <div class="fld"><label class="label" for="lead">Lead-in</label><span class="suffix"><input class="input" id="lead" type="number" min="0" max="99" value="10" aria-label="Lead-in seconds"><span>s</span></span></div>
+      <div class="fld"><label class="label" for="cue0">Announce each Interval</label><span class="selwrap "><select class="select" id="cue0" ><option selected>Default (On)</option><option>On</option><option>Off</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span></div><div class="fld"><label class="label" for="cue1">Warning</label><span class="selwrap "><select class="select" id="cue1" ><option selected>Default (On)</option><option>On</option><option>Off</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span><span class="suffix warn-s"><label class="vh" for="ws">Warning seconds</label><input class="input" id="ws" type="number" min="1" max="99" placeholder="10"><span>s before the end</span></span></div><div class="fld"><label class="label" for="cue2">Final-seconds beeps</label><span class="selwrap "><select class="select" id="cue2" ><option selected>Default (On)</option><option>On</option><option>Off</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span></div><div class="fld"><label class="label" for="cue3">Halfway</label><span class="selwrap "><select class="select" id="cue3" ><option selected>Default (Off)</option><option>On</option><option>Off</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span></div><div class="fld"><label class="label" for="cue4">Workout complete</label><span class="selwrap "><select class="select" id="cue4" ><option selected>Default (On)</option><option>On</option><option>Off</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span></div>
+      <p class="hint">Cues set to Default follow Settings.</p>
+    </div>
+  </details>
+
+  <div class="seltool" role="region" aria-label="Selected Intervals" data-reskin-state="selection wrap-refused">
+    <span class="sticker sel-n">2 selected</span>
+    <button class="btn btn-accent" type="button" data-reskin-state="selection">Wrap in Group</button>
+    <button class="btn btn-accent" type="button" disabled data-reskin-state="wrap-refused" aria-describedby="why">Wrap in Group</button>
+    <span class="sel-why" id="why" data-reskin-state="wrap-refused">Select Intervals at the same level</span>
+    <button class="btn btn-ghost sel-clear" type="button">Clear</button>
+  </div>
+
+  <ol class="outline">
+    <li class="outline-items" data-reskin-state="default settings-open selection wrap-refused undo-toast group-collapsed empty-group save-failed dragging invalid-field"><ol class="nest"><li class="tray" style="--tray:var(--color-hue-purple)">
+    <div class="tray-head">
+      <button class="grip" type="button" aria-label="Drag Group Warm-up" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+      <button class="btn btn-icon chev" type="button" aria-expanded="true" aria-label="Collapse Group Warm-up" data-toggle=".tray"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></button>
+      <label class="vh" for="g-db7a1b50-be07-4ab1-90e7-9cc554d943cf">Group name</label><input class="tray-name" id="g-db7a1b50-be07-4ab1-90e7-9cc554d943cf" value="Warm-up" placeholder="Unnamed Group">
+      <label class="rounds"><span aria-hidden="true">×</span><input type="number" min="1" max="99" value="1" aria-label="Rounds"><span>Rounds</span></label>
+      <label class="skip"><input class="check" type="checkbox">Skip last rest</label>
+      <button class="btn btn-icon" type="button" aria-label="Duplicate Group Warm-up" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+      <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Group Warm-up" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+    </div>
+    
+    <ol class="tray-body">
+      <li class="iv" style="--kc:var(--color-kind-warmup)">
+    <button class="grip" type="button" aria-label="Drag Interval Warm Up" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Warm Up">
+    <label class="vh" for="n-4b9effb6-c48a-402f-9cb7-4ee73978a254">Interval name</label><input class="iv-name" id="n-4b9effb6-c48a-402f-9cb7-4ee73978a254" value="Warm Up" placeholder="Warm-up">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option selected>Warm-up</option><option>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-4b9effb6-c48a-402f-9cb7-4ee73978a254">Duration</label><input class="dur k-warmup" id="d-4b9effb6-c48a-402f-9cb7-4ee73978a254" value="4:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Warm Up" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Warm Up" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+      
+      <li class="adds">
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Interval</button>
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Group</button>
+</li>
+    </ol>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-rest)">
+    <button class="grip" type="button" aria-label="Drag Interval Set-up" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Set-up" data-reskin-on="wrap-refused">
+    <label class="vh" for="n-07ff9976-5c48-4b43-9183-579746ca1961">Interval name</label><input class="iv-name" id="n-07ff9976-5c48-4b43-9183-579746ca1961" value="Set-up" placeholder="Rest">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option>Work</option><option selected>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-07ff9976-5c48-4b43-9183-579746ca1961">Duration</label><input class="dur k-rest" id="d-07ff9976-5c48-4b43-9183-579746ca1961" value="1:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Set-up" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Set-up" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="tray" style="--tray:var(--color-hue-orange)">
+    <div class="tray-head">
+      <button class="grip" type="button" aria-label="Drag Group Drill 1" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+      <button class="btn btn-icon chev" type="button" aria-expanded="true" aria-label="Collapse Group Drill 1" data-toggle=".tray"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></button>
+      <label class="vh" for="g-15d8702e-0c59-47b9-a8f0-f12201c657c9">Group name</label><input class="tray-name" id="g-15d8702e-0c59-47b9-a8f0-f12201c657c9" value="Drill 1" placeholder="Unnamed Group">
+      <label class="rounds"><span aria-hidden="true">×</span><input type="number" min="1" max="99" value="1" aria-label="Rounds"><span>Rounds</span></label>
+      <label class="skip"><input class="check" type="checkbox" checked>Skip last rest</label>
+      <button class="btn btn-icon" type="button" aria-label="Duplicate Group Drill 1" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+      <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Group Drill 1" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+    </div>
+    
+    <ol class="tray-body">
+      <li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Bridge 2Pulse Chest Press - Hold/Pulse/Single" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Bridge 2Pulse Chest Press - Hold/Pulse/Single" data-reskin-on="selection">
+    <label class="vh" for="n-89e1bf51-adb6-4692-b993-9e1954ee3510">Interval name</label><input class="iv-name" id="n-89e1bf51-adb6-4692-b993-9e1954ee3510" value="Bridge 2Pulse Chest Press - Hold/Pulse/Single" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-89e1bf51-adb6-4692-b993-9e1954ee3510">Duration</label><input class="dur k-work" id="d-89e1bf51-adb6-4692-b993-9e1954ee3510" value="2:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Bridge 2Pulse Chest Press - Hold/Pulse/Single" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Bridge 2Pulse Chest Press - Hold/Pulse/Single" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Hammer Press" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Hammer Press" data-reskin-on="selection wrap-refused">
+    <label class="vh" for="n-b176f035-ad24-4f80-a323-cfc094fc777c">Interval name</label><input class="iv-name" id="n-b176f035-ad24-4f80-a323-cfc094fc777c" value="Hammer Press" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell" data-reskin-state="default settings-open selection wrap-refused undo-toast group-collapsed empty-group empty-workout start-blocked save-failed dragging"><label class="vh" for="d-b176f035-ad24-4f80-a323-cfc094fc777c">Duration</label><input class="dur k-work" id="d-b176f035-ad24-4f80-a323-cfc094fc777c" value="1:00" inputmode="numeric"></span><span class="dur-cell dur-bad" data-reskin-state="invalid-field"><label class="vh" for="dx">Duration</label><input class="dur is-invalid" id="dx" value="1:7x" aria-invalid="true" title="Enter seconds (&quot;90&quot;) or m:ss (&quot;1:30&quot;), from 0:01 to 99:59"><span class="bubble" role="tooltip">Enter seconds ("90") or m:ss ("1:30"), from 0:01 to 99:59</span></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Hammer Press" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Hammer Press" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Skullcrusher" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Skullcrusher">
+    <label class="vh" for="n-6aec8e86-8827-43f4-9c95-3b17e4666114">Interval name</label><input class="iv-name" id="n-6aec8e86-8827-43f4-9c95-3b17e4666114" value="Skullcrusher" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-6aec8e86-8827-43f4-9c95-3b17e4666114">Duration</label><input class="dur k-work" id="d-6aec8e86-8827-43f4-9c95-3b17e4666114" value="1:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Skullcrusher" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Skullcrusher" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Narrow/wide Row" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Narrow/wide Row">
+    <label class="vh" for="n-19db8eff-5bbf-42a4-8f91-fa0c3a6b3909">Interval name</label><input class="iv-name" id="n-19db8eff-5bbf-42a4-8f91-fa0c3a6b3909" value="Narrow/wide Row" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-19db8eff-5bbf-42a4-8f91-fa0c3a6b3909">Duration</label><input class="dur k-work" id="d-19db8eff-5bbf-42a4-8f91-fa0c3a6b3909" value="1:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Narrow/wide Row" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Narrow/wide Row" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Lunge Hold: Row L" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Lunge Hold: Row L">
+    <label class="vh" for="n-2091cd1c-0f0d-43db-808a-b500c76bcb33">Interval name</label><input class="iv-name" id="n-2091cd1c-0f0d-43db-808a-b500c76bcb33" value="Lunge Hold: Row L" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-2091cd1c-0f0d-43db-808a-b500c76bcb33">Duration</label><input class="dur k-work" id="d-2091cd1c-0f0d-43db-808a-b500c76bcb33" value="1:15" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Lunge Hold: Row L" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Lunge Hold: Row L" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Lunge Hold: Row R" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Lunge Hold: Row R">
+    <label class="vh" for="n-965d2b38-dfa6-448a-b26a-57c7ef3c1823">Interval name</label><input class="iv-name" id="n-965d2b38-dfa6-448a-b26a-57c7ef3c1823" value="Lunge Hold: Row R" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-965d2b38-dfa6-448a-b26a-57c7ef3c1823">Duration</label><input class="dur k-work" id="d-965d2b38-dfa6-448a-b26a-57c7ef3c1823" value="1:15" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Lunge Hold: Row R" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Lunge Hold: Row R" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Sumo High Pull" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Sumo High Pull">
+    <label class="vh" for="n-01af8cf7-38ce-4685-b964-93e06c7f7d2a">Interval name</label><input class="iv-name" id="n-01af8cf7-38ce-4685-b964-93e06c7f7d2a" value="Sumo High Pull" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-01af8cf7-38ce-4685-b964-93e06c7f7d2a">Duration</label><input class="dur k-work" id="d-01af8cf7-38ce-4685-b964-93e06c7f7d2a" value="1:15" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Sumo High Pull" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Sumo High Pull" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Sumo Hold/Pulse" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Sumo Hold/Pulse">
+    <label class="vh" for="n-470233c1-195c-447b-96fd-c5088d7d2d00">Interval name</label><input class="iv-name" id="n-470233c1-195c-447b-96fd-c5088d7d2d00" value="Sumo Hold/Pulse" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-470233c1-195c-447b-96fd-c5088d7d2d00">Duration</label><input class="dur k-work" id="d-470233c1-195c-447b-96fd-c5088d7d2d00" value="1:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Sumo Hold/Pulse" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Sumo Hold/Pulse" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Sumo Squat" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Sumo Squat">
+    <label class="vh" for="n-e685b199-91b2-4dfe-9658-d92c47c520d2">Interval name</label><input class="iv-name" id="n-e685b199-91b2-4dfe-9658-d92c47c520d2" value="Sumo Squat" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-e685b199-91b2-4dfe-9658-d92c47c520d2">Duration</label><input class="dur k-work" id="d-e685b199-91b2-4dfe-9658-d92c47c520d2" value="1:30" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Sumo Squat" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Sumo Squat" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Alt. 2pulse Front Lunge" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Alt. 2pulse Front Lunge">
+    <label class="vh" for="n-7161f152-2c13-4626-af98-33dd1495f7b1">Interval name</label><input class="iv-name" id="n-7161f152-2c13-4626-af98-33dd1495f7b1" value="Alt. 2pulse Front Lunge" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-7161f152-2c13-4626-af98-33dd1495f7b1">Duration</label><input class="dur k-work" id="d-7161f152-2c13-4626-af98-33dd1495f7b1" value="1:30" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Alt. 2pulse Front Lunge" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Alt. 2pulse Front Lunge" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval KB" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select KB">
+    <label class="vh" for="n-f8463a6a-903d-412c-ba8e-c146ca5f7ed9">Interval name</label><input class="iv-name" id="n-f8463a6a-903d-412c-ba8e-c146ca5f7ed9" value="KB" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-f8463a6a-903d-412c-ba8e-c146ca5f7ed9">Duration</label><input class="dur k-work" id="d-f8463a6a-903d-412c-ba8e-c146ca5f7ed9" value="0:30" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate KB" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete KB" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval 10x10 Swings + Sumo Curls" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select 10x10 Swings + Sumo Curls">
+    <label class="vh" for="n-16e06c08-eba6-4a87-ba1a-6a39b76bdca5">Interval name</label><input class="iv-name" id="n-16e06c08-eba6-4a87-ba1a-6a39b76bdca5" value="10x10 Swings + Sumo Curls" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-16e06c08-eba6-4a87-ba1a-6a39b76bdca5">Duration</label><input class="dur k-work" id="d-16e06c08-eba6-4a87-ba1a-6a39b76bdca5" value="3:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate 10x10 Swings + Sumo Curls" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete 10x10 Swings + Sumo Curls" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-rest)">
+    <button class="grip" type="button" aria-label="Drag Interval Rest" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Rest">
+    <label class="vh" for="n-ccd4d359-2183-4e81-a136-4fb4cbc64e06">Interval name</label><input class="iv-name" id="n-ccd4d359-2183-4e81-a136-4fb4cbc64e06" value="Rest" placeholder="Rest">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option>Work</option><option selected>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-ccd4d359-2183-4e81-a136-4fb4cbc64e06">Duration</label><input class="dur k-rest" id="d-ccd4d359-2183-4e81-a136-4fb4cbc64e06" value="0:20" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Rest" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Rest" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+      <li data-reskin-state="empty-group"><ol class="nest"><li class="tray tray-empty" style="--tray:var(--color-hue-teal)">
+    <div class="tray-head">
+      <button class="grip" type="button" aria-label="Drag Unnamed Group" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+      <button class="btn btn-icon chev" type="button" aria-expanded="true" aria-label="Collapse Unnamed Group" data-toggle=".tray"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></button>
+      <label class="vh" for="g-empty">Group name</label><input class="tray-name" id="g-empty" value="" placeholder="Unnamed Group">
+      <label class="rounds"><span aria-hidden="true">×</span><input type="number" min="1" max="99" value="2" aria-label="Rounds"><span>Rounds</span></label>
+      <label class="skip"><input class="check" type="checkbox">Skip last rest</label>
+      <button class="btn btn-icon" type="button" aria-label="Duplicate Unnamed Group" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+      <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Unnamed Group" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+    </div>
+    <p class="tray-note"><svg class="ico " aria-hidden="true"><use href="#i-alert"/></svg><span>Empty Group: it plays nothing, so it will be skipped. Add an Interval (a final Rest is dropped when Skip last rest is on).</span></p>
+    <ol class="tray-body">
+      
+      
+      <li class="adds">
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Interval</button>
+  <span data-tip="Groups nest at most 2 levels deep" tabindex="0"><button class="btn btn-ghost btn-sm add" type="button" disabled><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Group</button></span>
+</li>
+    </ol>
+  </li></ol></li>
+      <li class="adds">
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Interval</button>
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Group</button>
+</li>
+    </ol>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-rest)">
+    <button class="grip" type="button" aria-label="Drag Interval Set-up" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Set-up">
+    <label class="vh" for="n-7c33656b-f495-4ca6-a3fd-b85009a1330f">Interval name</label><input class="iv-name" id="n-7c33656b-f495-4ca6-a3fd-b85009a1330f" value="Set-up" placeholder="Rest">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option>Work</option><option selected>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-7c33656b-f495-4ca6-a3fd-b85009a1330f">Duration</label><input class="dur k-rest" id="d-7c33656b-f495-4ca6-a3fd-b85009a1330f" value="2:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Set-up" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Set-up" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="tray" style="--tray:var(--color-hue-lime)" data-reskin-on="group-collapsed" data-reskin-class="is-collapsed">
+    <div class="tray-head">
+      <button class="grip" type="button" aria-label="Drag Group Core/Abs" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+      <button class="btn btn-icon chev" type="button" aria-expanded="true" aria-label="Collapse Group Core/Abs" data-toggle=".tray"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></button>
+      <label class="vh" for="g-aece39f7-ddbd-4e3d-b298-f150695d480b">Group name</label><input class="tray-name" id="g-aece39f7-ddbd-4e3d-b298-f150695d480b" value="Core/Abs" placeholder="Unnamed Group">
+      <label class="rounds"><span aria-hidden="true">×</span><input type="number" min="1" max="99" value="2" aria-label="Rounds"><span>Rounds</span></label>
+      <label class="skip"><input class="check" type="checkbox" checked>Skip last rest</label>
+      <button class="btn btn-icon" type="button" aria-label="Duplicate Group Core/Abs" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+      <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Group Core/Abs" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+    </div>
+    
+    <ol class="tray-body">
+      <li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Crunch" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Crunch">
+    <label class="vh" for="n-17fa5b83-5d28-42f6-8af7-cdf33a65009f">Interval name</label><input class="iv-name" id="n-17fa5b83-5d28-42f6-8af7-cdf33a65009f" value="Crunch" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-17fa5b83-5d28-42f6-8af7-cdf33a65009f">Duration</label><input class="dur k-work" id="d-17fa5b83-5d28-42f6-8af7-cdf33a65009f" value="0:45" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Crunch" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Crunch" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Leg Raise" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Leg Raise">
+    <label class="vh" for="n-d18dec1d-4e61-43df-8f02-487178155d0c">Interval name</label><input class="iv-name" id="n-d18dec1d-4e61-43df-8f02-487178155d0c" value="Leg Raise" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-d18dec1d-4e61-43df-8f02-487178155d0c">Duration</label><input class="dur k-work" id="d-d18dec1d-4e61-43df-8f02-487178155d0c" value="0:45" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Leg Raise" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Leg Raise" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Star Crunch" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Star Crunch">
+    <label class="vh" for="n-cf5bdf08-3433-421f-8559-f297ac983d3a">Interval name</label><input class="iv-name" id="n-cf5bdf08-3433-421f-8559-f297ac983d3a" value="Star Crunch" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-cf5bdf08-3433-421f-8559-f297ac983d3a">Duration</label><input class="dur k-work" id="d-cf5bdf08-3433-421f-8559-f297ac983d3a" value="0:45" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Star Crunch" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Star Crunch" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-rest)">
+    <button class="grip" type="button" aria-label="Drag Interval Flip" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Flip">
+    <label class="vh" for="n-1159ba5e-a845-453a-85ca-fee6e24cfb4b">Interval name</label><input class="iv-name" id="n-1159ba5e-a845-453a-85ca-fee6e24cfb4b" value="Flip" placeholder="Rest">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option>Work</option><option selected>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-1159ba5e-a845-453a-85ca-fee6e24cfb4b">Duration</label><input class="dur k-rest" id="d-1159ba5e-a845-453a-85ca-fee6e24cfb4b" value="0:15" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Flip" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Flip" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval MC" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select MC">
+    <label class="vh" for="n-d18d96c0-87f7-4fba-912c-ba2babaa5a84">Interval name</label><input class="iv-name" id="n-d18d96c0-87f7-4fba-912c-ba2babaa5a84" value="MC" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-d18d96c0-87f7-4fba-912c-ba2babaa5a84">Duration</label><input class="dur k-work" id="d-d18d96c0-87f7-4fba-912c-ba2babaa5a84" value="0:45" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate MC" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete MC" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Plank Walk" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Plank Walk">
+    <label class="vh" for="n-54c73be4-ebf8-4aa9-bf36-19c50a9c161b">Interval name</label><input class="iv-name" id="n-54c73be4-ebf8-4aa9-bf36-19c50a9c161b" value="Plank Walk" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-54c73be4-ebf8-4aa9-bf36-19c50a9c161b">Duration</label><input class="dur k-work" id="d-54c73be4-ebf8-4aa9-bf36-19c50a9c161b" value="0:45" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Plank Walk" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Plank Walk" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval Thruster" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Thruster">
+    <label class="vh" for="n-3076baec-492e-43cf-9692-b5a10d6fe2a3">Interval name</label><input class="iv-name" id="n-3076baec-492e-43cf-9692-b5a10d6fe2a3" value="Thruster" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-3076baec-492e-43cf-9692-b5a10d6fe2a3">Duration</label><input class="dur k-work" id="d-3076baec-492e-43cf-9692-b5a10d6fe2a3" value="0:45" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Thruster" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Thruster" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-rest)">
+    <button class="grip" type="button" aria-label="Drag Interval Rest" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Rest">
+    <label class="vh" for="n-f916dff3-044c-4042-9c3b-0fb2d3ae669b">Interval name</label><input class="iv-name" id="n-f916dff3-044c-4042-9c3b-0fb2d3ae669b" value="Rest" placeholder="Rest">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option>Work</option><option selected>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-f916dff3-044c-4042-9c3b-0fb2d3ae669b">Duration</label><input class="dur k-rest" id="d-f916dff3-044c-4042-9c3b-0fb2d3ae669b" value="0:20" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Rest" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Rest" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+      
+      <li class="adds">
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Interval</button>
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Group</button>
+</li>
+    </ol>
+  </li>
+<li class="drop drop-ok" data-reskin-state="dragging"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg>Drop here</li><li class="iv" style="--kc:var(--color-kind-rest)">
+    <button class="grip" type="button" aria-label="Drag Interval Set Up" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Set Up">
+    <label class="vh" for="n-a1d1536d-dbd7-4b86-b4d4-c934b5fc7d7d">Interval name</label><input class="iv-name" id="n-a1d1536d-dbd7-4b86-b4d4-c934b5fc7d7d" value="Set Up" placeholder="Rest">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option>Work</option><option selected>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-a1d1536d-dbd7-4b86-b4d4-c934b5fc7d7d">Duration</label><input class="dur k-rest" id="d-a1d1536d-dbd7-4b86-b4d4-c934b5fc7d7d" value="3:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Set Up" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Set Up" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="tray" style="--tray:var(--color-hue-purple)" data-reskin-on="dragging" data-reskin-class="is-lifted">
+    <div class="tray-head">
+      <button class="grip" type="button" aria-label="Drag Group Drill2" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+      <button class="btn btn-icon chev" type="button" aria-expanded="true" aria-label="Collapse Group Drill2" data-toggle=".tray"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></button>
+      <label class="vh" for="g-c2391920-9462-4988-9208-03a5d07237ef">Group name</label><input class="tray-name" id="g-c2391920-9462-4988-9208-03a5d07237ef" value="Drill2" placeholder="Unnamed Group">
+      <label class="rounds"><span aria-hidden="true">×</span><input type="number" min="1" max="99" value="1" aria-label="Rounds"><span>Rounds</span></label>
+      <label class="skip"><input class="check" type="checkbox" checked>Skip last rest</label>
+      <button class="btn btn-icon" type="button" aria-label="Duplicate Group Drill2" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+      <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Group Drill2" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+    </div>
+    
+    <ol class="tray-body">
+      <li class="iv" style="--kc:var(--color-kind-work)">
+    <button class="grip" type="button" aria-label="Drag Interval AMRAP: 15/12/10/8: PU / Row / Squat Thrust / Back Lunge &amp; Curl" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select AMRAP: 15/12/10/8: PU / Row / Squat Thrust / Back Lunge &amp; Curl">
+    <label class="vh" for="n-3f85d732-9594-4e0c-a13f-787903613c85">Interval name</label><input class="iv-name" id="n-3f85d732-9594-4e0c-a13f-787903613c85" value="AMRAP: 15/12/10/8: PU / Row / Squat Thrust / Back Lunge &amp; Curl" placeholder="Work">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option selected>Work</option><option>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-3f85d732-9594-4e0c-a13f-787903613c85">Duration</label><input class="dur k-work" id="d-3f85d732-9594-4e0c-a13f-787903613c85" value="8:00" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate AMRAP: 15/12/10/8: PU / Row / Squat Thrust / Back Lunge &amp; Curl" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete AMRAP: 15/12/10/8: PU / Row / Squat Thrust / Back Lunge &amp; Curl" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+<li class="iv" style="--kc:var(--color-kind-rest)">
+    <button class="grip" type="button" aria-label="Drag Interval Rest" title="Drag to move"><svg class="ico " aria-hidden="true"><use href="#i-grip"/></svg></button>
+    <input class="check" type="checkbox" aria-label="Select Rest">
+    <label class="vh" for="n-f08c184a-290c-42ac-8f70-02cbe2806522">Interval name</label><input class="iv-name" id="n-f08c184a-290c-42ac-8f70-02cbe2806522" value="Rest" placeholder="Rest">
+    <span class="selwrap kindsel"><select class="select" aria-label="Kind" ><option>Warm-up</option><option>Work</option><option selected>Rest</option><option>Cool-down</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <span class="dur-cell"><label class="vh" for="d-f08c184a-290c-42ac-8f70-02cbe2806522">Duration</label><input class="dur k-rest" id="d-f08c184a-290c-42ac-8f70-02cbe2806522" value="0:15" inputmode="numeric"></span>
+    <span class="selwrap colorsel"><select class="select" aria-label="Color" ><option selected>Kind color</option><option>Red</option><option>Blue</option><option>Yellow</option><option>Green</option><option>Black</option></select><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg></span>
+    <button class="btn btn-icon" type="button" aria-label="Duplicate Rest" title="Duplicate"><svg class="ico " aria-hidden="true"><use href="#i-copy"/></svg></button>
+    <button class="btn btn-icon btn-danger" type="button" aria-label="Delete Rest" title="Delete"><svg class="ico " aria-hidden="true"><use href="#i-trash"/></svg></button>
+  </li>
+      <li class="drop drop-no" data-reskin-state="dragging"><svg class="ico " aria-hidden="true"><use href="#i-x"/></svg><span class="notice" role="status">Can’t drop here: A Group can’t go inside itself</span></li>
+      <li class="adds">
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Interval</button>
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Group</button>
+</li>
+    </ol>
+  </li></ol></li>
+    <li class="adds adds-top">
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Interval</button>
+  <button class="btn btn-ghost btn-sm add" type="button"><svg class="ico " aria-hidden="true"><use href="#i-plus"/></svg>Add Group</button>
+</li>
+  </ol>
+</main>
+
+<div class="toast" role="status" data-reskin-state="undo-toast"><span>Deleted Interval</span><button class="btn btn-accent btn-sm" type="button">Undo</button></div>
+</div>
+
+<main class="lost" data-reskin-state="not-found">
+  <div class="lost-blob" aria-hidden="true">?</div>
+  <h1 class="page-title">Workout not found</h1>
+  <p>It may have been deleted.</p>
+  <a class="btn btn-primary btn-lg" href="#"><svg class="ico " aria-hidden="true"><use href="#i-left"/></svg>Back to My Workouts</a>
+</main>
+<script>(()=>{const h=document.documentElement;
+function sync(){const s=h.dataset.state||'default';
+document.querySelectorAll('[data-reskin-on]').forEach(el=>{const on=el.dataset.reskinOn.split(/\s+/).includes(s);
+if(el.tagName==='DIALOG'){if(on&&!el.open){'modal' in el.dataset?el.showModal():el.show()}else if(!on&&el.open)el.close()}
+else if(el.tagName==='DETAILS')el.open=on;
+else if(el.type==='checkbox')el.checked=on;
+else el.classList.toggle(el.dataset.reskinClass||'is-on',on)})}
+new MutationObserver(sync).observe(h,{attributes:true,attributeFilter:['data-state']});sync();
+document.addEventListener('click',e=>{const t=e.target;
+const o=t.closest('[data-open]');if(o){e.preventDefault();const d=document.getElementById(o.dataset.open);if(d&&!d.open){'modal' in d.dataset?d.showModal():d.show()}else if(d)d.close();return}
+const c=t.closest('[data-close]');if(c){c.closest('dialog')?.close();return}
+const g=t.closest('[data-toggle]');if(g){const box=g.closest(g.dataset.toggle);box.classList.toggle('is-collapsed');g.setAttribute('aria-expanded',String(!box.classList.contains('is-collapsed')));return}
+const p=t.closest('button[aria-pressed]');if(p)p.setAttribute('aria-pressed',String(p.getAttribute('aria-pressed')!=='true'))});
+document.addEventListener('pointerdown',e=>{const d=e.target;if(d.tagName==='DIALOG'&&d.open&&'modal' in d.dataset){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}});
+})();</script>
