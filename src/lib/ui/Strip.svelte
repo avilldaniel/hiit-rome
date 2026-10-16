@@ -13,11 +13,15 @@
 </span>
 
 <style>
+	/* Chunky and outlined in ink, with ink showing between the Intervals. */
 	.strip {
 		display: flex;
 		gap: 2px;
-		height: 8px;
-		border-radius: 99px;
+		box-sizing: border-box;
+		height: 22px;
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-sm);
+		background: var(--line);
 		overflow: hidden;
 	}
 
@@ -28,13 +32,17 @@
 
 	.large {
 		gap: 3px;
-		height: 56px;
-		border-radius: 0;
-		overflow: visible;
+		height: 72px;
+		border-radius: var(--r);
 	}
 
 	.large span {
 		min-width: 3px;
-		border-radius: 6px;
+	}
+
+	@media (max-width: 767px) {
+		.large {
+			height: 48px;
+		}
 	}
 </style>

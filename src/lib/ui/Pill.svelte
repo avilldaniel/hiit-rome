@@ -12,14 +12,17 @@
 		display: inline-flex;
 		align-items: center;
 		gap: var(--s2);
-		min-height: 32px;
-		padding: 0 var(--s3);
-		border-radius: 99px;
-		background: var(--primary);
-		color: var(--on-primary);
-		font-size: 15px;
+		box-sizing: border-box;
+		min-height: 44px;
+		padding: var(--s1) var(--s3);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--text);
+		color: var(--ground);
+		font-size: var(--fs-sm);
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
+		box-shadow: var(--shadow-sm);
 	}
 </style>

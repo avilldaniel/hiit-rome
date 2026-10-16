@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	// A small, quiet tag, such as a Sample's level or style.
+	// A small mono tag, such as a Sample's level or style.
 	let { children }: { children: Snippet } = $props();
 </script>
 
@@ -11,11 +11,11 @@
 	.chip {
 		display: inline-block;
 		padding: 2px var(--s2);
-		border-radius: 99px;
-		background: var(--ground);
-		color: var(--muted);
-		font-size: 13px;
-		font-weight: 600;
+		border: 2px solid var(--line);
+		border-radius: var(--r-sm);
+		background: var(--surface);
+		color: var(--text);
+		font: 700 var(--fs-xs) / 1.4 var(--font-mono);
 		white-space: nowrap;
 	}
 </style>

@@ -5,30 +5,32 @@
 
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { pressable } from './motion.ts';
 
 	/** A link back to where the trainer came from. Its name keeps the arrow the text link had, e.g. "← Library". */
 	let { href, label }: Back = $props();
 </script>
 
-<a class="back" {href} aria-label="← {label}"><Icon name="left" />{label}</a>
+<a class="back pressable" {href} aria-label="← {label}" {@attach pressable}><Icon name="left" size={18} />{label}</a>
 
 <style>
+	/* A white pill with a small hard shadow. */
 	.back {
+		--depth: 2px;
 		display: inline-flex;
 		align-items: center;
 		gap: var(--s2);
+		box-sizing: border-box;
 		width: max-content;
 		min-height: 44px;
+		padding: 0 var(--s3) 0 var(--s2);
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--surface);
 		color: var(--text);
-		font-weight: 600;
+		font-size: var(--fs-sm);
+		font-weight: 700;
 		text-decoration: none;
 		white-space: nowrap;
-	}
-
-	@media (hover: hover) {
-		.back:hover {
-			text-decoration: underline;
-			text-underline-offset: 4px;
-		}
 	}
 </style>

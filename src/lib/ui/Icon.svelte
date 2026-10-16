@@ -1,5 +1,5 @@
 <script module lang="ts">
-	// The Studio stroke icons, drawn on a 24×24 grid.
+	// The stroke icons, drawn on a 24×24 grid with Pop's heavy ink line.
 	const PATHS = {
 		play: '<path d="M7 4.5v15l12-7.5z"/>',
 		star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/>',
@@ -34,7 +34,7 @@
 		flex: none;
 		fill: none;
 		stroke: currentColor;
-		stroke-width: 1.75;
+		stroke-width: 2.4;
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}

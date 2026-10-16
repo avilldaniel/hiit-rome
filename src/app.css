@@ -140,7 +140,7 @@ body {
 
 :focus-visible {
 	outline: 3px solid var(--focus);
-	outline-offset: 2px;
+	outline-offset: 3px;
 }
 
 h1,
@@ -159,31 +159,47 @@ h3 {
 	white-space: nowrap;
 }
 
+/*
+ * A control that lifts on hover and squashes into its hard shadow when pressed. Motion springs `--lift` (px) and
+ * `--sink` (0 to 1) through the `pressable` attachment (#lib/ui/motion.ts); `--depth` is the resting shadow.
+ */
+.pressable {
+	--lift: 0;
+	--sink: 0;
+	--depth: 4px;
+	translate: calc(var(--sink) * var(--depth) - var(--lift) * 1px) calc(var(--sink) * var(--depth) - var(--lift) * 1px);
+	box-shadow: calc((1 - var(--sink)) * var(--depth) + var(--lift) * 1px) calc((1 - var(--sink)) * var(--depth) + var(--lift) * 1px)
+		0 var(--line);
+}
+
 /* Bare form controls, for screens that lay them out without a Field: a text or number input, and a select. */
 .input,
 .select {
 	box-sizing: border-box;
 	width: 100%;
-	min-height: 44px;
+	min-height: 48px;
 	padding: 0 var(--s3);
-	border: 1px solid var(--line);
-	border-radius: var(--r-sm);
+	border: var(--stroke) solid var(--line);
+	border-radius: var(--r);
 	background-color: var(--surface);
 	color: var(--text);
-	font: 500 17px/1 var(--font-body);
+	font: 600 var(--fs-body) / 1 var(--font-body);
 	font-variant-numeric: tabular-nums;
+	transition:
+		background-color var(--dur) ease,
+		box-shadow var(--dur) var(--ease-out);
 }
 
 .select {
 	appearance: none;
-	padding-right: 36px;
+	padding-right: 40px;
 	background-image:
 		linear-gradient(45deg, transparent 50%, currentColor 50%),
 		linear-gradient(135deg, currentColor 50%, transparent 50%);
 	background-position:
-		calc(100% - 18px) 50%,
-		calc(100% - 13px) 50%;
-	background-size: 5px 5px;
+		calc(100% - 20px) 52%,
+		calc(100% - 14px) 52%;
+	background-size: 6px 6px;
 	background-repeat: no-repeat;
 	cursor: pointer;
 }
@@ -193,27 +209,60 @@ h3 {
 	font-style: italic;
 }
 
-@media (hover: hover) {
-	.input:hover,
-	.select:hover {
-		border-color: var(--line-strong);
-	}
+.input:focus,
+.select:focus {
+	background-color: var(--surface-2);
+	box-shadow: var(--shadow-sm);
 }
 
 .input[aria-invalid='true'] {
 	border-color: var(--danger);
-	box-shadow: inset 0 0 0 1px var(--danger);
+	background-color: color-mix(in srgb, var(--danger) 12%, var(--surface));
+	color: var(--danger);
+	box-shadow: var(--shadow-sm);
 }
 
 .checkbox {
-	width: 20px;
-	height: 20px;
+	appearance: none;
+	display: inline-grid;
+	place-content: center;
+	flex: none;
+	box-sizing: border-box;
+	width: 26px;
+	height: 26px;
 	margin: 0;
-	accent-color: var(--primary);
+	border: var(--stroke) solid var(--line);
+	border-radius: var(--r-sm);
+	background: var(--surface);
 	cursor: pointer;
 }
 
-/* Animations are left to each screen: the Session and Countdown keep a gentler flash as a Cue. */
+.checkbox:checked {
+	background: var(--primary);
+}
+
+.checkbox:checked::after {
+	content: '';
+	width: 10px;
+	height: 5px;
+	border: solid var(--on-primary);
+	border-width: 0 0 3px 3px;
+	rotate: -45deg;
+	translate: 0 -2px;
+}
+
+/* A bit of confetti, thrown by the `confetti` attachment (#lib/ui/motion.ts) from the middle of its box. */
+.confetti-piece {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	z-index: 5;
+	border: 2px solid var(--line);
+	border-radius: 2px;
+	pointer-events: none;
+}
+
+/* Animations are left to each screen and to Motion, which plays them gently, or not at all, when asked. */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,

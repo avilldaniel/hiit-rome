@@ -1,24 +1,28 @@
 <script lang="ts">
 	import type { HTMLInputAttributes } from 'svelte/elements';
 
-	// A checkbox drawn as a toggle. It stays a checkbox to assistive tech, as the visual-only redesign keeps every role.
+	// A checkbox drawn as a chunky toggle. It stays a checkbox to assistive tech, as the visual-only redesign keeps every role.
 	let { checked = $bindable(false), class: className, ...rest }: Omit<HTMLInputAttributes, 'type'> = $props();
 </script>
 
 <input type="checkbox" class={['switch', className]} bind:checked {...rest} />
 
 <style>
+	/* An ink-outlined track with a small hard shadow; when on, it fills blue and the knob slides across, yellow. */
 	.switch {
 		appearance: none;
 		position: relative;
 		flex: none;
-		width: 48px;
-		height: 28px;
+		box-sizing: border-box;
+		width: 60px;
+		height: 34px;
 		margin: 0;
-		border-radius: 99px;
-		background: var(--line-strong);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--surface-2);
+		box-shadow: var(--shadow-sm);
 		cursor: pointer;
-		transition: background var(--dur-fast) var(--ease-out);
+		transition: background-color var(--dur) ease;
 	}
 
 	.switch::before {
@@ -26,12 +30,15 @@
 		position: absolute;
 		top: 3px;
 		left: 3px;
+		box-sizing: border-box;
 		width: 22px;
 		height: 22px;
+		border: 2px solid var(--line);
 		border-radius: 50%;
 		background: var(--surface);
-		box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 20%, transparent);
-		transition: transform var(--dur) var(--ease-out);
+		transition:
+			translate var(--dur) var(--ease-out),
+			background-color var(--dur) ease;
 	}
 
 	.switch:checked {
@@ -39,11 +46,16 @@
 	}
 
 	.switch:checked::before {
-		transform: translateX(20px);
+		translate: 26px 0;
+		background: var(--hue-yellow);
+	}
+
+	.switch:active::before {
+		scale: 0.85;
 	}
 
 	.switch:disabled {
-		opacity: 0.45;
+		opacity: 0.5;
 		cursor: not-allowed;
 	}
 </style>
