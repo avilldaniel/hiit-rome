@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { Settings } from '#lib/engine/settings.ts';
 	import { deviceStore } from '#lib/store/device.ts';
+	import Alert from '#lib/ui/Alert.svelte';
 	import Button from '#lib/ui/Button.svelte';
-	import Card from '#lib/ui/Card.svelte';
 	import Icon from '#lib/ui/Icon.svelte';
+	import { boing } from '#lib/ui/motion.ts';
+	import NumberedCard from '#lib/ui/NumberedCard.svelte';
 	import { exportBackup, importBackup, readBackupFile, type Backup } from './backup.ts';
 
 	/** Called once an import has replaced this device's Settings and Presets with the backup's. */
@@ -86,13 +88,12 @@
 		new Date(at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 </script>
 
-<Card as="section" aria-labelledby="backup-heading">
-	<h2 id="backup-heading">Backup</h2>
+<NumberedCard number="06" title="Backup" hue="var(--hue-lime)" id="backup-heading">
 	<p class="hint">
 		Your Workouts live only on this device. Export a backup now and then, and import it here or on another device.
 	</p>
 	{#if lastBackupAt !== undefined}
-		<p>Last backed up: <b>{lastBackupAt === null ? 'never' : formatDate(lastBackupAt)}</b></p>
+		<p class="last">Last backed up: <b>{lastBackupAt === null ? 'never' : formatDate(lastBackupAt)}</b></p>
 	{/if}
 	<div class="row">
 		<Button icon="down-tray" onclick={exportFile}>Export backup</Button>
@@ -104,37 +105,33 @@
 		</label>
 	</div>
 	{#if outcome}
-		<p class={['outcome', outcome.failed && 'failed']} role={outcome.failed ? 'alert' : 'status'}>{outcome.text}</p>
+		{#key outcome}
+			<Alert tone={outcome.failed ? 'danger' : 'ok'}>{outcome.text}</Alert>
+		{/key}
 	{/if}
-</Card>
+</NumberedCard>
 
 {#if pending}
 	<dialog bind:this={dialog} aria-labelledby="import-heading" onclose={() => (pending = undefined)}>
-		<h2 id="import-heading">Import backup</h2>
-		<p>
-			This backup from {formatDate(pending.exportedAt)} has {workouts(pending.workouts.length)}. They’re added
-			alongside yours, skipping any you already have; none of yours change.
-		</p>
-		<label class="replace">
-			<input class="checkbox" type="checkbox" bind:checked={replaceSettings} />
-			Also replace my Settings and Presets with the backup’s
-		</label>
-		<div class="actions">
-			<Button onclick={() => dialog?.close()}>Cancel</Button>
-			<Button variant="primary" icon="up-tray" onclick={confirmImport}>Import</Button>
+		<div class="card" {@attach boing(0, 0.7)}>
+			<h2 id="import-heading">Import backup</h2>
+			<p>
+				This backup from {formatDate(pending.exportedAt)} has {workouts(pending.workouts.length)}. They’re added
+				alongside yours, skipping any you already have; none of yours change.
+			</p>
+			<label class="replace">
+				<input class="checkbox" type="checkbox" bind:checked={replaceSettings} />
+				Also replace my Settings and Presets with the backup’s
+			</label>
+			<div class="actions">
+				<Button onclick={() => dialog?.close()}>Cancel</Button>
+				<Button variant="primary" icon="up-tray" onclick={confirmImport}>Import</Button>
+			</div>
 		</div>
 	</dialog>
 {/if}
 
 <style>
-	h2 {
-		margin: 0;
-		font-size: var(--fs-h2);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
-	}
-
 	p {
 		margin: 0;
 	}
@@ -142,7 +139,11 @@
 	.hint {
 		max-width: 68ch;
 		color: var(--muted);
-		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.last {
+		font-weight: 600;
 	}
 
 	.row {
@@ -152,7 +153,7 @@
 		gap: var(--s3);
 	}
 
-	/* Drawn as a default Button. */
+	/* Drawn as a default Button: outlined in ink, on a hard shadow it squashes into when pressed. */
 	.import {
 		position: relative;
 		display: inline-flex;
@@ -160,27 +161,36 @@
 		justify-content: center;
 		gap: var(--s2);
 		box-sizing: border-box;
-		min-height: 44px;
+		min-height: 48px;
 		padding: 0 var(--s4);
-		border: 1px solid var(--line);
+		border: var(--stroke) solid var(--line);
 		border-radius: var(--r);
 		background: var(--surface);
 		color: var(--text);
-		font: 600 16px/1 var(--font-body);
+		font: 700 var(--fs-body) / 1 var(--font-body);
 		white-space: nowrap;
+		box-shadow: var(--shadow);
 		cursor: pointer;
-		transition: border-color var(--dur-fast) var(--ease-out);
+		transition:
+			translate var(--dur) var(--ease-out),
+			box-shadow var(--dur) var(--ease-out);
 	}
 
 	@media (hover: hover) {
 		.import:hover {
-			border-color: var(--text);
+			translate: -2px -2px;
+			box-shadow: 6px 6px 0 var(--line);
 		}
+	}
+
+	.import:active {
+		translate: 4px 4px;
+		box-shadow: 0 0 0 var(--line);
 	}
 
 	.import:focus-within {
 		outline: 3px solid var(--focus);
-		outline-offset: 2px;
+		outline-offset: 3px;
 	}
 
 	/* Hidden, but still reachable from the keyboard through its label. */
@@ -191,32 +201,35 @@
 		opacity: 0;
 	}
 
-	.outcome {
-		font-weight: 600;
-	}
-
-	.failed {
-		color: var(--danger);
-	}
-
-	/* A card over the page, as the other confirm dialogs. */
+	/* A white sticker over the page, as the other dialogs. */
 	dialog {
 		box-sizing: border-box;
-		width: min(600px, calc(100vw - 2 * var(--s4)));
-		padding: var(--s6);
+		width: min(560px, calc(100vw - 2 * var(--s4)));
+		padding: 0;
 		border: none;
-		border-radius: var(--r-lg);
-		background: var(--surface);
-		box-shadow: var(--shadow);
+		background: transparent;
 		color: var(--text);
+		overflow: visible;
 	}
 
 	dialog::backdrop {
 		background: color-mix(in srgb, var(--text) 55%, transparent);
 	}
 
+	.card {
+		padding: var(--s6);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-lg);
+		background: var(--surface);
+		box-shadow: var(--shadow-raised);
+	}
+
 	dialog h2 {
-		margin-bottom: var(--s4);
+		margin: 0 0 var(--s4);
+		font-size: var(--fs-h2);
+		font-weight: 900;
+		line-height: 1.15;
+		text-transform: uppercase;
 	}
 
 	.replace {
@@ -224,7 +237,7 @@
 		align-items: center;
 		gap: var(--s3);
 		margin-top: var(--s5);
-		font-weight: 500;
+		font-weight: 700;
 		cursor: pointer;
 	}
 
@@ -234,5 +247,11 @@
 		gap: var(--s3);
 		justify-content: flex-end;
 		margin-top: var(--s6);
+	}
+
+	@media (max-width: 767px) {
+		.card {
+			padding: var(--s5);
+		}
 	}
 </style>
