@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { animate } from 'motion';
 	import { SESSION_LAYOUTS, type SessionLayout } from '#lib/engine/settings.ts';
 	import Icon from '#lib/ui/Icon.svelte';
-	import { BOUNCE } from '#lib/ui/motion.ts';
+	import { reveal } from '#lib/ui/motion.ts';
 
 	/**
 	 * The Session's layout, as a small sticker the layout tucks into a free corner. It shows and hides with the
@@ -13,9 +12,7 @@
 
 	let picker: HTMLElement;
 	$effect(() => {
-		const animation = shown
-			? animate(picker, { opacity: 1, scale: 1 }, BOUNCE)
-			: animate(picker, { opacity: 0, scale: 0.8 }, { duration: 0.18, ease: 'easeIn' });
+		const animation = reveal(picker, shown, { from: 0.8 });
 		return () => animation.stop();
 	});
 

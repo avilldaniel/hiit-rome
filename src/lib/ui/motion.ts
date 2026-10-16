@@ -3,9 +3,9 @@ import type { Attachment } from 'svelte/attachments';
 
 /*
  * Pop's motion, on Motion (motion.dev): springs that overshoot a little, so stickers boing in and pressed controls
- * squash into their shadows. Each helper is a Svelte attachment (`{@attach …}`) or is called from an effect. Motion
- * already skips movement (transforms, size, position) when the device asks for reduced motion; the helpers here also
- * skip what Motion would still play then, such as fades and flourishes.
+ * squash into their shadows. Each helper is a Svelte attachment (`{@attach …}`) or is called from an effect. When the
+ * device asks for less motion, each one lands at once instead (or, where a change must still show, fades); Motion's
+ * own `animate` plays on regardless, so the helpers check for themselves.
  */
 
 /** Whether the device asks for less motion. */
@@ -48,6 +48,7 @@ export const pressable: Attachment<HTMLElement> = (element) => {
 export const boing =
 	(delay = 0, from = 0.3): Attachment<HTMLElement> =>
 	(element) => {
+		if (reducedMotion()) return;
 		const animation = animate(element, { scale: [from, 1] }, { ...BOUNCE, delay });
 		return () => animation.stop();
 	};
@@ -63,13 +64,14 @@ export const dealIn =
 	(element) => {
 		void key;
 		const children = element.querySelectorAll<HTMLElement>(selector);
-		if (!children.length) return;
+		if (!children.length || reducedMotion()) return;
 		const animation = animate(children, { y: [24, 0], scale: [0.96, 1] }, { ...BOUNCE, delay: stagger(gap, { startDelay: delay }) });
 		return () => animation.stop();
 	};
 
 /** A notice rising into place from below the screen, such as a toast. */
 export const rise: Attachment<HTMLElement> = (element) => {
+	if (reducedMotion()) return;
 	const animation = animate(element, { y: [120, 0] }, BOUNCE);
 	return () => animation.stop();
 };
@@ -78,6 +80,23 @@ export const rise: Attachment<HTMLElement> = (element) => {
 export function thump(element: Element, from = 1.14) {
 	if (reducedMotion()) return animate(element, { opacity: [0.3, 1] }, { duration: 0.6 });
 	return animate(element, { scale: [from, 1] }, { type: 'spring', visualDuration: 0.45, bounce: 0.5 });
+}
+
+/** A heading landing, such as the Session's next Interval: it settles from a little larger and higher. */
+export function land(element: Element) {
+	if (reducedMotion()) return;
+	return animate(element, { scale: [1.06, 1], y: [-8, 0] }, BOUNCE);
+}
+
+/**
+ * A control tray or sticker showing or hiding: it springs up into place, or drops away; `rise` is how far it travels,
+ * in px, and `from` the scale it grows from. With less motion, it only fades.
+ */
+export function reveal(element: Element, shown: boolean, { rise = 0, from = 1 } = {}) {
+	if (reducedMotion()) return animate(element, { opacity: shown ? 1 : 0 }, { duration: 0.12 });
+	return shown
+		? animate(element, { opacity: 1, y: 0, scale: 1 }, BOUNCE)
+		: animate(element, { opacity: 0, y: rise, scale: from }, { duration: 0.18, ease: 'easeIn' });
 }
 
 /** A loading placeholder: blocks hopping in a wave until it is replaced. */

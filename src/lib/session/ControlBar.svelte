@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { animate } from 'motion';
 	import { ADJUST_MS, type SessionCommand, type SessionView } from '#lib/engine/session.ts';
 	import Button from '#lib/ui/Button.svelte';
-	import { BOUNCE } from '#lib/ui/motion.ts';
+	import { reveal } from '#lib/ui/motion.ts';
 
 	let {
 		status,
@@ -33,9 +32,7 @@
 	// Springs up into place as it shows, and drops away as it hides.
 	let deck: HTMLElement;
 	$effect(() => {
-		const animation = shown
-			? animate(deck, { opacity: 1, y: 0 }, BOUNCE)
-			: animate(deck, { opacity: 0, y: 24 }, { duration: 0.18, ease: 'easeIn' });
+		const animation = reveal(deck, shown, { rise: 24 });
 		return () => animation.stop();
 	});
 </script>

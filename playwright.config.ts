@@ -8,6 +8,9 @@ export default defineConfig({
 		baseURL: 'http://localhost:4173',
 		// Uses the locally installed Chrome; run `npx playwright install chromium` and drop this to use the bundled browser.
 		channel: 'chrome',
-		viewport: { width: 1920, height: 1080 }
+		viewport: { width: 1920, height: 1080 },
+		// Screens deal their cards and tiles in on springs; with reduced motion they land at once, so a click (and the
+		// stopped clocks the tests run on) never waits for an animation to settle.
+		reducedMotion: 'reduce'
 	}
 });

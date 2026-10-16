@@ -3,8 +3,7 @@
 	 * The current Interval's name, the screen's heading: a step down in size when it runs past ~40 characters
 	 * (`--name-size`, `--name-size-long`). It lands with a little spring each time the Interval changes.
 	 */
-	import { animate } from 'motion';
-	import { BOUNCE } from '#lib/ui/motion.ts';
+	import { land } from '#lib/ui/motion.ts';
 	import BreakableName from './BreakableName.svelte';
 
 	let { title, long = false }: { title: string; long?: boolean } = $props();
@@ -14,8 +13,8 @@
 	let element: HTMLElement;
 	$effect(() => {
 		void landed;
-		const animation = animate(element, { scale: [1.06, 1], y: [-8, 0] }, BOUNCE);
-		return () => animation.stop();
+		const animation = land(element);
+		return () => animation?.stop();
 	});
 </script>
 
