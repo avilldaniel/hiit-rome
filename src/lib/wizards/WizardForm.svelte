@@ -1,11 +1,13 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import { formatClock } from '#lib/engine/format.ts';
 	import { buildTimeline } from '#lib/engine/timeline.ts';
 	import type { Workout } from '#lib/engine/workout.ts';
-	import BackLink from '#lib/ui/BackLink.svelte';
+	import Alert from '#lib/ui/Alert.svelte';
+	import Band from '#lib/ui/Band.svelte';
 	import Button from '#lib/ui/Button.svelte';
 	import Field from '#lib/ui/Field.svelte';
+	import { thump } from '#lib/ui/motion.ts';
 	import Strip from '#lib/ui/Strip.svelte';
 	import type { Finish, OnFinish } from './registry.ts';
 
@@ -24,6 +26,16 @@
 
 	// The Timeline is the source of truth for the total, so skipped rests are already accounted for.
 	const timeline = $derived(buildTimeline(workout.items));
+	// The total thumps each time a field changes it.
+	const total = $derived(formatClock(timeline.totalMs));
+	let totalElement: HTMLElement;
+	let shownTotal = untrack(() => total);
+	$effect(() => {
+		if (total === shownTotal) return;
+		shownTotal = total;
+		thump(totalElement, 1.1);
+	});
+
 	let typedName = $state<string | null>(null);
 	const name = $derived(typedName ?? workout.name);
 
@@ -45,10 +57,7 @@
 </script>
 
 <div class="wizard">
-	<header>
-		<BackLink href="/wizard" label="Wizards" />
-		<h1>{title}</h1>
-	</header>
+	<Band hue="var(--hue-yellow)" back={{ href: '/wizard', label: 'Wizards' }} {title} />
 
 	<!-- Never submitted: its buttons finish the Wizard themselves, once the browser finds every field valid. -->
 	<form bind:this={form} onsubmit={(event) => event.preventDefault()}>
@@ -57,7 +66,8 @@
 			<p class="hint">{hint}</p>
 		</div>
 
-		<section class="finish" aria-label="Your Workout">
+		<section class="finish" aria-labelledby="your-workout">
+			<h2 id="your-workout"><span class="sticker">Your Workout</span></h2>
 			<Field label="Name" size="large">
 				<input
 					type="text"
@@ -67,13 +77,17 @@
 					onchange={(event) => !event.currentTarget.value.trim() && (typedName = null)}
 				/>
 			</Field>
-			<p class="total"><span class="label">Total</span> <span data-testid="total">{formatClock(timeline.totalMs)}</span></p>
+			<p class="total" bind:this={totalElement}>
+				<span class="label">Total</span> <span data-testid="total">{total}</span>
+			</p>
 			<span class="strip"><Strip {timeline} /></span>
 			{#if failed}
-				<p class="message" role="alert">Your Workout couldn’t be saved. Try again.</p>
+				<Alert>Your Workout couldn’t be saved. Try again.</Alert>
 			{/if}
 			<div class="actions">
-				<Button variant="primary" size="large" icon="play" disabled={busy} onclick={() => finish('start')}>Start now</Button>
+				<Button variant="primary" size="large" icon="play" class="start" disabled={busy} onclick={() => finish('start')}
+					>Start now</Button
+				>
 				<Button size="large" icon="edit" disabled={busy} onclick={() => finish('edit')}>Save & edit</Button>
 			</div>
 		</section>
@@ -82,73 +96,82 @@
 
 <style>
 	.wizard {
-		display: grid;
-		gap: var(--s6);
-		padding: var(--s7) var(--s8) var(--s9);
+		padding-bottom: var(--s9);
 	}
 
-	header {
-		display: grid;
-		gap: var(--s2);
-	}
-
-	h1 {
-		margin: 0;
-		font-size: var(--fs-title);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
-	}
-
-	/* The summary column gives way on a smaller screen, so the fields keep room for two to a row. */
+	/* The fields, then a sticky, tilted "Your Workout" card beside them. */
 	form {
+		box-sizing: border-box;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) clamp(400px, 36vw, 680px);
+		grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
 		align-items: start;
-		gap: var(--s7);
+		gap: var(--s6);
+		max-width: 1216px;
+		margin: 0 auto;
+		padding: var(--s7) var(--s6) 0;
+		/* Numbers the fieldsets: 1, 2, 3. */
+		counter-reset: fieldset;
 	}
 
 	.fields,
 	.finish {
 		display: grid;
 		align-content: start;
-		padding: var(--s7);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-lg);
 		background: var(--surface);
-		box-shadow: var(--shadow);
+		box-shadow: var(--shadow-raised);
 	}
 
 	.fields {
-		gap: var(--s6);
-		border-radius: var(--r-lg);
+		padding: var(--s3) var(--s6) var(--s6);
 	}
 
 	.finish {
-		gap: var(--s5);
-		border-radius: var(--r-xl);
+		position: sticky;
+		top: var(--s5);
+		gap: var(--s3);
+		padding: var(--s5) var(--s6) var(--s6);
+		rotate: 0.8deg;
+	}
+
+	.finish h2 {
+		margin: 0;
+		line-height: 1;
+	}
+
+	.sticker {
+		display: inline-block;
+		padding: var(--s1) var(--s3);
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--hue-yellow);
+		font: 700 var(--fs-sm) / 1.4 var(--font-mono);
+		rotate: -4deg;
+		box-shadow: var(--shadow-sm);
 	}
 
 	.hint {
 		max-width: 68ch;
-		margin: 0;
+		margin: var(--s5) 0 0;
 		color: var(--muted);
-		font-size: 16px;
+		font-weight: 600;
 	}
 
 	.total {
 		display: grid;
 		gap: 2px;
-		margin: 0;
+		margin: var(--s2) 0 0;
 	}
 
 	.total .label {
-		color: var(--muted);
-		font-size: 16px;
-		font-weight: 600;
+		font-size: var(--fs-sm);
+		font-weight: 700;
 	}
 
-	/* Huge on a TV, but it gives way on a short screen so the actions stay in view. */
+	/* Huge, but it gives way on a short screen so the actions stay in view. */
 	.total [data-testid='total'] {
-		font: 800 clamp(80px, 14.8vh, 160px) / 0.95 var(--font-display);
+		font: 900 clamp(72px, 13vh, 104px) / 0.95 var(--font-display);
 		font-variant-numeric: tabular-nums;
 		letter-spacing: -0.04em;
 		white-space: nowrap;
@@ -159,37 +182,42 @@
 	}
 
 	.strip :global(.strip) {
-		height: 16px;
+		height: 34px;
 	}
 
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--s3);
+		margin-top: var(--s3);
 	}
 
-	.message {
-		margin: 0;
-		color: var(--danger);
-		font-weight: 600;
+	.actions :global(.start) {
+		flex: 1;
 	}
 
 	@media (max-width: 1000px) {
-		.wizard {
-			padding: var(--s5) var(--s4) var(--s7);
-		}
-
-		h1 {
-			font-size: 48px;
-		}
-
 		form {
 			grid-template-columns: minmax(0, 1fr);
+			padding: var(--s5) var(--s4) 0;
 		}
 
-		.fields,
+		.fields {
+			padding: var(--s2) var(--s4) var(--s5);
+		}
+
 		.finish {
-			padding: var(--s5);
+			position: static;
+			padding: var(--s4) var(--s4) var(--s5);
+			rotate: 0deg;
+		}
+
+		.total [data-testid='total'] {
+			font-size: var(--fs-title);
+		}
+
+		.actions :global(.button) {
+			flex: 1 1 100%;
 		}
 	}
 </style>
