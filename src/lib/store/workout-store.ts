@@ -1,7 +1,7 @@
 import { DEFAULT_PRESETS_SEC } from '../engine/countdown';
 import { effectiveCueSettings } from '../engine/cues';
 import type { SessionSnapshot } from '../engine/session';
-import { DEFAULT_SETTINGS, type Settings } from '../engine/settings';
+import { DEFAULT_SETTINGS, isSessionLayout, type Settings } from '../engine/settings';
 import { buildTimeline } from '../engine/timeline';
 import type { Workout } from '../engine/workout';
 
@@ -215,7 +215,9 @@ export async function openWorkoutStore(overrides: Partial<StoreOptions> = {}) {
 				...DEFAULT_SETTINGS,
 				...stored,
 				cues: effectiveCueSettings(DEFAULT_SETTINGS.cues, stored?.cues),
-				countdown: { ...DEFAULT_SETTINGS.countdown, ...stored?.countdown }
+				countdown: { ...DEFAULT_SETTINGS.countdown, ...stored?.countdown },
+				// One this version doesn't know (say, from a newer version's backup) falls back to the default.
+				sessionLayout: isSessionLayout(stored?.sessionLayout) ? stored.sessionLayout : DEFAULT_SETTINGS.sessionLayout
 			};
 		},
 		saveSettings: async (settings: Settings) =>

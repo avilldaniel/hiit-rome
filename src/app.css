@@ -251,6 +251,28 @@ h3 {
 	translate: 0 -2px;
 }
 
+/*
+ * The TV-facing screens (the Session, Countdown and Resume prompt): sizes in TV pixels (`--tv`, one pixel of a
+ * 1920×1080 design), with Pop's chunky strokes, offsets and radii scaled to match. Portrait screens and phones set
+ * TV pixels by width instead, so the time stays large in a tall panel.
+ */
+.tv-stage {
+	--tv: min(calc(100vh / 1080), calc(100vw / 1920));
+	--ln: max(2px, calc(5 * var(--tv)));
+	--ln2: max(2px, calc(4 * var(--tv)));
+	--o-sm: calc(6 * var(--tv));
+	--o-md: calc(10 * var(--tv));
+	--o-lg: calc(16 * var(--tv));
+	--r-md-tv: calc(20 * var(--tv));
+	--r-lg-tv: calc(40 * var(--tv));
+}
+
+@media (max-width: 768px), (orientation: portrait) {
+	.tv-stage {
+		--tv: calc(100vw / 960);
+	}
+}
+
 /* A bit of confetti, thrown by the `confetti` attachment (#lib/ui/motion.ts) from the middle of its box. */
 .confetti-piece {
 	position: absolute;

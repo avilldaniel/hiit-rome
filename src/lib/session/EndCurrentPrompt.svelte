@@ -14,11 +14,13 @@
 	}: { current: SavedSession; starting: string; onend: () => void; onback: () => void } = $props();
 </script>
 
-<div class="backdrop">
+<div class="backdrop tv-stage">
 	<ConfirmDialog
 		message="{current.workoutName} is still under way. End it to start {starting}?"
 		confirmLabel="End {current.workoutName}"
 		cancelLabel="Back to {current.workoutName}"
+		tone="ink"
+		stacked
 		onconfirm={onend}
 		oncancel={onback}
 	/>

@@ -42,20 +42,26 @@ export const pressable: Attachment<HTMLElement> = (element) => {
 };
 
 /**
- * A sticker slapped on: it springs up from small as it appears, after `delay` seconds. Its resting `rotate` is its
- * own (CSS), so tilted stickers land tilted.
+ * A sticker slapped on: it springs up from small (`from`, as a scale) as it appears, after `delay` seconds. Its
+ * resting `rotate` is its own (CSS), so tilted stickers land tilted.
  */
 export const boing =
-	(delay = 0): Attachment<HTMLElement> =>
+	(delay = 0, from = 0.3): Attachment<HTMLElement> =>
 	(element) => {
-		const animation = animate(element, { scale: [0.3, 1] }, { ...BOUNCE, delay });
+		const animation = animate(element, { scale: [from, 1] }, { ...BOUNCE, delay });
 		return () => animation.stop();
 	};
 
-/** Children dealt in one after another, each springing up from below: cards, tiles and rows as a screen opens. */
+type DealOptions = { selector?: string; gap?: number; delay?: number; key?: unknown };
+
+/**
+ * Children dealt in one after another, each springing up from below: cards, tiles and rows as a screen opens. Pass
+ * a changing `key` (a primitive) to deal them in again each time it changes, such as the Session's next Interval.
+ */
 export const dealIn =
-	({ selector = ':scope > *', gap = 0.04, delay = 0 } = {}): Attachment<HTMLElement> =>
+	({ selector = ':scope > *', gap = 0.04, delay = 0, key }: DealOptions = {}): Attachment<HTMLElement> =>
 	(element) => {
+		void key;
 		const children = element.querySelectorAll<HTMLElement>(selector);
 		if (!children.length) return;
 		const animation = animate(children, { y: [24, 0], scale: [0.96, 1] }, { ...BOUNCE, delay: stagger(gap, { startDelay: delay }) });

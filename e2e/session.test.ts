@@ -242,3 +242,38 @@ test.describe('Session controls', () => {
 		await expect(page.getByText('Press Space or tap to start')).toBeVisible();
 	});
 });
+
+test.describe('Session layouts', () => {
+	test('every layout shows the name, the time, what is up next and the time left', async ({ page }) => {
+		await startSeeded(page);
+		const session = page.getByTestId('session');
+		const layout = page.getByRole('combobox', { name: 'Layout' });
+
+		await expect(session).toHaveAttribute('data-layout', 'column');
+		for (const id of ['billboard', 'diptych', 'dial', 'column']) {
+			await layout.selectOption(id);
+			await expect(session).toHaveAttribute('data-layout', id);
+			await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ready');
+			await expect(page.getByTestId('remaining')).toHaveText('0:10');
+			await expect(page.getByRole('list', { name: 'Up next' })).toContainText('Warm-up');
+			await expect(page.getByTestId('time-left')).toHaveText('3:50 left');
+		}
+	});
+
+	test('a layout picked mid-Session hands the keys back to the Session, and is kept for the next one', async ({ page }) => {
+		await startSeeded(page);
+		await page.getByRole('combobox', { name: 'Layout' }).selectOption('dial');
+		await expect(page.getByTestId('session')).toHaveAttribute('data-layout', 'dial');
+
+		// Space starts the Session rather than opening the list of layouts.
+		await page.keyboard.press('Space');
+		await expect(page.getByText('Press Space or tap to start')).toBeHidden();
+
+		// Ended, the next Session opens in the layout picked.
+		await page.keyboard.press('Escape');
+		await page.getByRole('button', { name: 'End Session' }).click();
+		await page.getByRole('link', { name: 'Back to My Workouts' }).click();
+		await page.getByRole('link', { name: 'Start Thursday Tabatas' }).click();
+		await expect(page.getByTestId('session')).toHaveAttribute('data-layout', 'dial');
+	});
+});

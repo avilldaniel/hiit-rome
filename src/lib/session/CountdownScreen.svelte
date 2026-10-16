@@ -100,7 +100,7 @@
 <!-- Taps are shortcuts for actions also on the keyboard and the control bar. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="screen"
+	class="screen tv-stage"
 	data-testid="countdown"
 	onpointerdown={touch.onpointerdown}
 	onpointerup={touch.onpointerup}
@@ -120,14 +120,17 @@
 			{/key}
 			<div class="bar" aria-hidden="true"><div style:width="{countdownView.progress * 100}%"></div></div>
 
-			<ControlBar
-				status={countdownView.status}
-				visible={touch.visible}
-				steps={false}
-				onaction={act}
-				onrestart={askToRestart}
-				onend={askToEnd}
-			/>
+			<div class="controls">
+				<ControlBar
+					status={countdownView.status}
+					visible={touch.visible}
+					pinned={countdownView.status === 'paused'}
+					steps={false}
+					onaction={act}
+					onrestart={askToRestart}
+					onend={askToEnd}
+				/>
+			</div>
 
 			{#if confirming === 'end'}
 				<ConfirmDialog
@@ -174,6 +177,15 @@
 
 	.time {
 		--time-size: calc(520 * var(--tv));
+	}
+
+	/* The controls float at the foot of the panel. */
+	.controls {
+		position: absolute;
+		left: 50%;
+		bottom: calc(32 * var(--tv));
+		z-index: 40;
+		translate: -50% 0;
 	}
 
 	.time-up-heading {
