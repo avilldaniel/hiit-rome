@@ -1,0 +1,470 @@
+<style>
+html,body{overflow-x:clip}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3,p{margin:0}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ico{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.mono{font-family:var(--font-mono)}
+.num{font-family:var(--font-display);font-weight:var(--weight-black);font-variant-numeric:tabular-nums;line-height:var(--leading-tight);letter-spacing:-.02em}
+:focus-visible{outline:3px solid var(--color-focus);outline-offset:3px}
+
+/* buttons: ink outline + hard shadow that collapses when pressed */
+.btn{--btn-bg:var(--color-surface);--btn-fg:var(--color-text);display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);min-height:48px;padding:0 var(--space-4);border:3px solid var(--color-border);border-radius:var(--radius-md);background:var(--btn-bg);color:var(--btn-fg);font-family:var(--font-body);font-weight:var(--weight-bold);font-size:var(--text-md);line-height:1;text-decoration:none;white-space:nowrap;box-shadow:var(--shadow-md);transition:transform var(--motion-base) var(--motion-ease),box-shadow var(--motion-base) var(--motion-ease),background var(--motion-base)}
+.btn:hover{transform:translate(-2px,-2px)}
+.btn:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--color-border);transition-duration:var(--motion-fast)}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:var(--shadow-sm)}
+.btn-primary{--btn-bg:var(--color-primary);--btn-fg:var(--color-on-primary)}
+.btn-accent{--btn-bg:var(--color-accent);--btn-fg:var(--color-on-accent)}
+.btn-ink{--btn-bg:var(--color-text);--btn-fg:var(--color-bg)}
+.btn-ghost{--btn-bg:transparent;border-style:dashed;box-shadow:none}
+.btn-ghost:active{transform:translate(1px,1px)}
+.btn-danger{--btn-fg:var(--color-danger)}
+.btn-lg{min-height:60px;padding:0 var(--space-6);font-size:var(--text-lg);font-weight:var(--weight-bold)}
+.btn-sm{min-height:40px;padding:0 var(--space-3);font-size:var(--text-sm);box-shadow:var(--shadow-sm)}
+.btn-icon{width:44px;min-height:44px;padding:0;box-shadow:var(--shadow-sm);border-width:2px}
+.btn-sm:active,.btn-icon:active{transform:translate(2px,2px)}
+.btn .ico{width:20px;height:20px}
+.btn-lg .ico{width:24px;height:24px}
+
+/* fields */
+.label{display:block;margin-bottom:var(--space-2);font-size:var(--text-sm);font-weight:var(--weight-bold)}
+.input,.select,.textarea{width:100%;min-height:48px;padding:0 var(--space-3);border:3px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);font-size:var(--text-md);font-weight:var(--weight-medium)}
+.textarea{padding:var(--space-3);line-height:var(--leading-body);resize:vertical}
+.input::placeholder,.textarea::placeholder{color:var(--color-text-muted);font-style:italic}
+.input:focus,.select:focus,.textarea:focus{outline:none;box-shadow:var(--shadow-sm);background:var(--color-surface-2)}
+.selwrap{position:relative;display:block}
+.select{appearance:none;-webkit-appearance:none;padding-right:44px;cursor:pointer}
+.selwrap>.ico{position:absolute;right:var(--space-3);top:50%;translate:0 -50%;pointer-events:none}
+.is-invalid,.input.is-invalid{border-color:var(--color-danger)!important;background:color-mix(in srgb,var(--color-danger) 12%,var(--color-surface))!important;color:var(--color-danger)!important;box-shadow:var(--shadow-sm)}
+.check{appearance:none;-webkit-appearance:none;flex:none;width:26px;height:26px;margin:0;border:3px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);display:inline-grid;place-content:center;cursor:pointer;transition:transform var(--motion-base) var(--motion-ease)}
+.check:checked{background:var(--color-primary)}
+.check:checked::after{content:"";width:10px;height:5px;border:solid var(--color-on-primary);border-width:0 0 3px 3px;rotate:-45deg;translate:0 -2px}
+.check:active{transform:scale(.85)}
+
+/* hover tips for disabled controls */
+[data-tip]{position:relative}
+[data-tip]:hover::after,[data-tip]:focus-within::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);translate:-50% 0;z-index:20;width:max-content;max-width:260px;padding:var(--space-1) var(--space-3);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-text);color:var(--color-bg);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:400;line-height:1.4;white-space:normal;box-shadow:var(--shadow-sm)}
+
+/* stickers: rotated badges that boing in */
+@keyframes boing{from{scale:.3}to{scale:1}}
+.sticker{display:inline-flex;align-items:center;gap:var(--space-1);padding:var(--space-1) var(--space-3);border:2px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-accent);color:var(--color-on-accent);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;line-height:1.4;white-space:nowrap;rotate:-5deg;box-shadow:var(--shadow-sm);animation:boing var(--motion-base) var(--motion-ease) both}
+.sticker .ico{width:14px;height:14px}
+.tag{display:inline-block;padding:2px var(--space-2);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700}
+
+/* Timeline strip: chunky, outlined */
+.strip{display:flex;gap:2px;height:22px;border:3px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-border);overflow:hidden}
+.strip>i{display:block;min-width:2px}
+.k-work{background:var(--color-kind-work)}
+.k-rest{background:var(--color-kind-rest)}
+.k-warmup{background:var(--color-kind-warmup)}
+.k-cooldown{background:var(--color-kind-cooldown)}
+
+/* brand */
+.brand{display:inline-flex;align-items:center;gap:var(--space-3);text-decoration:none;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-lg);letter-spacing:-.02em}
+.mark{display:inline-flex;gap:3px;align-items:flex-end}
+.mark i{display:block;width:9px;border:2px solid var(--color-border);border-radius:3px}
+.mark i:nth-child(1){height:18px}.mark i:nth-child(2){height:26px}.mark i:nth-child(3){height:14px}.mark i:nth-child(4){height:22px}
+
+/* destination header band */
+.band{background:var(--hue,var(--color-primary));border-bottom:3px solid var(--color-border);position:relative;overflow:hidden}
+.band::after{content:"";position:absolute;right:-40px;top:-60px;width:260px;height:260px;border:3px solid var(--color-border);border-radius:50%;background:repeating-linear-gradient(-45deg,transparent 0 10px,color-mix(in srgb,var(--color-border) 18%,transparent) 10px 13px);pointer-events:none}
+.band-inner{position:relative;z-index:1;max-width:1216px;margin:0 auto;padding:var(--space-6) var(--space-8) var(--space-8)}
+.back{display:inline-flex;align-items:center;gap:var(--space-2);min-height:40px;padding:0 var(--space-3) 0 var(--space-2);border:2px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);font-weight:var(--weight-bold);font-size:var(--text-sm);text-decoration:none;box-shadow:var(--shadow-sm);transition:transform var(--motion-base) var(--motion-ease)}
+.back:hover{transform:translateX(-3px)}
+.page-title{margin-top:var(--space-4);font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-3xl);line-height:var(--leading-tight);text-transform:uppercase;letter-spacing:-.03em}
+.intro{margin-top:var(--space-3);max-width:60ch;font-size:var(--text-lg);font-weight:var(--weight-medium)}
+.wrap{max-width:1216px;margin:0 auto;padding:var(--space-8)}
+.h2{font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-xl);text-transform:uppercase;letter-spacing:-.01em;line-height:var(--leading-tight)}
+
+/* loading bounce */
+@keyframes hop{0%,100%{translate:0 0}40%{translate:0 -18px}}
+.loading{display:flex;justify-content:center;gap:var(--space-3);padding:var(--space-16) 0}
+.loading i{width:28px;height:28px;border:3px solid var(--color-border);border-radius:var(--radius-sm);animation:hop 900ms var(--motion-ease) infinite}
+.loading i:nth-child(2){animation-delay:120ms}.loading i:nth-child(3){animation-delay:240ms}.loading i:nth-child(4){animation-delay:360ms}
+
+/* surfaces */
+.card{background:var(--color-surface);border:3px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg)}
+
+/* messages */
+.alert{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-4);border:3px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-danger);color:var(--color-surface);font-weight:var(--weight-bold);box-shadow:var(--shadow-md)}
+.alert .ico{width:24px;height:24px;margin-top:1px}
+.alert-warn{background:var(--color-hue-yellow);color:var(--color-text)}
+.alert-ok{background:var(--color-kind-cooldown);color:var(--color-text)}
+@keyframes rise{from{translate:-50% 140%}to{translate:-50% 0}}
+.toast{position:fixed;left:50%;bottom:var(--space-6);translate:-50% 0;z-index:40;display:flex;align-items:center;gap:var(--space-4);max-width:calc(100vw - 32px);padding:var(--space-2) var(--space-2) var(--space-2) var(--space-6);border:3px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-text);color:var(--color-bg);font-weight:var(--weight-bold);box-shadow:var(--shadow-md);animation:rise var(--motion-base) var(--motion-ease) both}
+.toast .btn{min-height:40px;box-shadow:none;border-color:var(--color-bg)}
+.toast span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* dialogs */
+dialog.dlg{width:min(560px,calc(100vw - 32px));padding:var(--space-8);border:3px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-lg)}
+dialog.dlg[open]{animation:boing var(--motion-base) var(--motion-ease)}
+dialog.dlg::backdrop{background:color-mix(in srgb,var(--color-text) 55%,transparent)}
+.dlg-title{font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-xl);line-height:1.15;text-transform:uppercase}
+.dlg-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-3);margin-top:var(--space-6)}
+
+/* a stand-alone message page (not found, can't start) */
+.lost{min-height:100vh;display:grid;place-content:center;justify-items:start;gap:var(--space-4);padding:var(--space-8);max-width:760px;margin:0 auto}
+.lost .page-title{margin:0;font-size:var(--text-2xl)}
+.lost p{font-size:var(--text-lg);font-weight:var(--weight-medium)}
+.lost-blob{width:120px;height:120px;border:3px solid var(--color-border);border-radius:38% 62% 55% 45%/48% 40% 60% 52%;background:var(--hue,var(--color-accent));box-shadow:var(--shadow-lg);display:grid;place-content:center;font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-2xl);rotate:-8deg}
+
+@media (max-width:767px){
+  .band-inner{padding:var(--space-4) var(--space-4) var(--space-6)}
+  .band::after{width:160px;height:160px;right:-50px;top:-50px}
+  .wrap{padding:var(--space-6) var(--space-4)}
+  .page-title{font-size:calc(var(--text-2xl) * .8);overflow-wrap:anywhere}
+  .h2{font-size:var(--text-lg)}
+  .intro{font-size:var(--text-md)}
+  .btn-lg{min-height:56px;font-size:var(--text-md)}
+  dialog.dlg{padding:var(--space-6)}
+  .toast{bottom:var(--space-4);padding-left:var(--space-4);gap:var(--space-2);font-size:var(--text-sm)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+body{background:var(--color-bg)}
+
+/* TV pixels: 1tv = 1px of a 1920x1080 design, scaled to the screen. Every Session size below is in tv. */
+.sroot{--tv:min(calc(100vh / 1080),calc(100vw / 1920));--ln:max(2px,calc(5 * var(--tv)));--ln2:max(2px,calc(4 * var(--tv)));--o-sm:calc(6 * var(--tv));--o-md:calc(10 * var(--tv));--o-lg:calc(16 * var(--tv));--r-md:calc(20 * var(--tv));--r-lg:calc(40 * var(--tv))}
+
+/* Diptych: a sticker strip across the top, then two posters side by side.
+   NOW (left) is solid in the current Kind color; NEXT (right) is striped in the next Interval's Kind color.
+   A chunky ink gutter between them carries the progress bar, running down. */
+.session{height:100vh;min-height:0;display:grid;grid-template-columns:minmax(0,1110fr) calc(64 * var(--tv)) minmax(0,650fr);grid-template-rows:auto minmax(0,1fr);column-gap:calc(20 * var(--tv));row-gap:calc(24 * var(--tv));padding:calc(18 * var(--tv)) calc(40 * var(--tv)) calc(40 * var(--tv)) calc(24 * var(--tv));overflow:hidden}
+
+/* the strip: Group/Round and time left as two stickers on a strip of tape */
+.tape{grid-column:1/-1;grid-row:1;position:relative;display:flex;align-items:center;justify-content:space-between;gap:calc(24 * var(--tv));min-width:0;padding:calc(6 * var(--tv)) calc(8 * var(--tv))}
+.tape::before{content:"";position:absolute;left:calc(40 * var(--tv));right:calc(40 * var(--tv));top:50%;border-top:var(--ln2) dashed var(--color-border);opacity:.45}
+.tape>*{position:relative}
+.st-group{max-width:60%;padding:calc(12 * var(--tv)) calc(30 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:var(--radius-full);background:var(--color-hue-yellow);color:var(--color-text);font-family:var(--font-mono);font-size:calc(40 * var(--tv));font-weight:700;line-height:1.1;white-space:normal;overflow-wrap:break-word;rotate:-2deg;box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border);animation:boing var(--motion-base) var(--motion-ease) both}
+.st-left{display:inline-flex;align-items:baseline;gap:calc(14 * var(--tv));padding:calc(4 * var(--tv)) calc(34 * var(--tv)) calc(8 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:var(--radius-full);background:var(--color-text);color:var(--color-bg);font-family:var(--font-display);font-weight:var(--weight-black);font-size:calc(40 * var(--tv));line-height:1;white-space:nowrap;rotate:2deg;box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-accent);animation:boing var(--motion-base) var(--motion-ease) both}
+.st-left .num{font-size:calc(72 * var(--tv))}
+
+/* NOW: a giant sticker in the Kind color */
+.panel{grid-area:2/1;container-type:inline-size;display:flex;flex-direction:column;justify-content:flex-end;min-width:0;min-height:0;padding:calc(36 * var(--tv)) calc(40 * var(--tv)) calc(26 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:var(--r-lg);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-border);color:var(--color-on-kind);position:relative;overflow:hidden}
+.panel::before{content:"";position:absolute;right:calc(-150 * var(--tv));top:calc(-190 * var(--tv));width:calc(560 * var(--tv));height:calc(560 * var(--tv));border:var(--ln) solid currentColor;border-radius:50%;opacity:.16;background:repeating-linear-gradient(-45deg,transparent 0 calc(20 * var(--tv)),currentColor calc(20 * var(--tv)) calc(26 * var(--tv)))}
+.panel>*{position:relative}
+.panel-ink{background:var(--color-kind-neutral);color:var(--color-on-kind-neutral);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-accent)}
+/* Ready and Paused keep the deck on screen, so their content clears it */
+.panel-decked{padding-bottom:calc(196 * var(--tv))}
+.eyebrow{align-self:flex-start;max-width:100%;margin-bottom:auto;padding:calc(12 * var(--tv)) calc(32 * var(--tv));border:var(--ln) solid currentColor;border-radius:var(--radius-full);font-family:var(--font-display);font-weight:var(--weight-black);font-size:calc(48 * var(--tv));line-height:1.05;text-transform:uppercase;letter-spacing:.01em;rotate:-2deg}
+.panel-kind .eyebrow{background:var(--color-kind-neutral);color:var(--color-on-kind-neutral);border-color:var(--color-border);box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.eyebrow-hint{font-size:calc(40 * var(--tv))}
+.iname{margin-top:calc(24 * var(--tv));font-family:var(--font-display);font-weight:var(--weight-bold);font-size:calc(110 * var(--tv));line-height:1.02;letter-spacing:-.03em;text-wrap:balance;overflow-wrap:break-word}
+/* names over ~40 characters take one step down so they fit beside a full-size time */
+.iname-long{font-size:calc(80 * var(--tv));line-height:1.02}
+.clock{font-size:min(calc(430 * var(--tv)),41cqi);line-height:.86;margin:calc(10 * var(--tv)) 0 0 calc(-8 * var(--tv));letter-spacing:-.06em;white-space:nowrap}
+@keyframes thump{0%{scale:1}30%{scale:1.08}100%{scale:1}}
+.pulse{transform-origin:left bottom;animation:thump 1s var(--motion-ease) infinite}
+
+/* the gutter: a chunky ink column; progress runs down it, under an arrow from NOW to NEXT */
+.gutter{grid-area:2/2;display:flex;flex-direction:column;align-items:center;gap:calc(14 * var(--tv));min-height:0;padding:calc(10 * var(--tv)) 0 calc(14 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:var(--radius-full);background:var(--color-border);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-accent)}
+.gut-coin{flex:none;display:grid;place-items:center;width:calc(44 * var(--tv));height:calc(44 * var(--tv));border-radius:50%;background:var(--color-bg);color:var(--color-text)}
+.gut-coin .ico{width:calc(30 * var(--tv));height:calc(30 * var(--tv));stroke-width:3.2}
+.vbar{flex:1;min-height:0;width:calc(32 * var(--tv));border:var(--ln2) solid var(--color-bg);border-radius:var(--radius-full);overflow:hidden;background:color-mix(in srgb,var(--color-bg) 16%,var(--color-border))}
+.vbar>i{display:block;position:relative;width:100%;height:var(--p);min-height:calc(14 * var(--tv));border-bottom:var(--ln2) solid var(--color-bg)}
+.vbar>i::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent 0 calc(10 * var(--tv)),color-mix(in srgb,var(--color-border) 24%,transparent) calc(10 * var(--tv)) calc(16 * var(--tv)))}
+.fill-ink{background:var(--color-accent)}
+
+/* the deck: chunky controls, overlaid at the foot of the NOW poster.
+   Pinned while Ready or Paused; while running it shows for 3s after a pointer move or tap. */
+.deck{grid-area:2/1;align-self:end;justify-self:center;z-index:40;display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:calc(6 * var(--tv));max-width:calc(100% - 12 * var(--tv));margin-bottom:calc(26 * var(--tv));padding:calc(10 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:calc(28 * var(--tv));background:var(--color-surface-2);color:var(--color-text);box-shadow:var(--o-md) var(--o-md) 0 var(--color-border);opacity:0;translate:0 calc(24 * var(--tv));pointer-events:none;transition:opacity var(--motion-base),translate var(--motion-base) var(--motion-ease)}
+.deck.is-pinned,.session.is-awake .deck,.deck:focus-within{opacity:1;translate:0 0;pointer-events:auto}
+.deck .btn{border-width:var(--ln2);border-radius:calc(16 * var(--tv));box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.deck .btn:active{transform:translate(var(--o-sm),var(--o-sm));box-shadow:0 0 0 var(--color-border)}
+.deck-btn{flex-direction:column;gap:calc(6 * var(--tv));min-height:calc(112 * var(--tv));padding:calc(10 * var(--tv)) calc(8 * var(--tv));font-size:max(12px,calc(28 * var(--tv)));font-weight:var(--weight-bold);line-height:1}
+.deck-btn .ico{width:calc(38 * var(--tv));height:calc(38 * var(--tv))}
+.deck-main{flex-direction:row;gap:calc(10 * var(--tv));min-width:calc(180 * var(--tv));padding:0 calc(20 * var(--tv));font-weight:var(--weight-bold);font-size:max(14px,calc(32 * var(--tv)));text-transform:uppercase;letter-spacing:.02em}
+.deck-main .ico{width:calc(40 * var(--tv));height:calc(40 * var(--tv));fill:currentColor}
+.deck-sep{display:none}
+.btn-danger-fill{--btn-bg:var(--color-danger);--btn-fg:var(--color-surface)}
+
+/* NEXT: a poster striped in the next Interval's Kind color and cream.
+   Every word sits on a solid card, never on the stripes. */
+.poster{grid-area:2/3;position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;border:var(--ln) solid var(--color-border);border-radius:var(--r-lg);background:var(--color-bg);color:var(--color-text);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-border);overflow:hidden}
+.stripes{position:absolute;inset:0;background:repeating-linear-gradient(-45deg,var(--nk) 0 calc(42 * var(--tv)),var(--color-border) calc(42 * var(--tv)) calc(47 * var(--tv)),var(--color-bg) calc(47 * var(--tv)) calc(89 * var(--tv)),var(--color-border) calc(89 * var(--tv)) calc(94 * var(--tv)))}
+.nk-warmup{--nk:var(--color-kind-warmup)}.nk-rest{--nk:var(--color-kind-rest)}.nk-work{--nk:var(--color-kind-work)}.nk-cooldown{--nk:var(--color-kind-cooldown)}
+/* Finish is a chequered flag */
+.stripes-finish{background:repeating-conic-gradient(var(--color-border) 0 25%,var(--color-bg) 0 50%) 0 0/calc(96 * var(--tv)) calc(96 * var(--tv))}
+.poster-in{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;gap:calc(30 * var(--tv));padding:calc(26 * var(--tv)) calc(30 * var(--tv)) calc(24 * var(--tv)) calc(26 * var(--tv))}
+.nx-head{flex:none;line-height:1}
+.nx-sticker{align-items:baseline;gap:calc(16 * var(--tv));padding:calc(10 * var(--tv)) calc(36 * var(--tv)) calc(14 * var(--tv));border-width:var(--ln);background:var(--color-text);color:var(--color-bg);font-family:var(--font-display);font-weight:var(--weight-black);text-transform:uppercase;line-height:1;letter-spacing:-.01em;rotate:-4deg;box-shadow:var(--o-md) var(--o-md) 0 var(--color-accent)}
+.nx-up{font-size:calc(44 * var(--tv))}
+.nx-big{font-size:calc(104 * var(--tv));letter-spacing:-.03em}
+.upnext{flex:1;min-height:0;display:flex;flex-direction:column;gap:calc(26 * var(--tv))}
+/* the next Interval: a big cream card with a fat Kind edge and a Kind-filled duration */
+.nxc{--edge:calc(34 * var(--tv));position:relative;flex:none;display:grid;grid-template-columns:var(--edge) minmax(0,1fr);border:var(--ln) solid var(--color-border);border-radius:var(--r-md);background:var(--color-surface);color:var(--color-text);rotate:-1deg;box-shadow:calc(12 * var(--tv)) calc(12 * var(--tv)) 0 var(--color-border)}
+.nxc-edge,.lt-edge{border-right:var(--ln) solid var(--color-border);border-radius:calc(15 * var(--tv)) 0 0 calc(15 * var(--tv))}
+.nxc-body{min-width:0;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:calc(16 * var(--tv)) calc(24 * var(--tv));padding:calc(24 * var(--tv)) calc(24 * var(--tv)) calc(24 * var(--tv)) calc(26 * var(--tv))}
+.nxc-name{flex:1 1 auto;min-width:0;align-self:center;font-family:var(--font-body);font-weight:var(--weight-bold);font-size:calc(76 * var(--tv));line-height:1.04;letter-spacing:-.03em;overflow-wrap:break-word}
+.nxc-dur{margin-left:auto;padding:calc(8 * var(--tv)) calc(20 * var(--tv)) calc(10 * var(--tv));border:var(--ln2) solid var(--color-border);border-radius:calc(16 * var(--tv));background:var(--nk);color:var(--color-on-kind);font-size:calc(80 * var(--tv));line-height:1;white-space:nowrap;rotate:2deg;box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.nxc-finish .nxc-body{align-items:center;flex-wrap:nowrap}
+.nxc-finish .nxc-name{font-family:var(--font-display);font-weight:var(--weight-black);font-size:calc(80 * var(--tv));text-transform:uppercase;letter-spacing:-.02em}
+.nx-check{flex:none;display:grid;place-items:center;width:calc(110 * var(--tv));height:calc(110 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:50%;background:var(--color-kind-cooldown);box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.nx-check .ico{width:calc(64 * var(--tv));height:calc(64 * var(--tv));stroke-width:3}
+/* the two after that: smaller outlined sticker rows, still full contrast.
+   A row that doesn't fit wraps into a hidden second column, so it is dropped whole, never cut. */
+.later{flex:1;min-height:0;list-style:none;margin:0;padding:0 calc(8 * var(--tv)) 0 calc(14 * var(--tv));display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:calc(18 * var(--tv)) 4000px}
+.lt{--edge:calc(22 * var(--tv));width:100%;display:grid;grid-template-columns:var(--edge) minmax(0,1fr) auto;align-items:center;border:var(--ln2) solid var(--color-border);border-radius:calc(18 * var(--tv));background:var(--color-surface);color:var(--color-text);box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.lt:nth-child(2){margin-left:calc(18 * var(--tv));width:calc(100% - 18 * var(--tv));rotate:.6deg}
+.lt-edge{align-self:stretch;border-right-width:var(--ln2);border-radius:calc(14 * var(--tv)) 0 0 calc(14 * var(--tv))}
+.lt-name{min-width:0;padding:calc(12 * var(--tv)) calc(12 * var(--tv)) calc(14 * var(--tv)) calc(18 * var(--tv));font-family:var(--font-body);font-weight:var(--weight-bold);font-size:calc(46 * var(--tv));line-height:1.06;letter-spacing:-.025em;overflow-wrap:break-word}
+.lt-dur{padding:0 calc(20 * var(--tv)) 0 calc(4 * var(--tv));font-size:calc(46 * var(--tv));letter-spacing:-.04em;white-space:nowrap}
+
+/* Interval list: opens over the NEXT poster */
+.ilist{position:absolute;inset:0;z-index:30;width:auto;height:auto;max-width:none;max-height:none;margin:0;padding:calc(32 * var(--tv)) calc(24 * var(--tv)) calc(24 * var(--tv)) calc(32 * var(--tv));display:none;flex-direction:column;border:var(--ln) solid var(--color-border);border-radius:var(--r-lg);background:var(--color-surface);color:var(--color-text);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-border)}
+.ilist[open]{display:flex;animation:boing var(--motion-base) var(--motion-ease)}
+.il-top{display:flex;justify-content:space-between;align-items:center;gap:calc(16 * var(--tv));margin-bottom:calc(20 * var(--tv))}
+.il-top{flex-wrap:wrap}
+.il-top .dlg-title{font-size:calc(46 * var(--tv))}
+.poster .ilist{border:0;border-radius:0;box-shadow:none}
+.il-close{min-height:calc(80 * var(--tv));padding:0 calc(28 * var(--tv));border-width:var(--ln2);font-size:max(13px,calc(32 * var(--tv)));box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.il-close .ico{width:calc(36 * var(--tv));height:calc(36 * var(--tv))}
+.il-list{list-style:none;margin:0;padding:calc(20 * var(--tv)) calc(20 * var(--tv)) calc(12 * var(--tv)) 0;overflow:auto;flex:1;overscroll-behavior:contain}
+.il-head{margin:calc(28 * var(--tv)) 0 calc(8 * var(--tv));font-size:calc(32 * var(--tv));font-weight:700;text-transform:uppercase;line-height:1.15}
+.il-head:first-child{margin-top:0}
+.il-row{position:relative;display:grid;grid-template-columns:calc(32 * var(--tv)) minmax(0,1fr) auto;align-items:baseline;column-gap:calc(18 * var(--tv));width:100%;padding:calc(12 * var(--tv)) calc(16 * var(--tv));border:var(--ln2) solid transparent;border-radius:calc(14 * var(--tv));background:none;text-align:left;font-family:var(--font-body);font-weight:var(--weight-bold);font-size:calc(36 * var(--tv));line-height:1.12;letter-spacing:-.02em;transition:transform var(--motion-base) var(--motion-ease)}
+.il-row:hover{border-color:var(--color-border);transform:translateX(calc(6 * var(--tv)))}
+.il-in{padding-left:calc(44 * var(--tv))}
+.sw{display:block;width:calc(32 * var(--tv));height:calc(32 * var(--tv));align-self:start;margin-top:calc(4 * var(--tv));border:var(--ln2) solid var(--color-border);border-radius:calc(8 * var(--tv))}
+.il-name{min-width:0;overflow-wrap:break-word}
+.il-dur{font-size:calc(36 * var(--tv));letter-spacing:-.04em}
+.il-now{border:var(--ln) solid var(--color-border);background:var(--color-kind-warmup);box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.il-now{grid-template-columns:calc(32 * var(--tv)) minmax(0,1fr) auto auto}
+.il-now .il-dur{order:2}
+.il-tag{order:1;align-self:center;rotate:8deg;padding:calc(4 * var(--tv)) calc(16 * var(--tv));border-width:var(--ln2);font-size:calc(32 * var(--tv))}
+
+/* confirm dialogs and the end-current prompt */
+.sroot dialog.dlg{width:min(calc(1040 * var(--tv)),calc(100vw - 32px));padding:calc(56 * var(--tv)) calc(64 * var(--tv));border-width:var(--ln);border-radius:var(--r-lg);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-border)}
+.sroot .dlg-title{font-size:max(22px,calc(56 * var(--tv)));line-height:1.1}
+.sroot .dlg-actions{gap:calc(24 * var(--tv));margin-top:calc(48 * var(--tv))}
+.sroot .dlg .btn,.sroot .big-btn{min-height:max(48px,calc(100 * var(--tv)));padding:0 calc(44 * var(--tv));border-width:var(--ln2);border-radius:calc(20 * var(--tv));font-size:max(16px,calc(36 * var(--tv)));box-shadow:var(--o-md) var(--o-md) 0 var(--color-border);white-space:normal;text-align:center;line-height:1.1}
+.sroot .dlg .btn .ico,.sroot .big-btn .ico{width:calc(40 * var(--tv));height:calc(40 * var(--tv))}
+.sroot .dlg .btn:active,.sroot .big-btn:active{transform:translate(var(--o-md),var(--o-md));box-shadow:0 0 0 var(--color-border)}
+.dlg-center{text-align:center}
+.dlg-stack{display:flex;flex-direction:column;align-items:stretch;gap:calc(24 * var(--tv));margin-top:calc(48 * var(--tv))}
+
+/* summary */
+.summary{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:calc(40 * var(--tv));padding:calc(96 * var(--tv)) calc(120 * var(--tv));position:relative;overflow:hidden}
+.sum-eyebrow{padding:calc(8 * var(--tv)) calc(24 * var(--tv));border-width:var(--ln2);font-size:max(13px,calc(36 * var(--tv)));background:var(--color-surface);color:var(--color-text);box-shadow:var(--o-sm) var(--o-sm) 0 var(--color-border)}
+.sum-title{font-family:var(--font-display);font-weight:var(--weight-black);font-size:calc(140 * var(--tv));line-height:.95;text-transform:uppercase;letter-spacing:-.04em;overflow-wrap:break-word;max-width:100%}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,calc(440 * var(--tv))),1fr));gap:calc(40 * var(--tv));width:100%;margin:calc(8 * var(--tv)) 0 calc(24 * var(--tv))}
+.stat{container-type:inline-size;padding:calc(40 * var(--tv)) calc(48 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:var(--r-lg);background:var(--hue);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-border);rotate:var(--r);animation:boing var(--motion-base) var(--motion-ease) both}
+.stat:nth-child(2){animation-delay:80ms}.stat:nth-child(3){animation-delay:160ms}
+.stat-label{font-family:var(--font-mono);font-size:max(13px,calc(32 * var(--tv)));font-weight:700;text-transform:uppercase;line-height:1.15}
+.stat-val{font-size:min(calc(150 * var(--tv)),30cqi);margin-top:calc(12 * var(--tv));letter-spacing:-.06em;white-space:nowrap}
+.summary-done .sum-title{color:var(--color-primary)}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+@keyframes fall{from{translate:0 calc(-60 * var(--tv));rotate:0deg}to{translate:0 0;rotate:var(--rr)}}
+.confetti i{position:absolute;width:calc(40 * var(--tv));height:calc(40 * var(--tv));border:var(--ln) solid var(--color-border);border-radius:calc(8 * var(--tv));animation:fall 700ms var(--motion-ease) both}
+.confetti i:nth-child(4n+1){background:var(--color-kind-work)}.confetti i:nth-child(4n+2){background:var(--color-kind-rest)}.confetti i:nth-child(4n+3){background:var(--color-kind-warmup)}.confetti i:nth-child(4n){background:var(--color-kind-cooldown);border-radius:50%}
+.confetti i:nth-child(1){left:8%;top:10%;--rr:20deg}.confetti i:nth-child(2){left:22%;top:6%;--rr:-30deg}.confetti i:nth-child(3){left:46%;top:9%;--rr:45deg}.confetti i:nth-child(4){left:63%;top:4%;--rr:0deg}.confetti i:nth-child(5){left:80%;top:12%;--rr:-15deg}.confetti i:nth-child(6){left:92%;top:30%;--rr:60deg}.confetti i:nth-child(7){left:86%;top:62%;--rr:-40deg}.confetti i:nth-child(8){left:94%;top:84%;--rr:10deg}.confetti i:nth-child(9){left:70%;top:90%;--rr:30deg}.confetti i:nth-child(10){left:40%;top:92%;--rr:-20deg}.confetti i:nth-child(11){left:4%;top:86%;--rr:50deg}.confetti i:nth-child(12){left:2%;top:46%;--rr:-60deg}
+
+/* can't start / not found */
+.sroot .lost{min-height:100vh;max-width:calc(1500 * var(--tv));gap:calc(36 * var(--tv));padding:calc(96 * var(--tv)) calc(120 * var(--tv))}
+.sroot .lost .page-title{font-size:max(30px,calc(110 * var(--tv)));line-height:1;overflow-wrap:break-word}
+.sroot .lost p{font-size:max(17px,calc(44 * var(--tv)));line-height:1.3}
+.sroot .lost-blob{width:calc(220 * var(--tv));height:calc(220 * var(--tv));border-width:var(--ln);box-shadow:var(--o-lg) var(--o-lg) 0 var(--color-border);font-size:calc(110 * var(--tv))}
+
+/* portrait or narrow: the diptych stacks — strip, NOW, a horizontal gutter, then NEXT at full width */
+@media (max-width:768px),(orientation:portrait){
+  .sroot{--tv:calc(100vw / 960)}
+  .session{height:auto;min-height:100vh;overflow:visible;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto;row-gap:calc(30 * var(--tv));padding:calc(24 * var(--tv)) calc(40 * var(--tv)) calc(500 * var(--tv)) calc(24 * var(--tv))}
+  .tape{grid-area:1/1;flex-wrap:wrap;row-gap:calc(16 * var(--tv))}
+  .st-group{max-width:100%}
+  .panel{grid-area:2/1;min-height:min(56vh,calc(1000 * var(--tv)));padding:calc(40 * var(--tv)) calc(36 * var(--tv)) calc(28 * var(--tv))}
+  .panel-decked{padding-bottom:calc(28 * var(--tv))}
+  .clock{font-size:min(calc(420 * var(--tv)),38cqi)}
+  .eyebrow-hint{font-size:calc(36 * var(--tv))}
+  .gutter{grid-area:3/1;flex-direction:row;height:calc(68 * var(--tv));padding:0 calc(14 * var(--tv)) 0 calc(10 * var(--tv))}
+  .gut-coin{rotate:90deg}
+  .vbar{width:auto;height:calc(32 * var(--tv))}
+  .vbar>i{width:var(--p);height:100%;min-width:calc(14 * var(--tv));border-bottom:0;border-right:var(--ln2) solid var(--color-bg)}
+  .poster{grid-area:4/1;min-height:calc(700 * var(--tv))}
+  .upnext{flex:none}
+  .later{flex:none;flex-wrap:nowrap}
+  /* the deck floats over the foot of the screen */
+  .deck{position:fixed;justify-self:stretch;align-self:stretch;left:calc(20 * var(--tv));right:calc(20 * var(--tv));bottom:calc(20 * var(--tv));max-width:none;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:calc(12 * var(--tv))}
+  .deck-btn{min-width:0;min-height:max(52px,calc(112 * var(--tv)));padding:calc(8 * var(--tv)) calc(4 * var(--tv))}
+  .deck-main{grid-column:1/-1;order:-1;min-height:max(52px,calc(100 * var(--tv)))}
+  .deck-sep{display:none}
+  .stats{grid-template-columns:minmax(0,1fr)}
+  .summary{justify-content:flex-start;padding:calc(160 * var(--tv)) calc(56 * var(--tv)) calc(96 * var(--tv))}
+  .sroot .lost{padding:calc(96 * var(--tv)) calc(56 * var(--tv))}
+  .sum-title{font-size:calc(96 * var(--tv))}
+}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol><symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol><symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol><symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol><symbol id="i-down-tray" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></symbol><symbol id="i-up-tray" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M5 19h14"/></symbol><symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol><symbol id="i-wand" viewBox="0 0 24 24"><path d="M5 19L15.5 8.5"/><path d="M14 4.5v2M19.5 10h-2M17.8 6.2l-1.4 1.4M10 5l.6 1.6M19 14l-1.6-.6"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19M9 7h6"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol><symbol id="i-prev" viewBox="0 0 24 24"><path d="M18 6l-9 6 9 6z"/><path d="M6 6v12"/></symbol><symbol id="i-next" viewBox="0 0 24 24"><path d="M6 6l9 6-9 6z"/><path d="M18 6v12"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol><symbol id="i-restart" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.5h.01"/></symbol><symbol id="i-reload" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></symbol><symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></symbol></svg>
+<div class="sroot">
+<div class="session" data-reskin-state="default lead-in running paused final-seconds interval-list confirm-end confirm-restart end-current">
+  <!-- the strip: Group/Round and time left -->
+  <div class="tape" data-reskin-state="default end-current lead-in"><p class="st-group">Warm-up 1 of 1</p><p class="st-left"><span class="num">44:05</span> left</p></div>
+  <div class="tape" data-reskin-state="running interval-list confirm-end"><p class="st-group">Warm-up 1 of 1</p><p class="st-left"><span class="num">44:03</span> left</p></div>
+  <div class="tape" data-reskin-state="paused confirm-restart"><p class="st-group">Lean Burn 11/12</p><p class="st-left"><span class="num">39:47</span> left</p></div>
+  <div class="tape" data-reskin-state="final-seconds"><p class="st-group">Drill2 1 of 1</p><p class="st-left"><span class="num">0:03</span> left</p></div>
+
+  <!-- NOW -->
+  <section class="panel panel-ink panel-decked" data-reskin-state="default end-current" aria-label="Current Interval">
+    <p class="eyebrow eyebrow-hint">Press Space or tap to start</p>
+    <h1 class="iname">Ready</h1>
+    <p class="clock num" aria-live="off">0:10</p>
+  </section>
+  <section class="panel panel-ink" data-reskin-state="lead-in" aria-label="Current Interval">
+    <p class="eyebrow">Get ready</p>
+    <h1 class="iname">Get ready</h1>
+    <p class="clock num" aria-live="off">0:07</p>
+  </section>
+  <section class="panel panel-kind k-warmup" data-reskin-state="running interval-list confirm-end" aria-label="Current Interval">
+    <p class="eyebrow">Warm-up</p>
+    <h1 class="iname">Warm Up</h1>
+    <p class="clock num" aria-live="off">3:58</p>
+  </section>
+  <section class="panel panel-ink panel-decked" data-reskin-state="paused confirm-restart" aria-label="Current Interval">
+    <p class="eyebrow">Paused · Rest</p>
+    <h1 class="iname">Set-up</h1>
+    <p class="clock num" aria-live="off">0:42</p>
+  </section>
+  <section class="panel panel-kind k-work" data-reskin-state="final-seconds" aria-label="Current Interval">
+    <p class="eyebrow">Work</p>
+    <h1 class="iname iname-long">AMRAP: 15/12/10/8: PU / Row / Squat Thrust / Back Lunge &amp; Curl</h1>
+    <p class="clock num pulse" aria-live="off">0:03</p>
+  </section>
+
+  <!-- the gutter: progress runs down it -->
+  <div class="gutter">
+    <span class="gut-coin" aria-hidden="true"><svg class="ico"><use href="#i-right"/></svg></span>
+    <div class="vbar" data-reskin-state="default end-current" role="progressbar" aria-label="Interval progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i class="fill-ink" style="--p:0%"></i></div>
+    <div class="vbar" data-reskin-state="lead-in" role="progressbar" aria-label="Interval progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30"><i class="fill-ink" style="--p:30%"></i></div>
+    <div class="vbar" data-reskin-state="running interval-list confirm-end" role="progressbar" aria-label="Interval progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="1"><i class="k-warmup" style="--p:1%"></i></div>
+    <div class="vbar" data-reskin-state="paused confirm-restart" role="progressbar" aria-label="Interval progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30"><i class="fill-ink" style="--p:30%"></i></div>
+    <div class="vbar" data-reskin-state="final-seconds" role="progressbar" aria-label="Interval progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="99"><i class="k-work" style="--p:99%"></i></div>
+  </div>
+
+  <nav class="deck" aria-label="Session controls" data-reskin-on="default end-current paused confirm-restart" data-reskin-class="is-pinned">
+    <button class="btn deck-btn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-prev"/></svg><span>Previous</span></button>
+    <button class="btn deck-btn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-minus"/></svg><span>−30 s</span></button>
+    <button class="btn deck-btn btn-primary deck-main" type="button" data-reskin-state="default end-current"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>Start</span></button>
+    <button class="btn deck-btn btn-primary deck-main" type="button" data-reskin-state="lead-in running final-seconds interval-list confirm-end"><svg class="ico" aria-hidden="true"><use href="#i-pause"/></svg><span>Pause</span></button>
+    <button class="btn deck-btn btn-accent deck-main" type="button" data-reskin-state="paused confirm-restart"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>Resume</span></button>
+    <button class="btn deck-btn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg><span>+30 s</span></button>
+    <button class="btn deck-btn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-next"/></svg><span>Next</span></button>
+    <span class="deck-sep" data-reskin-state="lead-in running paused final-seconds interval-list confirm-end confirm-restart" aria-hidden="true"></span>
+    <button class="btn deck-btn" type="button" data-reskin-state="lead-in running paused final-seconds interval-list confirm-end confirm-restart" data-open="ilist" aria-haspopup="dialog"><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg><span>Intervals</span></button>
+    <button class="btn deck-btn" type="button" data-reskin-state="paused confirm-restart" data-open="dlg-restart"><svg class="ico" aria-hidden="true"><use href="#i-restart"/></svg><span>Restart</span></button>
+    <button class="btn deck-btn btn-danger" type="button" data-reskin-state="lead-in running paused final-seconds interval-list confirm-end confirm-restart" data-open="dlg-end"><svg class="ico" aria-hidden="true"><use href="#i-stop"/></svg><span>End</span></button>
+  </nav>
+
+  <!-- NEXT -->
+  <aside class="poster" aria-label="Up next">
+    <i class="stripes nk-warmup" data-reskin-state="default end-current lead-in" aria-hidden="true"></i>
+    <i class="stripes nk-rest" data-reskin-state="running interval-list confirm-end" aria-hidden="true"></i>
+    <i class="stripes nk-work" data-reskin-state="paused confirm-restart" aria-hidden="true"></i>
+    <i class="stripes stripes-finish" data-reskin-state="final-seconds" aria-hidden="true"></i>
+    <div class="poster-in">
+      <h2 class="nx-head"><span class="sticker nx-sticker"><span class="nx-up">Up</span> <span class="nx-big">next</span></span></h2>
+
+      <div class="upnext nk-warmup" data-reskin-state="default end-current lead-in">
+        <div class="nxc"><span class="nxc-edge k-warmup"></span><div class="nxc-body"><span class="nxc-name">Warm Up</span><span class="nxc-dur num">4:00</span></div></div>
+        <ol class="later">
+          <li class="lt"><span class="lt-edge k-rest"></span><span class="lt-name">Set-up</span><span class="lt-dur num">1:00</span></li>
+          <li class="lt"><span class="lt-edge k-work"></span><span class="lt-name">Bridge 2Pulse Chest Press - Hold/Pulse</span><span class="lt-dur num">2:00</span></li>
+        </ol>
+      </div>
+
+      <div class="upnext nk-rest" data-reskin-state="running interval-list confirm-end">
+        <div class="nxc"><span class="nxc-edge k-rest"></span><div class="nxc-body"><span class="nxc-name">Set-up</span><span class="nxc-dur num">1:00</span></div></div>
+        <ol class="later">
+          <li class="lt"><span class="lt-edge k-work"></span><span class="lt-name">Bridge 2Pulse Chest Press - Hold/Pulse</span><span class="lt-dur num">2:00</span></li>
+          <li class="lt"><span class="lt-edge k-work"></span><span class="lt-name">Hammer Press</span><span class="lt-dur num">1:00</span></li>
+        </ol>
+      </div>
+
+      <div class="upnext nk-work" data-reskin-state="paused confirm-restart">
+        <div class="nxc"><span class="nxc-edge k-work"></span><div class="nxc-body"><span class="nxc-name">Bridge 2Pulse Chest Press - Hold/Pulse</span><span class="nxc-dur num">2:00</span></div></div>
+        <ol class="later">
+          <li class="lt"><span class="lt-edge k-work"></span><span class="lt-name">Hammer Press</span><span class="lt-dur num">1:00</span></li>
+          <li class="lt"><span class="lt-edge k-work"></span><span class="lt-name">Skullcrusher</span><span class="lt-dur num">1:00</span></li>
+        </ol>
+      </div>
+
+      <div class="upnext" data-reskin-state="final-seconds">
+        <div class="nxc nxc-finish"><span class="nxc-edge k-cooldown"></span><div class="nxc-body"><span class="nxc-name">Finish</span><span class="nx-check"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></span></div></div>
+      </div>
+    </div>
+
+    <dialog class="ilist" id="ilist" data-reskin-on="interval-list" aria-labelledby="il-title">
+      <div class="il-top"><h2 class="dlg-title" id="il-title">Intervals</h2><button class="btn il-close" type="button" data-close><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>Close</button></div>
+      <ol class="il-list"><li class="il-head mono">Warm-up 1 of 1</li><li><button class="il-row il-in il-now" type="button" aria-current="true"><span class="sw k-warmup"></span><span class="il-name">Warm Up</span><span class="num il-dur">4:00</span><span class="sticker il-tag">Now</span></button></li><li><button class="il-row" type="button"><span class="sw k-rest"></span><span class="il-name">Set-up</span><span class="num il-dur">1:00</span></button></li><li class="il-head mono">Drill 1 1 of 1</li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Bridge 2Pulse Chest Press - Hold/Pulse</span><span class="num il-dur">2:00</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Hammer Press</span><span class="num il-dur">1:00</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Skullcrusher</span><span class="num il-dur">1:00</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Narrow/wide Row</span><span class="num il-dur">1:00</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Lunge Hold: Row L</span><span class="num il-dur">1:15</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Lunge Hold: Row R</span><span class="num il-dur">1:15</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Sumo High Pull</span><span class="num il-dur">1:15</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Sumo Hold/Pulse</span><span class="num il-dur">1:00</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Sumo Squat</span><span class="num il-dur">1:30</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Alt. 2pulse Front Lunge</span><span class="num il-dur">1:30</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">KB</span><span class="num il-dur">0:30</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">10x10 Swings + Sumo Curls</span><span class="num il-dur">3:00</span></button></li><li><button class="il-row" type="button"><span class="sw k-rest"></span><span class="il-name">Set-up</span><span class="num il-dur">2:00</span></button></li><li class="il-head mono">Core/Abs 1 of 2</li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Crunch</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Leg Raise</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Star Crunch</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-rest"></span><span class="il-name">Flip</span><span class="num il-dur">0:15</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">MC</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Plank Walk</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Thruster</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-rest"></span><span class="il-name">Rest</span><span class="num il-dur">0:20</span></button></li><li class="il-head mono">Core/Abs 2 of 2</li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Crunch</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Leg Raise</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Star Crunch</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-rest"></span><span class="il-name">Flip</span><span class="num il-dur">0:15</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">MC</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Plank Walk</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">Thruster</span><span class="num il-dur">0:45</span></button></li><li><button class="il-row" type="button"><span class="sw k-rest"></span><span class="il-name">Set Up</span><span class="num il-dur">3:00</span></button></li><li class="il-head mono">Drill2 1 of 1</li><li><button class="il-row il-in" type="button"><span class="sw k-work"></span><span class="il-name">AMRAP: 15/12/10/8: PU / Row / Squat Thrust / Back Lunge &amp; Curl</span><span class="num il-dur">8:00</span></button></li></ol>
+    </dialog>
+  </aside>
+</div>
+
+<!-- Summary: ended early / finished -->
+<main class="summary" data-reskin-state="summary">
+  <p class="sticker sum-eyebrow">Lean Burn 11/12</p>
+  <h1 class="sum-title">Session ended</h1>
+  <div class="stats">
+    <div class="stat" style="--hue:var(--color-hue-yellow);--r:-2deg"><p class="stat-label">Elapsed</p><p class="stat-val num">0:03</p></div>
+    <div class="stat" style="--hue:var(--color-hue-teal);--r:1.5deg"><p class="stat-label">Intervals completed</p><p class="stat-val num">0</p></div>
+    <div class="stat" style="--hue:var(--color-hue-pink);--r:-1deg"><p class="stat-label">Work time</p><p class="stat-val num">0:00</p></div>
+  </div>
+  <a class="btn btn-primary big-btn" href="#"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg>Back to My Workouts</a>
+</main>
+<main class="summary summary-done" data-reskin-state="summary-finished">
+  <div class="confetti" aria-hidden="true" data-reskin-addition="Confetti burst"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <p class="sticker sum-eyebrow">Lean Burn 11/12</p>
+  <h1 class="sum-title">Workout complete</h1>
+  <div class="stats">
+    <div class="stat" style="--hue:var(--color-hue-yellow);--r:-2deg"><p class="stat-label">Elapsed</p><p class="stat-val num">44:15</p></div>
+    <div class="stat" style="--hue:var(--color-hue-teal);--r:1.5deg"><p class="stat-label">Intervals completed</p><p class="stat-val num">32</p></div>
+    <div class="stat" style="--hue:var(--color-hue-pink);--r:-1deg"><p class="stat-label">Work time</p><p class="stat-val num">33:15</p></div>
+  </div>
+  <a class="btn btn-primary big-btn" href="#"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg>Back to My Workouts</a>
+</main>
+
+<main class="lost" data-reskin-state="cant-start" style="--hue:var(--color-hue-yellow)">
+  <div class="lost-blob" aria-hidden="true">0</div>
+  <h1 class="page-title">Untitled Workout can’t start yet</h1>
+  <p>Nothing to play yet: add an Interval before starting.</p>
+  <a class="btn btn-primary big-btn" href="#"><svg class="ico" aria-hidden="true"><use href="#i-edit"/></svg>Edit Untitled Workout</a>
+</main>
+<main class="lost" data-reskin-state="not-found">
+  <div class="lost-blob" aria-hidden="true">?</div>
+  <h1 class="page-title">Workout not found</h1>
+  <p>It may have been deleted.</p>
+  <a class="btn btn-primary big-btn" href="#"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg>Back to My Workouts</a>
+</main>
+
+<dialog class="dlg" id="dlg-end" data-modal data-reskin-on="confirm-end" aria-labelledby="end-t">
+  <p class="dlg-title" id="end-t">End this Session?</p>
+  <div class="dlg-actions"><button class="btn" type="button" data-close>Keep going</button><button class="btn btn-danger-fill" type="button" autofocus><svg class="ico" aria-hidden="true"><use href="#i-stop"/></svg>End Session</button></div>
+</dialog>
+<dialog class="dlg" id="dlg-restart" data-modal data-reskin-on="confirm-restart" aria-labelledby="rs-t">
+  <p class="dlg-title" id="rs-t">Restart the Session from the beginning?</p>
+  <div class="dlg-actions"><button class="btn" type="button" data-close>Cancel</button><button class="btn btn-primary" type="button" autofocus><svg class="ico" aria-hidden="true"><use href="#i-restart"/></svg>Restart</button></div>
+</dialog>
+<dialog class="dlg dlg-center" data-modal data-reskin-on="end-current" aria-labelledby="ec-t">
+  <p class="dlg-title" id="ec-t">HIIT - 11/12 KB/SB/DB is still under way. End it to start Lean Burn 11/12?</p>
+  <div class="dlg-stack"><button class="btn" type="button">Back to HIIT - 11/12 KB/SB/DB</button><button class="btn btn-ink" type="button">End HIIT - 11/12 KB/SB/DB</button></div>
+</dialog>
+</div>
+<script>(()=>{const h=document.documentElement;
+function sync(){const s=h.dataset.state||'default';
+document.querySelectorAll('[data-reskin-on]').forEach(el=>{const on=el.dataset.reskinOn.split(/\s+/).includes(s);
+if(el.tagName==='DIALOG'){if(on&&!el.open){'modal' in el.dataset?el.showModal():el.show()}else if(!on&&el.open)el.close()}
+else if(el.tagName==='DETAILS')el.open=on;
+else if(el.type==='checkbox')el.checked=on;
+else el.classList.toggle(el.dataset.reskinClass||'is-on',on)})}
+new MutationObserver(sync).observe(h,{attributes:true,attributeFilter:['data-state']});sync();
+/* the deck wakes for 3s after a pointer move or tap, as in the source */
+const S=document.querySelector('.session');let t;
+function wake(){S.classList.add('is-awake');clearTimeout(t);t=setTimeout(()=>S.classList.remove('is-awake'),3000)}
+S.addEventListener('pointermove',wake);S.addEventListener('pointerdown',wake);
+new MutationObserver(()=>{if((h.dataset.state||'default')==='running')wake()}).observe(h,{attributes:true,attributeFilter:['data-state']});
+if(h.dataset.state==='running')wake();
+document.addEventListener('click',e=>{const t=e.target;
+const o=t.closest('[data-open]');if(o){e.preventDefault();const d=document.getElementById(o.dataset.open);if(d&&!d.open){'modal' in d.dataset?d.showModal():d.show()}else if(d)d.close();return}
+const c=t.closest('[data-close]');if(c){c.closest('dialog')?.close();return}});
+document.addEventListener('pointerdown',e=>{const d=e.target;if(d.tagName==='DIALOG'&&d.open&&'modal' in d.dataset){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}});
+})();</script>

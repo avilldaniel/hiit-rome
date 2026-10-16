@@ -1,0 +1,63 @@
+{
+  "slug": "current",
+  "name": "Studio",
+  "fonts": {
+    "display": { "family": "Bricolage Grotesque", "source": "bundled (@fontsource-variable/bricolage-grotesque, opsz axis, latin only)", "weights": [800], "fallback": "'Helvetica Neue', system-ui, sans-serif" },
+    "body":    { "family": "Inter", "source": "bundled (@fontsource-variable/inter, latin only)", "weights": [400, 500, 600, 700], "fallback": "system-ui, sans-serif" }
+  },
+  "color": {
+    "light": {
+      "bg": "#eef1f4",
+      "surface": "#ffffff",
+      "surface-2": "#f5f7f9",
+      "text": "#11161d",
+      "text-muted": "#4f5a66",
+      "border": "#d8dee4",
+      "border-strong": "#b9c2cc",
+      "primary": "#11161d",
+      "primary-hover": "#2a313b",
+      "on-primary": "#ffffff",
+      "danger": "#b4183e",
+      "favorite": "#8a5a00",
+      "focus": "#2563eb",
+      "kind-work": "#f0476a",
+      "kind-rest": "#3b9fd6",
+      "kind-warmup": "#f7b928",
+      "kind-cooldown": "#1fc79a",
+      "kind-neutral": "#11161d",
+      "on-kind": "#11161d",
+      "on-kind-neutral": "#ffffff",
+      "browser-theme-color": "#11161d"
+    }
+  },
+  "text": {
+    "xs": 14,
+    "sm": 15,
+    "control": 16,
+    "input": 17,
+    "md": 18,
+    "lg": 20,
+    "card-heading": 22,
+    "xl": 26,
+    "card-title": 28,
+    "card-time": 34,
+    "2xl": 48,
+    "3xl": 64,
+    "tv-scaled": "calc(N * var(--tv)), --tv = min(100vh/1080, 100vw/1920); Session time min(calc(520 * var(--tv)), 38cqi), name max(36px, calc(160 * var(--tv)))"
+  },
+  "leading": { "tight": 1.05, "heading": 1.1, "body": 1.5, "time": 1 },
+  "weight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700, "display": 800 },
+  "space": { "1": 4, "2": 8, "3": 12, "4": 16, "5": 24, "6": 32, "7": 48, "8": 64, "9": 96 },
+  "radius": { "sm": 8, "md": 12, "lg": 20, "xl": 32, "full": 99 },
+  "shadow": {
+    "md": "0 1px 2px rgb(17 22 29 / 0.06), 0 4px 16px rgb(17 22 29 / 0.06)",
+    "lg": "0 1px 2px rgb(17 22 29 / 0.06), 0 4px 16px rgb(17 22 29 / 0.06), 0 8px 24px rgb(17 22 29 / 0.12)"
+  },
+  "motion": { "fast": "150ms", "base": "220ms", "ease": "cubic-bezier(0.2, 0.7, 0.2, 1)" },
+  "notes": [
+    "Tokens live in src/app.css :root (custom properties --ground, --surface, --s1..--s9, --r-sm..--r-xl, --fs-*, --dur*, --ease-out).",
+    "Kind colors live in src/lib/engine/palette.ts (PALETTE) and are set inline per element; a unit test checks each background/text pair's contrast. The trainer picks Interval and Countdown colors by name: Red (work), Blue (rest), Yellow (warmup), Green (cooldown), Black (neutral).",
+    "Light theme only; app.html paints html #11161d until the stylesheet loads.",
+    "Icons: a hand-drawn 24x24 stroke set in src/lib/ui/Icon.svelte (play, star, copy, edit, trash, share, search, grip, chevron, down, left, plus, plus-box, speaker, down-tray, up-tray)."
+  ]
+}

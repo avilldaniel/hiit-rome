@@ -1,0 +1,32 @@
+{
+  "slug": "clay",
+  "name": "Clay",
+  "thesis": "A calm studio, not a gym: warm paper, earthy Kind colors and soft Fraunces digits, so running a class feels like a well-run yoga or pilates room.",
+  "nativeFeel": "override",
+  "layoutChanges": {
+    "home": "The left sidebar becomes a top bar with a centered pill-tab nav and a terracotta New Workout pill; the most recently used Workout becomes a large hero card with Start, and the rest sit in a two-column grid of soft cards below it.",
+    "session": "The full-height panel and side rail become one huge rounded Kind-colored window, with Up next as a floating card that overlaps its bottom-right corner, and the control bar becomes a cream pill inside the window; the Interval list slides in as a panel over that corner.",
+    "edit": "The outline becomes a vertical spine: Intervals hang off a continuous line on Kind-colored nodes and Groups are rounded bays on ring nodes; Workout settings leaves the column for a right-hand drawer opened from the header, and the selection toolbar floats as a dock at the bottom.",
+    "wizard": "The four-across row of cards becomes a 2×2 grid of large cards, each with a giant serif title and a bead-string Timeline beside an arrow.",
+    "library": "Level headings become serif chapter headings with a three-step level mark and a hairline rule.",
+    "countdown": "The Preset tiles become round pebbles in a gently staggered row, with the Custom card beside them instead of below; the running screen is a rounded window with the control pill centered under the time.",
+    "settings": "The two-column card grid becomes one reading column with a sticky section index on the left (a scrolling pill row on narrow screens).",
+    "wizard-style": "The fieldsets become cards hanging off a vertical spine with Kind-colored nodes, and the Your Workout card leads with a large label and a giant serif total."
+  },
+  "additions": {
+    "home": [
+      "Pick up where you left off label",
+      "Heading over the remaining Workouts",
+      "Breathing placeholder while loading",
+      "Empty-state shortcuts to Wizard and Library"
+    ],
+    "session": ["Workout strip showing how far the Session got"],
+    "edit": ["Collapsed Group summary"],
+    "wizard": ["App nav on every screen"],
+    "library": ["App nav on every screen", "Jump links to each level"],
+    "countdown": ["App nav on every screen"],
+    "settings": ["App nav on every screen", "Sticky section index"],
+    "wizard-style": ["App nav on every screen", "Style switcher between Wizards"]
+  },
+  "newRoutes": []
+}

@@ -1,0 +1,36 @@
+{
+  "slug": "pop",
+  "name": "Pop",
+  "thesis": "Loud, playful neo-brutalism: thick ink outlines, hard offset shadows and a saturated hue per destination, so a workout feels like a game.",
+  "nativeFeel": "override",
+  "layoutChanges": {
+    "home": "The sidebar becomes a lime header band (brand, giant title, count as a tilted sticker) with a row of six colored launch tiles overlapping its edge (New Workout, My Workouts as the pressed current tile, Wizard, Library, Countdown, Settings); Workout cards become tilted sticker cards with a chunky Timeline bar, a boxed total, a big Start and a dashed tool row.",
+    "session": "Built for a TV across the room: every size is in TV pixels (1tv = 1px of a 1920x1080 design) and scales with the screen. The Kind-filled panel takes ~62% of the width (a tilted 48tv Kind pill, a 110tv Interval name and a ~416tv time) and Up next becomes a wide ~38% purple column of cream sticker cards: the next Interval is the biggest card (64tv name and duration, a fat Kind-colored edge, a tilted NEXT sticker), followed by up to three more in a modest offset stack at 44tv; names are set in Manrope 800 and always wrap, never truncate, and a card that doesn't fit is dropped whole. The ink foot keeps the Group/Round line (40tv) and time left (72tv). The chunky control deck shows on demand, overlaid at the foot of the panel: pinned when Ready or Paused, and shown for 3s after a pointer move or tap while running. The Interval list opens over the Up next column. In portrait or on narrow screens, Up next stacks under the panel at full width and the deck floats at the bottom of the screen.",
+    "edit": "The header becomes a lime band with the total as a tilted sticker; Groups become colored trays with Interval chips that carry a Kind-colored edge, a Kind-filled Kind select and a Kind-colored duration tile; the selection toolbar becomes a sticky blue bar.",
+    "wizard": "A yellow header band replaces the plain header and the four Wizard cards become tilted sticker cards with a colored top panel holding the Timeline bar and a round go-arrow.",
+    "library": "A teal header band; level headings become hued pill stickers and Sample cards become tilted sticker cards with a boxed duration and mono Level/Style tags.",
+    "countdown": "An orange header band; Presets become tilted square stickers with a play badge, the Custom card puts a wide duration field beside Start, and the running screen uses the Session's TV-scaled panel (sizes in TV pixels, a 520tv time) with the same chunky deck overlaid on demand at its foot (pinned while Paused); TIME is a tilted red sticker on a spinning sunburst.",
+    "settings": "A purple header band with section jump chips; each card gets a numbered colored header strip, Cues and the other toggles become chunky pill switches, and Backup outcomes show as stickers inside the Backup card.",
+    "wizard-style": "A yellow header band; fieldsets get numbered legends, every field is a large outlined box, and the Your Workout card is a tilted sticky sticker with a giant total and full-width Start now."
+  },
+  "additions": {
+    "home": [
+      "Loading bounce"
+    ],
+    "session": [
+      "Confetti burst",
+      "NEXT sticker"
+    ],
+    "library": [
+      "Sample count per level"
+    ],
+    "countdown": [
+      "Loading bounce"
+    ],
+    "settings": [
+      "Section jump chips",
+      "Loading bounce"
+    ]
+  },
+  "newRoutes": []
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "pop-diptych",
+  "name": "Pop · Diptych",
+  "thesis": "Pop, with the Session as two posters side by side, NOW and NEXT: a solid poster for what is happening and a striped one in the next Kind color, so the room sees the next color coming before it arrives.",
+  "nativeFeel": "override",
+  "layoutChanges": {
+    "home": "The sidebar becomes a lime header band (brand, giant title, count as a tilted sticker) with a row of six colored launch tiles overlapping its edge (New Workout, My Workouts as the pressed current tile, Wizard, Library, Countdown, Settings); Workout cards become tilted sticker cards with a chunky Timeline bar, a boxed total, a big Start and a dashed tool row.",
+    "session": "A diptych sized in TV pixels (1tv = 1px of a 1920x1080 design): a sticker strip runs across the top edge (Group/Round as a tilted yellow 40tv mono sticker, '<time> left' as an ink sticker with a 72tv number) above two posters side by side. NOW (left, ~60%) is solid in the current Kind color (ink while Ready, in the Lead-in or Paused) with the tilted 48tv Kind pill pinned top-left and the 110tv name (80tv past ~40 characters) and a ~416tv time anchored to the bottom. A chunky ink gutter between the posters carries the progress bar, filling top to bottom under an arrow coin pointing from NOW to NEXT. NEXT (right, ~40%) is a poster in diagonal stripes of the next Interval's Kind color and cream (a chequered flag before Finish), with a huge tilted 'Up next' sticker, the next name in Manrope 800 at 76tv on a solid cream card with a fat Kind edge and an 80tv Kind-filled duration, and the two Intervals after that as 46tv outlined sticker rows; every word sits on a solid card, never on the stripes, names wrap and never truncate, and a row that doesn't fit is dropped whole. The chunky control deck overlays the foot of the NOW poster on demand (pinned while Ready or Paused, shown for 3s after a pointer move or tap while running), and the Interval list opens over the NEXT poster. In portrait or on narrow screens the diptych stacks: strip, NOW, a horizontal gutter with the progress bar, then NEXT at full width, with the deck floating at the bottom of the screen.",
+    "edit": "The header becomes a lime band with the total as a tilted sticker; Groups become colored trays with Interval chips that carry a Kind-colored edge, a Kind-filled Kind select and a Kind-colored duration tile; the selection toolbar becomes a sticky blue bar.",
+    "wizard": "A yellow header band replaces the plain header and the four Wizard cards become tilted sticker cards with a colored top panel holding the Timeline bar and a round go-arrow.",
+    "library": "A teal header band; level headings become hued pill stickers and Sample cards become tilted sticker cards with a boxed duration and mono Level/Style tags.",
+    "countdown": "An orange header band; Presets become tilted square stickers with a play badge, the Custom card puts a wide duration field beside Start, and the running screen uses the Session's TV-scaled panel (sizes in TV pixels, a 520tv time) with the same chunky deck overlaid on demand at its foot (pinned while Paused); TIME is a tilted red sticker on a spinning sunburst.",
+    "settings": "A purple header band with section jump chips; each card gets a numbered colored header strip, Cues and the other toggles become chunky pill switches, and Backup outcomes show as stickers inside the Backup card.",
+    "wizard-style": "A yellow header band; fieldsets get numbered legends, every field is a large outlined box, and the Your Workout card is a tilted sticky sticker with a giant total and full-width Start now."
+  },
+  "additions": {
+    "home": [
+      "Loading bounce"
+    ],
+    "session": [
+      "Confetti burst"
+    ],
+    "library": [
+      "Sample count per level"
+    ],
+    "countdown": [
+      "Loading bounce"
+    ],
+    "settings": [
+      "Section jump chips",
+      "Loading bounce"
+    ]
+  },
+  "newRoutes": []
+}

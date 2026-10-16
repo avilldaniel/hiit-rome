@@ -1,0 +1,376 @@
+<style>
+/* ---- Index: shared system ---- */
+:root{--ix-w:216px;--gut:var(--space-6);--pad:var(--space-12);
+  --hatch:repeating-linear-gradient(-45deg,var(--color-kind-cooldown) 0 3px,var(--color-surface) 3px 5px)}
+h1,h2,h3,p,dl,dd,figure{margin:0}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--font-mono)}
+.muted{color:var(--color-text-muted)}
+:focus-visible{outline:2px solid var(--color-focus);outline-offset:2px}
+.ico{width:20px;height:20px;flex:none}
+
+/* type */
+.eyebrow{font-family:var(--font-mono);font-size:var(--text-xs);font-weight:var(--weight-medium);text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted)}
+.eyebrow b{color:var(--color-text);font-weight:var(--weight-medium)}
+.title{font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-3xl);line-height:var(--leading-tight);letter-spacing:-.04em}
+.h2{font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-xl);line-height:var(--leading-tight);letter-spacing:-.025em}
+.h3{font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-lg);line-height:var(--leading-tight);letter-spacing:-.015em}
+
+/* Kinds: value + pattern, one hue */
+.k-w{background:var(--color-kind-work);color:var(--color-on-kind-work)}
+.k-r{background:var(--color-kind-rest);color:var(--color-on-kind-rest)}
+.k-u{background:var(--color-kind-warmup);color:var(--color-on-kind-warmup)}
+.k-c{background:var(--hatch);color:var(--color-on-kind-cooldown)}
+.k-n{background:var(--color-kind-neutral);color:var(--color-on-kind-neutral)}
+.k-b{background:var(--color-pick-blue);color:var(--color-on-primary)}
+.swatch{display:inline-block;width:14px;height:14px;flex:none;box-shadow:inset 0 0 0 1px var(--color-border)}
+
+/* Timeline strip: a printed chart */
+.tl{display:flex;gap:1px;height:8px}
+.tl>i{display:block;flex-basis:0;min-width:1px}
+.tl.hair{height:6px}
+.tl.thick{height:16px}
+.tl.v{flex-direction:column;height:100%;width:40px}
+.tl.v>i{min-height:1px}
+
+/* App frame + index column */
+.app{display:grid;grid-template-columns:var(--ix-w) minmax(0,1fr);min-height:100vh;background:var(--color-bg)}
+.ix{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:var(--space-8);padding:var(--space-8) var(--space-6);border-right:1px solid var(--color-border-strong);background:var(--color-surface);z-index:2}
+.ix-top{display:flex;flex-direction:column;gap:var(--space-6)}
+.brand{display:flex;align-items:center;gap:var(--space-3);font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-lg);letter-spacing:-.03em;text-decoration:none;line-height:1}
+.brand-bars{display:flex;gap:2px;height:20px}
+.brand-bars i{width:5px}
+.ix-new{width:100%;justify-content:flex-start}
+.ix-nav{display:flex;flex-direction:column;border-top:1px solid var(--color-border-strong)}
+.ix-nav a{display:grid;grid-template-columns:36px 1fr;align-items:baseline;padding:var(--space-3) 0;border-bottom:1px solid var(--color-border);text-decoration:none;font-weight:var(--weight-medium);transition:background var(--motion-fast) var(--motion-ease)}
+.ix-nav a:hover{background:var(--color-surface-2)}
+.ix-nav .n{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-muted)}
+.ix-nav a[aria-current] .n{color:var(--color-text)}
+.ix-nav a[aria-current] .l{font-family:var(--font-display);font-weight:var(--weight-black);letter-spacing:-.02em}
+.ix-nav a[aria-current] .l::after{content:"";display:inline-block;width:8px;height:8px;margin-left:var(--space-2);background:var(--color-accent);vertical-align:.1em}
+.ix-key{margin-top:auto;display:grid;gap:var(--space-2)}
+.ix-key ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-1)}
+.ix-key li{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm)}
+.ix-key li i{width:20px;height:12px}
+
+/* Main + visible 12-column grid */
+.main{position:relative;padding:var(--space-12) var(--pad) var(--space-16);min-width:0}
+.guides{position:absolute;top:0;bottom:0;left:var(--pad);right:calc(var(--pad) - var(--gut));pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(90deg,var(--color-surface-2) 0 1px,transparent 1px calc(100% / 12))}
+.main>:not(.guides){position:relative;z-index:1}
+.g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+
+/* Page head */
+.ph{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);row-gap:var(--space-4);padding-bottom:var(--space-8);margin-bottom:var(--space-8);border-bottom:1px solid var(--color-border-strong)}
+.ph>*{grid-column:1/-1}
+.ph-top{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-4)}
+.back{display:inline-flex;align-items:center;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--text-xs);font-weight:var(--weight-medium);text-transform:uppercase;letter-spacing:.08em;text-decoration:none}
+.back .ico{width:16px;height:16px}
+.back:hover{text-decoration:underline}
+.lede{font-size:var(--text-lg);line-height:1.35;max-width:36ch}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);height:44px;padding:0 var(--space-4);border:1px solid var(--color-border-strong);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);font-weight:var(--weight-semibold);font-size:var(--text-sm);text-decoration:none;white-space:nowrap;transition:background var(--motion-fast) var(--motion-ease),color var(--motion-fast) var(--motion-ease)}
+.btn:hover{background:var(--color-surface-2)}
+.btn-primary{background:var(--color-primary);color:var(--color-on-primary);border-color:var(--color-primary)}
+.btn-primary:hover{background:var(--color-primary);box-shadow:inset 0 -3px 0 var(--color-accent)}
+.btn-go{background:var(--color-accent);color:var(--color-on-accent);border-color:var(--color-accent)}
+.btn-go:hover{background:var(--color-accent);box-shadow:inset 0 -3px 0 var(--color-primary)}
+.btn-ghost{border-color:transparent;background:transparent}
+.btn-ghost:hover{background:transparent;text-decoration:underline}
+.btn-lg{height:56px;padding:0 var(--space-6);font-size:var(--text-md)}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.4;cursor:not-allowed}
+.iconbtn{display:inline-grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid transparent;background:transparent;color:var(--color-text);border-radius:var(--radius-sm);text-decoration:none}
+.iconbtn:hover{border-color:var(--color-border-strong)}
+.iconbtn.danger{color:var(--color-danger)}
+.iconbtn:disabled{opacity:.35;cursor:not-allowed}
+.iconbtn .ico{width:18px;height:18px}
+.textbtn{display:inline-flex;align-items:center;gap:var(--space-1);border:0;background:none;padding:var(--space-2) 0;font-weight:var(--weight-semibold);font-size:var(--text-sm);text-decoration:underline;text-underline-offset:3px}
+.textbtn .ico{width:16px;height:16px}
+.textbtn:disabled{opacity:.4;cursor:not-allowed;text-decoration:none}
+.share-wrap{position:relative;display:inline-flex}
+.notice{position:absolute;bottom:calc(100% + 6px);right:0;white-space:nowrap;background:var(--color-primary);color:var(--color-on-primary);font-family:var(--font-mono);font-size:var(--text-xs);padding:var(--space-1) var(--space-2);z-index:5}
+.notice.bad{background:var(--color-danger)}
+
+/* Fields */
+.fld{display:grid;gap:var(--space-1);align-content:start;min-width:0}
+.lbl{font-family:var(--font-mono);font-size:var(--text-xs);font-weight:var(--weight-medium);text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted)}
+.inp{height:44px;width:100%;min-width:0;border:0;border-bottom:1px solid var(--color-border-strong);border-radius:0;background:transparent;padding:0 var(--space-1)}
+.inp:focus{outline:none;box-shadow:inset 0 -2px 0 var(--color-focus)}
+.inp::placeholder{color:var(--color-text-muted)}
+.inp.bad{border-bottom:2px solid var(--color-danger);color:var(--color-danger);background:var(--color-surface-2)}
+.inp.big{height:auto;padding:var(--space-1) 0;font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-xl);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tip{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-danger)}
+.sel{position:relative;display:block;min-width:0}
+.sel select{appearance:none;-webkit-appearance:none;width:100%;height:44px;border:0;border-bottom:1px solid var(--color-border-strong);border-radius:0;background:transparent;padding:0 var(--space-6) 0 var(--space-1)}
+.sel::after{content:"";position:absolute;right:var(--space-2);top:50%;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-75%) rotate(45deg);pointer-events:none}
+.inline-fld{display:flex;align-items:center;gap:var(--space-3)}
+.inline-fld>.lbl{flex:none}
+input[type=checkbox]{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:0;flex:none;border:1px solid var(--color-border-strong);border-radius:0;background:var(--color-surface);cursor:pointer}
+input[type=checkbox]:checked{background:var(--color-primary);box-shadow:inset 0 0 0 3px var(--color-surface)}
+.check{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);white-space:nowrap}
+.switch{appearance:none;flex:none;display:inline-flex;width:44px;height:24px;padding:2px;border:1px solid var(--color-border-strong);border-radius:0;background:var(--color-surface)}
+.switch::before{content:"";width:18px;height:18px;background:var(--color-text);transition:transform var(--motion-base) var(--motion-ease)}
+.switch[aria-checked=true]{background:var(--color-primary)}
+.switch[aria-checked=true]::before{background:var(--color-on-primary);transform:translateX(20px)}
+
+/* Messages + overlays */
+.alert{display:flex;gap:var(--space-3);align-items:flex-start;padding:var(--space-3) var(--space-4);border:1px solid var(--color-danger);border-left-width:6px;background:var(--color-surface);color:var(--color-danger);font-weight:var(--weight-medium)}
+.alert.ok{border-color:var(--color-success);color:var(--color-success)}
+.alert.warn{border-color:var(--color-warning);color:var(--color-warning)}
+.alert .ico{margin-top:2px}
+.empty-msg{font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-xl);letter-spacing:-.02em;color:var(--color-text-muted);padding:var(--space-12) 0}
+.toast{position:fixed;left:50%;bottom:var(--space-6);transform:translateX(-50%);display:flex;align-items:center;gap:var(--space-6);max-width:calc(100% - 32px);padding:var(--space-2) var(--space-2) var(--space-2) var(--space-6);background:var(--color-primary);color:var(--color-on-primary);z-index:40}
+.toast p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast button{flex:none;height:40px;padding:0 var(--space-4);border:0;background:var(--color-accent);color:var(--color-on-accent);font-weight:var(--weight-semibold)}
+.banner{position:fixed;right:var(--space-6);bottom:var(--space-6);display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3) var(--space-4);max-width:min(440px,calc(100% - 32px));padding:var(--space-4);border:1px solid var(--color-border-strong);border-top:6px solid var(--color-accent);background:var(--color-surface);z-index:40}
+.banner p{flex:1 1 200px;font-weight:var(--weight-medium)}
+.scrim{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:var(--space-4);background:color-mix(in srgb,var(--color-text) 55%,transparent)}
+.dlg{width:min(560px,100%);display:grid;gap:var(--space-6);padding:var(--space-8);border:1px solid var(--color-border-strong);border-top:6px solid var(--color-text);background:var(--color-surface);color:var(--color-text)}
+.dlg h2{font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-xl);line-height:1.05;letter-spacing:-.025em}
+.dlg .acts{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:var(--space-3)}
+
+/* Not-found pages */
+.nf{display:grid;gap:var(--space-6);align-content:start;max-width:720px}
+.nf .title{font-size:var(--text-2xl)}
+
+@media (max-width:767px){
+  :root{--gut:var(--space-3);--pad:var(--space-4)}
+  .app{grid-template-columns:minmax(0,1fr)}
+  .ix{position:static;height:auto;gap:var(--space-2);padding:var(--space-3) var(--space-4) 0;border-right:0;border-bottom:1px solid var(--color-border-strong)}
+  .ix-top{flex-direction:row;justify-content:space-between;align-items:center;gap:var(--space-3)}
+  .ix-new{width:auto;height:40px;padding:0 var(--space-3)}
+  .ix-nav{flex-direction:row;overflow-x:auto;border-top:0;margin:0 calc(-1 * var(--space-4));padding:0 var(--space-4);scrollbar-width:none}
+  .ix-nav a{grid-template-columns:auto auto;gap:var(--space-1);padding:var(--space-2) 0 var(--space-3);margin-right:var(--space-4);border-bottom:0;white-space:nowrap}
+  .ix-nav a:hover{background:none}
+  .ix-nav a[aria-current]{box-shadow:inset 0 -3px 0 var(--color-accent)}
+  .ix-nav a[aria-current] .l::after{display:none}
+  .ix-key{display:none}
+  .main{padding:var(--space-6) var(--pad) var(--space-16)}
+  .guides{background:repeating-linear-gradient(90deg,var(--color-surface-2) 0 1px,transparent 1px calc(100% / 4))}
+  .title{font-size:var(--text-2xl)}
+  .ph{padding-bottom:var(--space-6);margin-bottom:var(--space-6)}
+  .banner{right:var(--space-4);left:var(--space-4);bottom:var(--space-4);max-width:none}
+  .toast{bottom:var(--space-4);gap:var(--space-3);padding-left:var(--space-4)}
+  .dlg{padding:var(--space-6)}
+}
+
+/* ---- wizard-style ---- */
+.wsg{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:start}
+.fields{grid-column:1/8;min-width:0}
+.fs{border:0;margin:0;padding:0 0 var(--space-8);min-width:0}
+.fs+.fs{padding-top:var(--space-6);border-top:1px solid var(--color-border-strong)}
+.fs legend{float:left;width:100%;padding:0;margin-bottom:var(--space-4);display:flex;align-items:baseline;gap:var(--space-3)}
+.fs legend+*{clear:both}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-6) var(--space-6)}
+.pair .wide{grid-column:1/-1}
+.fld{position:relative}
+textarea.inp{height:auto;resize:vertical;padding:var(--space-2) var(--space-1);border:1px solid var(--color-border-strong);font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-lg);line-height:1.35}
+.bubble{position:absolute;left:0;top:calc(100% + 10px);z-index:3;max-width:320px;padding:var(--space-2) var(--space-3);background:var(--color-primary);color:var(--color-on-primary);font-family:var(--font-mono);font-size:var(--text-xs);line-height:1.4}
+.bubble::before{content:"";position:absolute;left:16px;top:-6px;border:6px solid transparent;border-top:0;border-bottom-color:var(--color-primary)}
+.fhint{color:var(--color-text-muted);padding-top:var(--space-4);border-top:1px solid var(--color-border-strong)}
+.card{grid-column:9/13;position:sticky;top:var(--space-6);display:grid;gap:var(--space-4);padding-top:var(--space-3);border-top:6px solid var(--color-text)}
+.card .total{font-family:var(--font-display);font-weight:var(--weight-black);font-size:var(--text-3xl);line-height:.85;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.card .tl{height:24px}
+.card .acts{display:grid;gap:var(--space-2)}
+.card .acts .btn{width:100%;justify-content:flex-start}
+.namein{height:auto;padding:var(--space-1) 0;font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-lg)}
+@media (max-width:767px){
+  .fields,.card{grid-column:1/-1}
+  .card{position:static;margin-top:var(--space-8)}
+  .pair{gap:var(--space-4)}
+  .card .total{font-size:var(--text-2xl)}
+}
+</style>
+<div class="app">
+<aside class="ix">
+  <div class="ix-top">
+    <a class="brand" href="#"><span class="brand-bars" aria-hidden="true"><i class="k-u"></i><i class="k-w"></i><i class="k-r"></i><i class="k-c"></i></span>hiit-rome</a>
+    <button class="btn btn-primary ix-new" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>New Workout</span></button>
+  </div>
+  <nav class="ix-nav" aria-label="Create"><a href="#"><span class="n">01</span><span class="l">My Workouts</span></a><a href="#" aria-current="page"><span class="n">02</span><span class="l">Wizard</span></a><a href="#"><span class="n">03</span><span class="l">Library</span></a><a href="#"><span class="n">04</span><span class="l">Countdown</span></a><a href="#"><span class="n">05</span><span class="l">Settings</span></a></nav>
+  <div class="ix-key" data-reskin-addition="Kind key">
+    <p class="eyebrow">Kind</p>
+    <ul><li><i class="k-u"></i>Warm-up</li><li><i class="k-w"></i>Work</li><li><i class="k-r"></i>Rest</li><li><i class="k-c"></i>Cool-down</li></ul>
+  </div>
+</aside>
+<main class="main" data-reskin-state="default circuit hiit emom tabatas-multiple invalid-field saving save-failed">
+  <div class="guides" aria-hidden="true"></div>
+  <header class="ph">
+    <div class="ph-top"><a class="back" href="#"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>Wizards</a>
+      <span class="eyebrow" data-reskin-state="default tabatas-multiple invalid-field saving save-failed"><b>02.2</b> — Wizard</span>
+      <span class="eyebrow" data-reskin-state="hiit"><b>02.1</b> — Wizard</span>
+      <span class="eyebrow" data-reskin-state="circuit"><b>02.3</b> — Wizard</span>
+      <span class="eyebrow" data-reskin-state="emom"><b>02.4</b> — Wizard</span>
+    </div>
+    <h1 class="title" data-reskin-state="default tabatas-multiple invalid-field saving save-failed">Tabata</h1>
+    <h1 class="title" data-reskin-state="hiit">HIIT</h1>
+    <h1 class="title" data-reskin-state="circuit">Circuit</h1>
+    <h1 class="title" data-reskin-state="emom">EMOM</h1>
+  </header>
+
+  <form class="wsg" onsubmit="return false" novalidate>
+    <div class="fields">
+      <!-- Tabata -->
+      <div role="group" aria-label="Tabata Wizard" data-reskin-state="default tabatas-multiple invalid-field saving save-failed">
+        <fieldset class="fs"><legend><span class="eyebrow"><b>01</b></span><span class="h3">Each Round</span></legend>
+          <div class="pair">
+            <label class="fld" data-reskin-state="default circuit hiit emom tabatas-multiple saving save-failed not-found"><span class="lbl">Work</span><input class="inp big" value="0:20"></label>
+            <label class="fld" data-reskin-state="invalid-field"><span class="lbl">Work</span><input class="inp big bad" value="0:2x" aria-invalid="true" title="Enter seconds (&quot;90&quot;) or m:ss (&quot;1:30&quot;), from 0:01 to 99:59"><span class="bubble" role="tooltip">Enter seconds ("90") or m:ss ("1:30"), from 0:01 to 99:59</span></label>
+            <label class="fld"><span class="lbl">Rest</span><input class="inp big" value="0:10"></label>
+          </div>
+        </fieldset>
+        <fieldset class="fs"><legend><span class="eyebrow"><b>02</b></span><span class="h3">Repeats</span></legend>
+          <div class="pair">
+            <label class="fld"><span class="lbl">Rounds</span><input class="inp big" type="number" min="1" max="99" value="8"></label>
+            <label class="fld" data-reskin-state="default circuit hiit emom invalid-field saving save-failed not-found"><span class="lbl">Tabatas</span><input class="inp big" type="number" min="1" max="99" value="1"></label>
+            <label class="fld" data-reskin-state="tabatas-multiple"><span class="lbl">Tabatas</span><input class="inp big" type="number" min="1" max="99" value="2"></label>
+            <label class="fld" data-reskin-state="tabatas-multiple"><span class="lbl">Rest between Tabatas</span><input class="inp big" value="1:00"></label>
+          </div>
+        </fieldset>
+      </div>
+      <!-- HIIT -->
+      <div role="group" aria-label="HIIT Wizard" data-reskin-state="hiit">
+        <fieldset class="fs"><legend><span class="eyebrow"><b>01</b></span><span class="h3">Each Round</span></legend>
+          <div class="pair">
+            <label class="fld wide"><span class="lbl">Exercise</span><input class="inp big" placeholder="Work"></label>
+            <label class="fld"><span class="lbl">Work</span><input class="inp big" value="0:40"></label>
+            <label class="fld"><span class="lbl">Rest</span><input class="inp big" value="0:20"></label>
+          </div>
+        </fieldset>
+        <fieldset class="fs"><legend><span class="eyebrow"><b>02</b></span><span class="h3">Repeats</span></legend>
+          <div class="pair"><label class="fld"><span class="lbl">Rounds</span><input class="inp big" type="number" min="1" max="99" value="8"></label></div>
+        </fieldset>
+      </div>
+      <!-- Circuit -->
+      <div role="group" aria-label="Circuit Wizard" data-reskin-state="circuit">
+        <fieldset class="fs"><legend><span class="eyebrow"><b>01</b></span><span class="h3">Each Round</span></legend>
+          <div class="pair">
+            <label class="fld wide"><span class="lbl">Exercises</span><textarea class="inp" rows="8" placeholder="Squats&#10;Push-ups&#10;Lunges">Squats
+Push-ups
+Lunges</textarea></label>
+            <label class="fld"><span class="lbl">Work per exercise</span><input class="inp big" value="0:45"></label>
+            <label class="fld"><span class="lbl">Rest between exercises</span><input class="inp big" value="0:15"></label>
+          </div>
+        </fieldset>
+        <fieldset class="fs"><legend><span class="eyebrow"><b>02</b></span><span class="h3">Repeats</span></legend>
+          <div class="pair">
+            <label class="fld"><span class="lbl">Rounds</span><input class="inp big" type="number" min="1" max="99" value="3"></label>
+            <label class="fld"><span class="lbl">Rest between Rounds</span><input class="inp big" value="1:00"></label>
+          </div>
+        </fieldset>
+      </div>
+      <!-- EMOM -->
+      <div role="group" aria-label="EMOM Wizard" data-reskin-state="emom">
+        <fieldset class="fs"><legend><span class="eyebrow"><b>01</b></span><span class="h3">Each Round</span></legend>
+          <div class="pair">
+            <label class="fld wide"><span class="lbl">Exercises</span><textarea class="inp" rows="8" placeholder="Squats&#10;Push-ups&#10;Lunges">Squats
+Push-ups
+Lunges</textarea></label>
+          </div>
+        </fieldset>
+        <fieldset class="fs"><legend><span class="eyebrow"><b>02</b></span><span class="h3">Repeats</span></legend>
+          <div class="pair"><label class="fld"><span class="lbl">Rounds</span><input class="inp big" type="number" min="1" max="99" value="10"></label></div>
+        </fieldset>
+      </div>
+      <!-- Shared -->
+      <fieldset class="fs"><legend><span class="eyebrow"><b>03</b></span><span class="h3">Before and after</span></legend>
+        <div class="pair">
+          <label class="fld"><span class="lbl">Warm-up</span><input class="inp big" value="0:00"></label>
+          <label class="fld"><span class="lbl">Cool-down</span><input class="inp big" value="0:00"></label>
+        </div>
+      </fieldset>
+      <p class="fhint" data-reskin-state="default circuit hiit tabatas-multiple invalid-field saving save-failed not-found">Set Warm-up, Cool-down or any Rest to 0:00 to leave it out.</p>
+      <p class="fhint" data-reskin-state="emom">Each exercise gets a minute. Set Warm-up or Cool-down to 0:00 to leave it out.</p>
+    </div>
+
+    <aside class="card" aria-labelledby="yw">
+      <span class="eyebrow"><b>04</b> — Result</span>
+      <h2 class="h2" id="yw">Your Workout</h2>
+      <label class="fld"><span class="lbl">Name</span>
+        <input class="inp namein" aria-label="Workout name" value="Tabata (20/10)" data-reskin-state="default tabatas-multiple invalid-field saving save-failed">
+        <input class="inp namein" aria-label="Workout name" value="HIIT ×8 (40/20)" data-reskin-state="hiit">
+        <input class="inp namein" aria-label="Workout name" value="Circuit ×3 (45/15)" data-reskin-state="circuit">
+        <input class="inp namein" aria-label="Workout name" value="EMOM ×10 (3 exercises)" data-reskin-state="emom">
+      </label>
+      <div class="fld"><span class="lbl">Total</span>
+        <p class="total" data-reskin-state="default invalid-field saving save-failed">3:50</p>
+        <p class="total" data-reskin-state="tabatas-multiple">8:40</p>
+        <p class="total" data-reskin-state="hiit">7:40</p>
+        <p class="total" data-reskin-state="circuit">10:15</p>
+        <p class="total" data-reskin-state="emom">30:00</p>
+      </div>
+      <div class="tl" aria-hidden="true" data-reskin-state="default invalid-field saving save-failed"><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i></div>
+      <div class="tl" aria-hidden="true" data-reskin-state="tabatas-multiple"><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:60"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i><i class="k-r" style="flex-grow:10"></i><i class="k-w" style="flex-grow:20"></i></div>
+      <div class="tl" aria-hidden="true" data-reskin-state="hiit"><i class="k-w" style="flex-grow:40"></i><i class="k-r" style="flex-grow:20"></i><i class="k-w" style="flex-grow:40"></i><i class="k-r" style="flex-grow:20"></i><i class="k-w" style="flex-grow:40"></i><i class="k-r" style="flex-grow:20"></i><i class="k-w" style="flex-grow:40"></i><i class="k-r" style="flex-grow:20"></i><i class="k-w" style="flex-grow:40"></i><i class="k-r" style="flex-grow:20"></i><i class="k-w" style="flex-grow:40"></i><i class="k-r" style="flex-grow:20"></i><i class="k-w" style="flex-grow:40"></i><i class="k-r" style="flex-grow:20"></i><i class="k-w" style="flex-grow:40"></i></div>
+      <div class="tl" aria-hidden="true" data-reskin-state="circuit"><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:15"></i><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:15"></i><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:60"></i><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:15"></i><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:15"></i><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:60"></i><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:15"></i><i class="k-w" style="flex-grow:45"></i><i class="k-r" style="flex-grow:15"></i><i class="k-w" style="flex-grow:45"></i></div>
+      <div class="tl" aria-hidden="true" data-reskin-state="emom"><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i><i class="k-w" style="flex-grow:60"></i></div>
+      <div class="alert" role="alert" data-reskin-state="save-failed"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg><span>Your Workout couldn’t be saved. Try again.</span></div>
+      <div class="acts" data-reskin-state="default circuit hiit emom tabatas-multiple invalid-field save-failed not-found">
+        <button class="btn btn-go btn-lg" type="submit"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>Start now</button>
+        <button class="btn btn-lg" type="submit"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>Save &amp; edit</button>
+      </div>
+      <div class="acts" data-reskin-state="saving">
+        <button class="btn btn-go btn-lg" type="submit" disabled><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>Start now</button>
+        <button class="btn btn-lg" type="submit" disabled><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>Save &amp; edit</button>
+      </div>
+    </aside>
+  </form>
+</main>
+
+<main class="main" data-reskin-state="not-found">
+  <div class="guides" aria-hidden="true"></div>
+  <div class="nf">
+    <p class="eyebrow">404 — Wizard</p>
+    <h1 class="title">Wizard not found</h1>
+    <p><a class="btn btn-primary btn-lg" href="#"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>Back to Wizards</a></p>
+  </div>
+</main>
+</div>
+<script>
+(() => {
+  const h = document.documentElement;
+  const st = () => h.dataset.state || 'default';
+  const has = (el, attr) => el.getAttribute(attr).split(/\s+/).includes(st());
+  // Per-state open <details> and checked boxes, so a state shows the control in that position.
+  const sync = () => {
+    document.querySelectorAll('[data-open-on]').forEach((el) => { el.open = has(el, 'data-open-on'); });
+    document.querySelectorAll('[data-check-on]').forEach((el) => { el.checked = has(el, 'data-check-on'); });
+  };
+  new MutationObserver(sync).observe(h, { attributes: true, attributeFilter: ['data-state'] });
+  sync();
+  document.addEventListener('click', (e) => {
+    const show = e.target.closest('[data-show]');
+    if (show) {
+      e.preventDefault();
+      const t = document.querySelector(show.dataset.show);
+      if (t) { t.hidden = false; (t.querySelector('[autofocus]') || t.querySelector('button'))?.focus(); }
+    }
+    const dismiss = e.target.closest('[data-dismiss]');
+    if (dismiss) { const t = dismiss.closest('[data-overlay]'); if (t) t.hidden = true; }
+    const sc = e.target.closest('[data-overlay]');
+    if (sc && e.target === sc && sc.classList.contains('scrim')) sc.hidden = true;
+    const tg = e.target.closest('[aria-pressed][data-toggle]');
+    if (tg) tg.setAttribute('aria-pressed', String(tg.getAttribute('aria-pressed') !== 'true'));
+    const sw = e.target.closest('[role=switch]');
+    if (sw) sw.setAttribute('aria-checked', String(sw.getAttribute('aria-checked') !== 'true'));
+    const col = e.target.closest('[data-collapse]');
+    if (col) {
+      const body = col.closest('.grp')?.querySelector('.grp-body');
+      const open = col.getAttribute('aria-expanded') !== 'false';
+      col.setAttribute('aria-expanded', String(!open));
+      if (body) body.hidden = open;
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('[data-overlay]').forEach((o) => { o.hidden = true; });
+  });
+})();
+
+
+</script>

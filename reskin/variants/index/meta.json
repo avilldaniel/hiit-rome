@@ -1,0 +1,27 @@
+{
+  "slug": "index",
+  "name": "Index",
+  "thesis": "A Swiss typographic system: a strict, visible 12-column grid, black on white, one signal orange, and type doing the work that cards and shadows do today.",
+  "nativeFeel": "override",
+  "layoutChanges": {
+    "home": "The home-only sidebar becomes a persistent numbered index column (01 My Workouts … 05 Settings, New Workout above it), and the three-column card grid becomes an editorial list of hairline-ruled rows: number, large name, hairline Timeline, a right-hand time column, and the actions on one line beneath.",
+    "session": "The rounded Kind-colored panel becomes a white stage with a full-height Kind bar along its left edge (only Work floods the whole stage orange), the floating control pill becomes a full-width ruled control strip pinned to the stage's bottom, and the rail becomes a ruled Up next column with numbered entries.",
+    "edit": "The single centered column splits into two panes on the 12-column grid: the outline on the left (8 columns) and a sticky right pane (4 columns) holding a vertical Timeline with its time axis plus the Workout settings disclosure; the header gets the persistent index column and a huge inline name field.",
+    "wizard": "The row of four cards becomes four full-width numbered rows (02.1–02.4) with the title huge on the left, the blurb in the middle columns, and the Timeline strip and an arrow on the right.",
+    "library": "Each level's three-column card grid becomes a lettered section (A Beginner, B Intermediate, C Advanced) of ruled list rows: name with its Timeline strip under it, Level and Style chips, the blurb, and the time in a right column.",
+    "countdown": "Rounded Preset tiles become a flush, rule-divided row of five square blocks in the Countdown color with the time set bottom-left; Custom becomes a huge underlined numeral field with a wide Start; the running screen floods in the Countdown color with a vertical label bar, and Paused turns the stage white with only the bar in color.",
+    "settings": "The two columns of white cards become one stack of numbered, rule-divided sections (05.1 Voice … 05.5 Backup) with the heading in a left label column and the controls in the main columns; switches are square.",
+    "wizard-style": "The two white cards become an open form on the grid: numbered fieldsets with underlined display-face fields on the left (7 columns) and a sticky \"Your Workout\" column on the right topped by a heavy black rule."
+  },
+  "additions": {
+    "home": ["Kind key", "List column headers"],
+    "session": ["Keyboard legend", "Completed Timeline"],
+    "edit": ["Kind key", "Group labels on the Timeline", "Visible nesting limit note"],
+    "wizard": ["Kind key", "Default shape caption"],
+    "library": ["Kind key", "Level jump links"],
+    "countdown": ["Kind key", "Preset numbers on tiles"],
+    "settings": ["Kind key", "Section index"],
+    "wizard-style": ["Kind key"]
+  },
+  "newRoutes": []
+}
