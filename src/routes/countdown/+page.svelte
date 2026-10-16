@@ -10,14 +10,20 @@
 	import { resumeSaved, sessionPath, takeResumed } from '#lib/session/recovery.ts';
 	import { deviceStore } from '#lib/store/device.ts';
 	import type { SavedSession } from '#lib/store/workout-store.ts';
-	import BackLink from '#lib/ui/BackLink.svelte';
+	import Alert from '#lib/ui/Alert.svelte';
+	import Band from '#lib/ui/Band.svelte';
 	import Button from '#lib/ui/Button.svelte';
 	import Card from '#lib/ui/Card.svelte';
 	import Field from '#lib/ui/Field.svelte';
+	import Icon from '#lib/ui/Icon.svelte';
+	import Loading from '#lib/ui/Loading.svelte';
+	import { dealIn, pressable } from '#lib/ui/motion.ts';
 
 	const PATH = '/countdown';
 	/** The custom duration first offered: 2 minutes. */
 	const CUSTOM_DEFAULT_SEC = 120;
+	/** Each Preset sticker's tilt. */
+	const TILTS = [-2, 1.5, -1, 2, -1.5];
 
 	let settings = $state.raw<Settings>();
 	let presets = $state.raw<number[]>([]);
@@ -97,32 +103,36 @@
 	<EndCurrentPrompt {current} starting="a Countdown" onend={endCurrent} onback={() => backToCurrent(current!)} />
 {:else}
 	<div class="countdown">
-		<header>
-			<BackLink href="/" label="My Workouts" />
-			<h1>Countdown</h1>
-		</header>
+		<Band hue="var(--hue-orange)" back={{ href: '/', label: 'My Workouts' }} title="Countdown" />
 
 		<main>
 			{#if failed}
-				<p class="message" role="alert">Your Presets couldn’t be loaded. Try reloading the page.</p>
-			{:else if settings}
+				<Alert>Your Presets couldn’t be loaded. Try reloading the page.</Alert>
+			{:else if !settings}
+				<Loading />
+			{:else}
 				<section aria-labelledby="presets-heading">
 					<h2 id="presets-heading">Presets</h2>
-					<div class="presets">
+					<div class="presets" {@attach dealIn({ gap: 0.05 })}>
 						{#each presets as sec, i (i)}
 							<button
 								type="button"
-								class="preset"
+								class="preset pressable"
 								style:background-color={PALETTE[settings.countdown.color].background}
 								style:color={PALETTE[settings.countdown.color].text}
+								style:--tilt="{TILTS[i % TILTS.length]}deg"
 								aria-label="Start a {formatClock(sec * 1000)} Countdown"
 								onclick={() => start(sec)}
+								{@attach pressable}
 							>
 								{formatClock(sec * 1000)}
+								<span class="play" aria-hidden="true"><Icon name="play" size={16} /></span>
 							</button>
 						{/each}
 					</div>
-					<a class="edit" href="/settings#countdown-heading">Edit Presets in Settings</a>
+					<a class="edit pressable" href="/settings#countdown-heading" {@attach pressable}
+						><Icon name="sliders" size={18} />Edit Presets in Settings</a
+					>
 				</section>
 
 				<Card as="section" class="custom" aria-labelledby="custom-heading">
@@ -145,41 +155,23 @@
 {/if}
 
 <style>
-	.countdown {
-		display: grid;
-		gap: var(--s6);
-		padding: var(--s7) var(--s8);
-	}
-
-	header {
-		display: grid;
-		gap: var(--s2);
-	}
-
-	h1 {
-		margin: 0;
-		font-size: var(--fs-title);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
-	}
-
 	main {
+		box-sizing: border-box;
 		display: grid;
 		align-content: start;
 		gap: var(--s7);
+		max-width: 1216px;
+		margin: 0 auto;
+		padding: var(--s7) var(--s6) var(--s9);
 	}
 
 	h2 {
-		margin: 0;
+		margin: 0 0 var(--s4);
 		font-size: var(--fs-h2);
 		font-weight: 800;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.01em;
 		line-height: 1.05;
-	}
-
-	section > h2 {
-		margin-bottom: var(--s3);
+		text-transform: uppercase;
 	}
 
 	.presets {
@@ -188,72 +180,92 @@
 		gap: var(--s5);
 	}
 
-	/* Sized with the viewport, so "15:00" fits its tile from 1280 wide and the page fits 720 high. */
+	/* A square sticker in the Countdown color, tilted, with a little play badge; it straightens up on hover. */
 	.preset {
-		appearance: none;
-		min-height: clamp(160px, 24vh, 260px);
-		border: 0;
-		border-radius: var(--r-xl);
-		box-shadow: var(--shadow);
-		font: 800 min(112px, 5.8vw) / 1 var(--font-display);
+		--depth: 8px;
+		position: relative;
+		display: grid;
+		place-content: center;
+		aspect-ratio: 1;
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-lg);
+		font: 900 min(var(--fs-2xl), 3.6vw) / 1 var(--font-display);
 		letter-spacing: -0.03em;
 		font-variant-numeric: tabular-nums;
+		rotate: var(--tilt);
 		cursor: pointer;
-		transition: transform var(--dur) var(--ease-out);
+		transition: rotate var(--dur) var(--ease-out);
 	}
 
 	@media (hover: hover) {
 		.preset:hover {
-			transform: translateY(-4px);
+			rotate: 0deg;
 		}
 	}
 
-	.preset:active {
-		transform: translateY(0);
+	.play {
+		position: absolute;
+		right: var(--s3);
+		bottom: var(--s3);
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--surface);
+		color: var(--text);
+	}
+
+	.play :global(.icon) {
+		fill: currentColor;
 	}
 
 	.edit {
+		--depth: 2px;
 		display: inline-flex;
 		align-items: center;
-		width: max-content;
-		min-height: 44px;
+		gap: var(--s2);
+		margin-top: var(--s6);
+		padding: var(--s1) var(--s3);
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--hue-purple);
 		color: var(--text);
-		font-weight: 600;
-		text-underline-offset: 4px;
+		font-size: var(--fs-sm);
+		font-weight: 700;
+		text-underline-offset: 3px;
+		rotate: -1.5deg;
 	}
 
 	main :global(.custom) {
 		box-sizing: border-box;
-		width: min(680px, 100%);
+		width: min(640px, 100%);
+		rotate: 0.6deg;
 	}
 
 	form {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
 		gap: var(--s4);
 	}
 
-	/* A large field, but right-aligned like every other duration. */
+	form :global(.field) {
+		flex: 1;
+		min-width: 0;
+	}
+
+	/* A large field, right-aligned like every other duration. */
 	form :global(.field input.duration) {
-		width: 220px;
+		width: 100%;
+		background-color: var(--surface-2);
+		font-size: var(--fs-h2);
 		text-align: right;
 	}
 
-	.message {
-		margin: 0;
-		color: var(--danger);
-		font-size: var(--fs-lead);
-		font-weight: 600;
-	}
-
 	@media (max-width: 1000px) {
-		.countdown {
+		main {
 			padding: var(--s5) var(--s4) var(--s7);
-		}
-
-		h1 {
-			font-size: 48px;
 		}
 
 		.presets {
@@ -262,17 +274,34 @@
 		}
 
 		.preset {
-			font-size: min(88px, 9vw);
+			font-size: min(var(--fs-2xl), 7vw);
 		}
 	}
 
-	@media (max-width: 560px) {
+	@media (max-width: 767px) {
 		.presets {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
+			grid-template-columns: repeat(6, minmax(0, 1fr));
+			gap: var(--s3);
 		}
 
 		.preset {
-			font-size: 13vw;
+			grid-column: span 2;
+			border-radius: var(--r);
+			font-size: var(--fs-lead);
+		}
+
+		.preset:nth-child(n + 4) {
+			grid-column: span 3;
+			aspect-ratio: 1.6;
+		}
+
+		.play {
+			display: none;
+		}
+
+		form {
+			flex-direction: column;
+			align-items: stretch;
 		}
 	}
 </style>
