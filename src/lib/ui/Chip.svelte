@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	// A small mono tag, such as a Sample's level or style.
-	let { children }: { children: Snippet } = $props();
+	// A small mono tag, such as a Sample's level or style; `hue` fills it.
+	let { hue, children }: { hue?: string; children: Snippet } = $props();
 </script>
 
-<span class="chip">{@render children()}</span>
+<span class="chip" style:background={hue}>{@render children()}</span>
 
 <style>
 	.chip {
