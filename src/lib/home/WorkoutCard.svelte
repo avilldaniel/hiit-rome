@@ -4,7 +4,8 @@
 	import type { StoredWorkout } from '#lib/store/workout-store.ts';
 	import ShareButton from '#lib/transfer/ShareButton.svelte';
 	import Button from '#lib/ui/Button.svelte';
-	import Card from '#lib/ui/Card.svelte';
+	import Icon from '#lib/ui/Icon.svelte';
+	import { boing } from '#lib/ui/motion.ts';
 	import Strip from '#lib/ui/Strip.svelte';
 
 	let {
@@ -25,81 +26,97 @@
 	const intervalCount = $derived(timeline.entries.length);
 </script>
 
-<Card as="article" class="workout" aria-labelledby={headingId}>
+<!-- A sticker card, tilted by its place in the list (`--tilt`); it straightens up on hover. -->
+<article class="workout" aria-labelledby={headingId}>
+	{#if workout.favorite}
+		<span class="favorite-sticker" aria-hidden="true" {@attach boing()}><Icon name="star" size={14} />Favorite</span>
+	{/if}
 	<Strip {timeline} />
-	<div class="body">
-		<div class="top">
-			<div class="title">
-				<h2 id={headingId}>{workout.name}</h2>
-				<p class="meta">{intervalCount} {intervalCount === 1 ? 'Interval' : 'Intervals'}</p>
-			</div>
-			<p class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</p>
-		</div>
-		<div class="actions">
-			<Button variant="primary" icon="play" class="start" href="/session/{workout.id}" aria-label="Start {workout.name}">
-				Start
-			</Button>
-			<Button variant="ghost" icon="star" class="favorite" aria-pressed={workout.favorite} onclick={onfavorite}>Favorite</Button>
-			<div class="secondary">
-				<Button variant="ghost" icon="edit" href="/edit/{workout.id}" aria-label="Edit {workout.name}" title="Edit" />
-				<Button
-					variant="ghost"
-					icon="copy"
-					aria-label="Duplicate {workout.name}"
-					title="Duplicate"
-					onclick={onduplicate}
-				/>
-				<ShareButton {workout} icon />
-				<Button
-					variant="danger"
-					class="delete"
-					icon="trash"
-					aria-label="Delete {workout.name}"
-					title="Delete"
-					onclick={ondelete}
-				/>
-			</div>
-		</div>
+	<div class="top">
+		<h2 id={headingId}>{workout.name}</h2>
+		<p class="duration" data-testid="duration">{formatClock(timeline.totalMs)}</p>
 	</div>
-</Card>
+	<p class="meta">{intervalCount} {intervalCount === 1 ? 'Interval' : 'Intervals'}</p>
+	<div class="go">
+		<Button variant="primary" size="large" icon="play" class="start" href="/session/{workout.id}" aria-label="Start {workout.name}">
+			Start
+		</Button>
+		<Button size="large" icon="star" aria-pressed={workout.favorite} onclick={onfavorite}>Favorite</Button>
+	</div>
+	<div class="tools">
+		<Button icon="edit" href="/edit/{workout.id}" aria-label="Edit {workout.name}" title="Edit" />
+		<Button icon="copy" aria-label="Duplicate {workout.name}" title="Duplicate" onclick={onduplicate} />
+		<ShareButton {workout} icon />
+		<Button variant="danger" icon="trash" aria-label="Delete {workout.name}" title="Delete" onclick={ondelete} />
+	</div>
+</article>
 
 <style>
-	/* A Card whose strip and body each carry their own inset; `article` outranks the Card's own padding. */
-	:global(article.card.workout) {
-		grid-template-rows: auto 1fr;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 0;
-		padding: 0;
-	}
-
-	:global(.workout) > :global(.strip) {
-		margin: var(--s5) var(--s5) 0;
-	}
-
-	.body {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		align-content: start;
-		gap: var(--s4);
+	.workout {
+		position: relative;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: var(--s3);
+		height: 100%;
 		padding: var(--s5);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-lg);
+		background: var(--surface);
+		box-shadow: var(--shadow-raised);
+		rotate: var(--tilt, 0deg);
+		transition:
+			rotate var(--dur) var(--ease-out),
+			translate var(--dur) var(--ease-out);
+	}
+
+	@media (hover: hover) {
+		.workout:hover {
+			rotate: 0deg;
+			translate: 0 -3px;
+		}
+	}
+
+	.favorite-sticker {
+		position: absolute;
+		top: calc(-1 * var(--s3));
+		right: var(--s5);
+		z-index: 1;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--s1);
+		padding: var(--s1) var(--s3);
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--hue-yellow);
+		font: 700 var(--fs-xs) / 1.4 var(--font-mono);
+		rotate: 6deg;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.favorite-sticker :global(.icon) {
+		fill: currentColor;
+	}
+
+	.workout > :global(.strip) {
+		height: 28px;
+		margin-bottom: var(--s2);
 	}
 
 	.top {
 		display: flex;
+		justify-content: space-between;
 		align-items: flex-start;
-		gap: var(--s3);
-	}
-
-	.title {
-		min-width: 0;
+		gap: var(--s4);
 	}
 
 	h2 {
+		min-width: 0;
 		margin: 0;
-		font-size: 28px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.1;
+		font-size: var(--fs-lead);
+		font-weight: 700;
+		letter-spacing: -0.01em;
+		line-height: 1.2;
 		/* Up to two lines, so a long name is mostly shown without making its card taller than the rest. */
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
@@ -109,51 +126,59 @@
 		overflow-wrap: anywhere;
 	}
 
-	.meta {
-		margin: var(--s1) 0 0;
-		color: var(--muted);
-		font-size: 15px;
-		font-variant-numeric: tabular-nums;
-	}
-
+	/* The total, boxed and tilted. */
 	.duration {
-		margin: 0 0 0 auto;
-		font: 800 34px/1 var(--font-display);
+		flex: none;
+		margin: 0;
+		padding: var(--s1) var(--s2);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-sm);
+		background: var(--surface-2);
+		font: 900 var(--fs-h2) / 1 var(--font-display);
 		font-variant-numeric: tabular-nums;
+		letter-spacing: -0.02em;
 		white-space: nowrap;
+		rotate: 2deg;
 	}
 
-	.actions {
+	.meta {
+		margin: 0;
+		color: var(--muted);
+		font: 400 var(--fs-sm) / 1.4 var(--font-mono);
+	}
+
+	.go {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
+		gap: var(--s3);
+		margin-top: auto;
+		padding-top: var(--s2);
+	}
+
+	.go :global(.start) {
+		flex: 1;
+	}
+
+	/* The rest of the actions, small, on a dashed line. */
+	.tools {
+		display: flex;
+		justify-content: flex-end;
 		gap: var(--s2);
+		margin-top: var(--s1);
+		padding-top: var(--s3);
+		border-top: 2px dashed var(--line);
 	}
 
-	.actions :global(.start) {
-		padding: 0 var(--s5);
-	}
+	@media (max-width: 767px) {
+		.workout {
+			padding: var(--s4);
+		}
 
-	/* Trimmed, with the icons' 44 px targets touching, so every action fits on one line in a third of the screen. */
-	.actions :global(.favorite) {
-		padding: 0 var(--s3);
-	}
+		h2 {
+			font-size: var(--fs-body);
+		}
 
-	.secondary {
-		display: flex;
-		margin-left: auto;
-	}
-
-	/* An icon-only danger button: ghost until hovered, like its neighbours. */
-	.secondary :global(.delete) {
-		border-color: transparent;
-		background: transparent;
-	}
-
-	@media (hover: hover) {
-		.secondary :global(.delete:not(:disabled):hover) {
-			border-color: transparent;
-			background: color-mix(in srgb, var(--text) 7%, transparent);
+		.duration {
+			font-size: var(--fs-lead);
 		}
 	}
 </style>
