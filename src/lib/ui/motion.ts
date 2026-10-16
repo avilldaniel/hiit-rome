@@ -82,6 +82,18 @@ export function thump(element: Element, from = 1.14) {
 	return animate(element, { scale: [from, 1] }, { type: 'spring', visualDuration: 0.45, bounce: 0.5 });
 }
 
+/**
+ * Something new in a list the trainer is editing, such as an added row: it pops in. Rows already there as the list
+ * first appears (made at `since`, from `performance.now()`) don't, so a screen opening doesn't pop every row.
+ */
+export const popIn =
+	(since: number, settleMs = 400): Attachment<HTMLElement> =>
+	(element) => {
+		if (reducedMotion() || performance.now() - since < settleMs) return;
+		const animation = animate(element, { scale: [0.9, 1], y: [-10, 0] }, BOUNCE);
+		return () => animation.stop();
+	};
+
 /** A heading landing, such as the Session's next Interval: it settles from a little larger and higher. */
 export function land(element: Element) {
 	if (reducedMotion()) return;

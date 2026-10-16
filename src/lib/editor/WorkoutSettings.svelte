@@ -39,7 +39,7 @@
 </script>
 
 <details class="workout-settings">
-	<summary><Icon name="chevron" />Workout settings</summary>
+	<summary><span class="chevron"><Icon name="chevron" /></span>Workout settings</summary>
 	<div class="fields" role="group" aria-label="Workout settings">
 		<label class="field">
 			<span class="label">Lead-in</span>
@@ -100,19 +100,23 @@
 </details>
 
 <style>
+	/* A card that opens on its yellow chevron, its fields under a dashed rule. */
 	.workout-settings {
+		border: var(--stroke) solid var(--line);
 		border-radius: var(--r-lg);
 		background: var(--surface);
-		box-shadow: var(--shadow);
+		box-shadow: var(--shadow-raised);
 	}
 
 	summary {
 		display: flex;
 		align-items: center;
-		gap: var(--s2);
-		min-height: 52px;
+		gap: var(--s3);
+		min-height: 64px;
 		padding: 0 var(--s5);
-		font-weight: 600;
+		font: 800 var(--fs-h2) / 1 var(--font-display);
+		letter-spacing: -0.01em;
+		text-transform: uppercase;
 		list-style: none;
 		cursor: pointer;
 	}
@@ -121,37 +125,46 @@
 		display: none;
 	}
 
-	summary :global(.icon) {
-		transition: transform var(--dur) var(--ease-out);
+	.chevron {
+		display: grid;
+		place-content: center;
+		box-sizing: border-box;
+		width: 36px;
+		height: 36px;
+		border: 2px solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--hue-yellow);
+		transition: rotate var(--dur) var(--ease-out);
 	}
 
-	[open] > summary :global(.icon) {
-		transform: rotate(90deg);
+	[open] > summary .chevron {
+		rotate: 90deg;
 	}
 
 	.fields {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		align-items: start;
-		gap: var(--s3) var(--s5);
-		padding: 0 var(--s5) var(--s5);
+		gap: var(--s4) var(--s5);
+		padding: var(--s5);
+		border-top: var(--stroke) dashed var(--line);
 	}
 
 	.field {
 		display: grid;
-		gap: var(--s1);
+		gap: var(--s2);
 	}
 
 	.label {
-		color: var(--muted);
-		font-size: 14px;
-		font-weight: 600;
+		font-size: var(--fs-sm);
+		font-weight: 700;
 	}
 
 	.inline {
 		display: flex;
 		align-items: center;
 		gap: var(--s2);
+		font-weight: 700;
 		white-space: nowrap;
 	}
 
@@ -163,12 +176,23 @@
 		grid-column: 1 / -1;
 		margin: 0;
 		color: var(--muted);
-		font-size: 16px;
+		font-weight: 600;
 	}
 
 	@media (max-width: 1100px) {
 		.fields {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 767px) {
+		summary {
+			font-size: var(--fs-lead);
+		}
+
+		.fields {
+			grid-template-columns: minmax(0, 1fr);
+			padding: var(--s4);
 		}
 	}
 </style>

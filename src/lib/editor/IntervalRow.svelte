@@ -14,7 +14,12 @@
 	const label = $derived(interval.name.trim() || KIND_LABEL[interval.kind]);
 </script>
 
-<div class="row" role="group" aria-label="Interval {label}" style:--kind={PALETTE[interval.kind].background}>
+<div
+	class={['row', actions.isSelected(interval.id) && 'selected']}
+	role="group"
+	aria-label="Interval {label}"
+	style:--kind={PALETTE[interval.kind].background}
+>
 	<DragHandle id={interval.id} label="Interval {label}" {actions} />
 	<input
 		class="checkbox"
@@ -61,41 +66,87 @@
 		{/each}
 	</select>
 	<span class="actions">
-		<Button variant="ghost" icon="copy" aria-label="Duplicate {label}" title="Duplicate" onclick={() => actions.duplicate(interval.id)} />
-		<Button variant="ghost" icon="trash" class="danger" aria-label="Delete {label}" title="Delete" onclick={() => actions.remove(interval.id)} />
+		<Button icon="copy" aria-label="Duplicate {label}" title="Duplicate" onclick={() => actions.duplicate(interval.id)} />
+		<Button variant="danger" icon="trash" aria-label="Delete {label}" title="Delete" onclick={() => actions.remove(interval.id)} />
 	</span>
 </div>
 
 <style>
-	/* The Studio design draws the duration tile first; it stays after the Kind here so the focus order is unchanged. */
+	/*
+	 * An Interval as an outlined chip with a fat edge in its Kind's color. The Studio design drew the duration tile
+	 * first; it stays after the Kind here so the focus order is unchanged.
+	 */
 	.row {
 		display: grid;
-		grid-template-columns: 24px 20px minmax(0, 1fr) 180px 128px 160px auto;
+		grid-template-columns: auto auto minmax(0, 1fr) 150px 112px 150px auto;
 		align-items: center;
 		gap: var(--s3);
 		padding: var(--s2) var(--s3) var(--s2) var(--s2);
+		border: var(--stroke) solid var(--line);
+		border-left: 12px solid var(--kind);
 		border-radius: var(--r);
 		background: var(--surface);
+		box-shadow: var(--shadow-sm);
+		transition:
+			background-color var(--dur) ease,
+			translate var(--dur) var(--ease-out),
+			box-shadow var(--dur) var(--ease-out);
+	}
+
+	/* Ticked: tinted blue and lifted a little. */
+	.selected {
+		background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+		translate: -2px -2px;
 		box-shadow: var(--shadow);
 	}
 
 	.name {
-		border-color: transparent;
+		min-width: 0;
+		min-height: 44px;
+		padding: var(--s2);
+		border: 2px solid transparent;
+		border-radius: var(--r-sm);
 		background-color: transparent;
-		font-size: 20px;
-		font-weight: 600;
+		font-size: var(--fs-body);
+		font-weight: 700;
+		text-overflow: ellipsis;
 	}
 
+	.name:focus {
+		border-color: var(--line);
+		background-color: var(--surface-2);
+		box-shadow: none;
+	}
+
+	.select {
+		min-height: 42px;
+		border-width: 2px;
+		font-size: var(--fs-sm);
+		font-weight: 700;
+	}
+
+	/* The Kind select is filled with its Kind's color. */
 	.kind {
-		border-color: color-mix(in oklab, var(--kind) 50%, var(--surface));
-		background-color: color-mix(in oklab, var(--kind) 16%, var(--surface));
-		font-weight: 600;
+		background-color: var(--kind);
 	}
 
+	/* The duration, in a tile of the Interval's color. */
 	.tile {
 		display: flex;
-		height: 56px;
+		box-sizing: border-box;
+		height: 48px;
+		border: var(--stroke) solid var(--line);
 		border-radius: var(--r-sm);
+		box-shadow: var(--shadow-sm);
+		transition:
+			background-color var(--dur) ease,
+			translate var(--dur) var(--ease-out),
+			box-shadow var(--dur) var(--ease-out);
+	}
+
+	.tile:focus-within {
+		translate: -1px -1px;
+		box-shadow: var(--shadow);
 	}
 
 	.row .tile :global(.duration) {
@@ -107,19 +158,23 @@
 		border-radius: inherit;
 		background: transparent;
 		color: inherit;
-		font: 800 30px var(--font-display);
+		font: 900 var(--fs-lead) var(--font-display);
 		text-align: center;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.row .tile :global(.duration[aria-invalid='true']) {
+	.row .tile :global(.duration:focus-visible) {
+		outline: none;
+	}
+
+	.row .tile:has(:global(.duration[aria-invalid='true'])) {
 		outline: 3px solid var(--danger);
 		outline-offset: 2px;
 	}
 
 	.actions {
 		display: flex;
-		gap: var(--s1);
+		gap: var(--s2);
 	}
 
 	/* Narrower screens let the row wrap. */
@@ -139,7 +194,7 @@
 		}
 
 		.tile {
-			width: 128px;
+			width: 112px;
 		}
 	}
 </style>

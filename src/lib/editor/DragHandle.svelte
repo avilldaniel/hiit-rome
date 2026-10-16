@@ -27,10 +27,17 @@
 
 <style>
 	.handle {
-		display: flex;
-		justify-content: center;
-		color: var(--muted);
+		display: grid;
+		place-content: center;
+		width: 28px;
+		height: 40px;
+		color: var(--text);
 		cursor: grab;
 		user-select: none;
+	}
+
+	.handle :global(.icon) {
+		width: 22px;
+		height: 22px;
 	}
 </style>
