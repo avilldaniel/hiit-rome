@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const INK = 'rgb(17, 22, 29)';
-const WARM_UP_YELLOW = 'rgb(247, 185, 40)';
+const INK = 'rgb(17, 17, 17)';
+const WARM_UP_YELLOW = 'rgb(255, 210, 63)';
 
 /** Opens the Session screen for the Workout seeded on first launch. */
 async function startSeeded(page: Page) {

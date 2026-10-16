@@ -17,11 +17,11 @@ describe('palette', () => {
 		}
 	});
 
-	it('puts ink text on every Kind color, and white on the ink neutral', () => {
+	it('puts ink text on every Kind color, and cream on the ink neutral', () => {
 		for (const token of PALETTE_TOKENS.filter((t) => t !== 'neutral')) {
-			expect(PALETTE[token].text, token).toBe('#11161d');
+			expect(PALETTE[token].text, token).toBe('#111111');
 		}
-		expect(PALETTE.neutral).toEqual({ background: '#11161d', text: '#ffffff' });
+		expect(PALETTE.neutral).toEqual({ background: '#111111', text: '#fff4d6' });
 		expect(COLOR_NAME.neutral).toBe('Black');
 	});
 });

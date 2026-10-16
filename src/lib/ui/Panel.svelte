@@ -1,7 +1,7 @@
 <script lang="ts" module>
-	// Measured advances in the `.time` style (Bricolage Grotesque 800, tabular, -0.04em tracking), in em.
-	const DIGIT_EM = 0.59;
-	const COLON_EM = 0.23;
+	// Measured advances in the `.time` style (Unbounded 800 or 900, tabular, -0.04em tracking), in em.
+	const DIGIT_EM = 0.74;
+	const COLON_EM = 0.31;
 
 	/**
 	 * How wide `clock` (as "0:19" or "100:57") sets in the panel's `.time`, in em. A screen passes it as `--time-em`,

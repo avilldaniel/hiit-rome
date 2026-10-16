@@ -15,7 +15,7 @@ describe('buildTimeline', () => {
 		expect(names(t)).toEqual(['Warm-up', 'Burpees', 'Cool-down']);
 		expect(t.entries.map((e) => e.startMs)).toEqual([0, 60_000, 80_000]);
 		expect(t.totalMs).toBe(110_000);
-		expect(t.entries[1].colors).toEqual({ background: '#f0476a', text: '#11161d' });
+		expect(t.entries[1].colors).toEqual({ background: '#ff3864', text: '#111111' });
 	});
 
 	it('repeats a Group once per Round and records each entry’s Round position', () => {

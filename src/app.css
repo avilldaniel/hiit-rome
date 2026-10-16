@@ -1,70 +1,110 @@
 /*
- * The Studio design tokens and base styles, loaded once by the root layout. Screens and the shared
+ * The Pop design tokens and base styles, loaded once by the root layout. Screens and the shared
  * components in `#lib/ui` read these custom properties instead of carrying their own values.
  * The Kind colors are not here: `#lib/engine/palette.ts` is their one source.
  */
 
 /*
  * Bundled with the app, Latin only, so they're precached for offline use and no visit reaches a font CDN.
- * Bricolage's file carries its optical-size axis too, as the packet's does: large times and titles are drawn tighter.
+ * Unbounded is wide and chunky, for titles and every time; Manrope carries the text; Space Mono the counts and tags.
  */
 @font-face {
-	font-family: 'Bricolage Grotesque';
+	font-family: 'Unbounded';
 	font-style: normal;
 	font-display: swap;
-	font-weight: 200 800;
-	src: url('@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2')
-		format('woff2-variations');
+	font-weight: 200 900;
+	src: url('@fontsource-variable/unbounded/files/unbounded-latin-wght-normal.woff2') format('woff2-variations');
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
 		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
-	font-family: 'Inter';
+	font-family: 'Manrope';
 	font-style: normal;
 	font-display: swap;
-	font-weight: 100 900;
-	src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+	font-weight: 200 800;
+	src: url('@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: 'Space Mono';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 400;
+	src: url('@fontsource/space-mono/files/space-mono-latin-400-normal.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: 'Space Mono';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 700;
+	src: url('@fontsource/space-mono/files/space-mono-latin-700-normal.woff2') format('woff2');
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
 		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 :root {
 	/* Ground and surfaces */
-	--ground: #eef1f4;
+	--ground: #fff4d6;
 	--surface: #ffffff;
-	--surface-2: #f5f7f9;
-	--line: #d8dee4;
-	--line-strong: #b9c2cc;
+	--surface-2: #ffe7a8;
+	/* Every outline is ink: Pop draws its edges, it doesn't hint at them. */
+	--line: #111111;
+	--line-strong: #111111;
+	--stroke: 3px;
 
 	/* Text */
-	--text: #11161d;
-	--muted: #4f5a66;
-	--focus: #2563eb;
+	--text: #111111;
+	--muted: #474747;
+	--focus: #3b2bff;
 
 	/* Buttons and states */
-	--primary: #11161d;
-	--primary-hover: #2a313b;
+	--primary: #3b2bff;
+	--primary-hover: #2c1de0;
 	--on-primary: #ffffff;
-	--danger: #b4183e;
-	--favorite: #8a5a00;
+	--accent: #ff5ca8;
+	--on-accent: #111111;
+	--danger: #d1002a;
+	--success: #16823f;
+	--warning: #a35200;
+	--favorite: #111111;
+
+	/* Each destination owns a hue: its launch tile, and the header band it opens with. */
+	--hue-yellow: #ffd23f;
+	--hue-teal: #3dd6d0;
+	--hue-orange: #ff8a3d;
+	--hue-purple: #a78bff;
+	--hue-lime: #9be564;
+	--hue-pink: #ff5ca8;
 
 	/* Type */
-	--font-display: 'Bricolage Grotesque', 'Helvetica Neue', system-ui, sans-serif;
-	--font-body: 'Inter', system-ui, sans-serif;
-	--fs-body: 18px;
-	--fs-lead: 20px;
-	--fs-h2: 26px;
-	--fs-title: 64px;
+	--font-display: 'Unbounded', system-ui, sans-serif;
+	--font-body: 'Manrope', system-ui, sans-serif;
+	--font-mono: 'Space Mono', ui-monospace, Menlo, monospace;
+	--fs-xs: 13px;
+	--fs-sm: 15px;
+	--fs-body: 17px;
+	--fs-lead: 22px;
+	--fs-h2: 30px;
+	--fs-2xl: 48px;
+	--fs-title: 80px;
 
 	/* Shape */
-	--r-sm: 8px;
+	--r-sm: 6px;
 	--r: 12px;
 	--r-lg: 20px;
-	--r-xl: 32px;
-	--shadow: 0 1px 2px rgb(17 22 29 / 0.06), 0 4px 16px rgb(17 22 29 / 0.06);
+	--r-xl: 28px;
+	--r-full: 999px;
+	/* Hard offset shadows in ink, which collapse when a control is pressed */
+	--shadow-sm: 2px 2px 0 var(--line);
+	--shadow: 4px 4px 0 var(--line);
 	/* For what floats over the page, such as a toast or a sticky bar */
-	--shadow-raised: var(--shadow), 0 8px 24px rgb(17 22 29 / 0.12);
+	--shadow-raised: 8px 8px 0 var(--line);
 
 	/* Spacing, a 4-pt scale */
 	--s1: 4px;
@@ -80,10 +120,10 @@
 	/* TV-facing sizes (the Session, Countdown and Resume prompt): one pixel of the Studio design at 1920×1080, scaled to the viewport */
 	--tv: min(calc(100vh / 1080), calc(100vw / 1920));
 
-	/* Motion */
-	--dur-fast: 150ms;
-	--dur: 220ms;
-	--ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+	/* Motion: quick, with a rubber-band overshoot. Motion (the library) springs the bigger moves. */
+	--dur-fast: 80ms;
+	--dur: 180ms;
+	--ease-out: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 html,
@@ -94,7 +134,7 @@ body {
 body {
 	margin: 0;
 	color: var(--text);
-	font: var(--fs-body) / 1.5 var(--font-body);
+	font: 500 var(--fs-body) / 1.5 var(--font-body);
 	-webkit-font-smoothing: antialiased;
 }
 
