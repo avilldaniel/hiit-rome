@@ -1,10 +1,24 @@
 <script lang="ts">
 	import { buildTimeline } from '#lib/engine/timeline.ts';
-	import BackLink from '#lib/ui/BackLink.svelte';
+	import Band from '#lib/ui/Band.svelte';
+	import Icon from '#lib/ui/Icon.svelte';
+	import { dealIn, pressable } from '#lib/ui/motion.ts';
 	import Strip from '#lib/ui/Strip.svelte';
 	import { WIZARDS } from '#lib/wizards/registry.ts';
 
-	const cards = WIZARDS.map((wizard) => ({ wizard, timeline: buildTimeline(wizard.defaultWorkout.items) }));
+	/** Each Wizard's card: its hue and its tilt. */
+	const LOOKS: Record<string, { hue: string; tilt: number }> = {
+		hiit: { hue: 'var(--hue-pink)', tilt: -1.5 },
+		tabata: { hue: 'var(--hue-teal)', tilt: 1 },
+		circuit: { hue: 'var(--hue-orange)', tilt: -0.8 },
+		emom: { hue: 'var(--hue-purple)', tilt: 1.6 }
+	};
+
+	const cards = WIZARDS.map((wizard) => ({
+		wizard,
+		timeline: buildTimeline(wizard.defaultWorkout.items),
+		look: LOOKS[wizard.style] ?? { hue: 'var(--hue-yellow)', tilt: 0 }
+	}));
 </script>
 
 <svelte:head>
@@ -12,20 +26,26 @@
 </svelte:head>
 
 <div class="wizards">
-	<header>
-		<BackLink href="/" label="My Workouts" />
-		<h1>Wizards</h1>
-	</header>
+	<Band hue="var(--hue-yellow)" back={{ href: '/', label: 'My Workouts' }} title="Wizards">
+		<p class="intro">Pick a style, punch in a few numbers, and get a Workout of your own: ready to start, or to fine-tune.</p>
+	</Band>
 
 	<main>
-		<p class="intro">Fill in a short form and get a Workout of your own, ready to start or fine-tune.</p>
-		<ul class="cards">
-			{#each cards as { wizard, timeline } (wizard.style)}
+		<ul class="cards" {@attach dealIn({ gap: 0.06 })}>
+			{#each cards as { wizard, timeline, look } (wizard.style)}
 				<li>
-					<a class="card" href="/wizard/{wizard.style}">
-						<span class="strip"><Strip {timeline} /></span>
+					<!-- A tilted sticker: the Workout it makes on a colored panel, its title and blurb, and a go arrow. -->
+					<a
+						class="card pressable"
+						href="/wizard/{wizard.style}"
+						style:--hue={look.hue}
+						style:--tilt="{look.tilt}deg"
+						{@attach pressable}
+					>
+						<span class="top"><Strip {timeline} /></span>
 						<h2>{wizard.title}</h2>
 						<p>{wizard.blurb}</p>
+						<span class="go" aria-hidden="true"><Icon name="right" /></span>
 					</a>
 				</li>
 			{/each}
@@ -35,34 +55,21 @@
 
 <style>
 	.wizards {
-		display: grid;
-		gap: var(--s2);
-		padding: var(--s7) var(--s8) var(--s9);
-	}
-
-	header {
-		display: grid;
-		gap: var(--s2);
-	}
-
-	h1 {
-		margin: 0;
-		font-size: var(--fs-title);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
-	}
-
-	main {
-		display: grid;
-		gap: var(--s6);
+		padding-bottom: var(--s9);
 	}
 
 	.intro {
-		max-width: 68ch;
-		margin: 0;
-		color: var(--muted);
+		max-width: 60ch;
+		margin: var(--s3) 0 0;
 		font-size: var(--fs-lead);
+		font-weight: 600;
+	}
+
+	main {
+		box-sizing: border-box;
+		max-width: 1216px;
+		margin: 0 auto;
+		padding: var(--s7) var(--s6) 0;
 	}
 
 	.cards {
@@ -74,79 +81,112 @@
 		list-style: none;
 	}
 
+	.cards li {
+		display: flex;
+	}
+
 	.card {
-		display: grid;
-		align-content: start;
+		--depth: 8px;
+		position: relative;
+		display: flex;
+		flex: 1;
+		flex-direction: column;
 		gap: var(--s4);
-		box-sizing: border-box;
-		height: 100%;
-		min-height: 320px;
-		padding: var(--s6);
-		border: 1px solid transparent;
-		border-radius: var(--r-xl);
+		padding: 0 0 var(--s8);
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-lg);
 		background: var(--surface);
-		box-shadow: var(--shadow);
-		color: inherit;
+		color: var(--text);
 		text-decoration: none;
-		transition:
-			transform var(--dur) var(--ease-out),
-			border-color var(--dur) var(--ease-out);
+		rotate: var(--tilt);
+		overflow: hidden;
+		transition: rotate var(--dur) var(--ease-out);
 	}
 
 	@media (hover: hover) {
 		.card:hover {
-			border-color: var(--text);
-			transform: translateY(-2px);
+			rotate: 0deg;
 		}
 	}
 
-	.strip {
-		display: grid;
-		margin-bottom: var(--s4);
+	.top {
+		padding: var(--s6) var(--s4) var(--s5);
+		border-bottom: var(--stroke) solid var(--line);
+		background: var(--hue);
 	}
 
-	.strip :global(.strip) {
-		height: 12px;
+	.top :global(.strip) {
+		height: 30px;
 	}
 
-	h2 {
+	.card h2 {
 		margin: 0;
-		font-size: 48px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
+		padding: 0 var(--s5);
+		font-size: var(--fs-h2);
+		font-weight: 900;
+		line-height: 1;
+		text-transform: uppercase;
 	}
 
 	.card p {
 		margin: 0;
-		color: var(--muted);
-		font-size: var(--fs-lead);
-		line-height: 1.5;
+		padding: 0 var(--s5);
+		font-weight: 600;
 	}
 
-	@media (max-width: 1100px) {
-		.cards {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
+	/* The way in: a blue coin that nudges right on hover. */
+	.go {
+		position: absolute;
+		right: var(--s4);
+		bottom: var(--s4);
+		display: grid;
+		place-content: center;
+		box-sizing: border-box;
+		width: 48px;
+		height: 48px;
+		border: var(--stroke) solid var(--line);
+		border-radius: var(--r-full);
+		background: var(--primary);
+		color: var(--on-primary);
+		box-shadow: var(--shadow-sm);
+		transition: translate var(--dur) var(--ease-out);
+	}
 
-		.card {
-			min-height: 0;
+	@media (hover: hover) {
+		.card:hover .go {
+			translate: 4px 0;
 		}
 	}
 
 	@media (max-width: 1000px) {
-		.wizards {
-			padding: var(--s5) var(--s4) var(--s7);
-		}
-
-		h1 {
-			font-size: 48px;
+		.cards {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 767px) {
+		.intro {
+			font-size: var(--fs-body);
+		}
+
+		main {
+			padding: var(--s6) var(--s4) 0;
+		}
+
 		.cards {
 			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.card {
+			padding-bottom: var(--s5);
+		}
+
+		.top {
+			padding: var(--s5) var(--s4) var(--s4);
+		}
+
+		.card p {
+			padding-right: calc(var(--s8) + var(--s2));
 		}
 	}
 </style>
